@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Easy Office — Mi cuenta (mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=Albert+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green:#24D356; --green-dark:#18B644; --green-tint:#EAF9F0; --green-line:#BEEBCE;
+    --ink:#282828; --text:#333333; --muted:#69727D;
+    --line:#E4E7E9; --bg:#F5F7F7; --white:#fff;
+    --red:#D8402F; --red-tint:#FCEBE8;
+    --amber:#B8790F; --amber-tint:#FBF0DC;
+    --blue:#2E6FCE; --blue-tint:#E7EFFB;
+    --shadow:0 5px 15px rgba(0,0,0,.10);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Albert Sans',sans-serif;font-size:14.5px;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3,h4{font-family:'Lora',serif;margin:0;color:var(--ink);}
+  a{color:inherit;text-decoration:none;}
+
+  .flag{background:var(--amber-tint);color:#7A5209;font-size:12px;text-align:center;padding:7px;font-weight:600;}
+
+  /* ===== Header público (idéntico al sitio) ===== */
+  .strip{background:var(--green-tint);display:flex;align-items:center;justify-content:space-between;padding:9px 34px;font-size:13px;font-weight:600;color:var(--ink);}
+  .strip .phone{background:#fff;border:1.5px solid var(--green);color:var(--green);border-radius:6px;padding:5px 22px;font-weight:700;font-size:13.5px;}
+  .nav{background:#fff;display:flex;align-items:center;justify-content:space-between;padding:13px 34px;border-bottom:1px solid var(--line);}
+  .logo{display:flex;align-items:center;gap:10px;}
+  .logo .lw{font-weight:700;font-size:14.5px;letter-spacing:.5px;color:var(--ink);line-height:1;}
+  .logo .ls{font-size:9.5px;letter-spacing:2.2px;color:var(--muted);text-transform:uppercase;margin-top:3px;}
+  .userbox{display:flex;align-items:center;gap:10px;font-size:13px;}
+  .avatar{width:32px;height:32px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+  .userbox .un{font-weight:600;color:var(--ink);}
+  .userbox .ur{font-size:11.5px;color:var(--muted);}
+  .logout{border:1px solid var(--line);background:#fff;border-radius:3px;padding:8px 14px;font-size:12.5px;font-family:inherit;color:var(--muted);cursor:pointer;}
+
+  /* ===== Tabs de la cuenta ===== */
+  .tabs{background:#fff;display:flex;gap:2px;padding:0 34px;border-bottom:1px solid var(--line);overflow-x:auto;position:sticky;top:0;z-index:20;}
+  .tab{border:none;background:none;padding:14px 16px;font-family:inherit;font-size:13.5px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;}
+  .tab:hover{color:var(--ink);}
+  .tab.on{color:var(--ink);border-color:var(--green);}
+  .tab .b{background:var(--red);color:#fff;font-size:10px;font-weight:700;border-radius:20px;padding:1px 6px;margin-left:6px;vertical-align:1px;}
+
+  .wrap{max-width:1120px;margin:0 auto;padding:26px 24px 70px 24px;}
+  .view{display:none;} .view.on{display:block;animation:fade .2s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+
+  .sh{margin-bottom:18px;}
+  .sh h2{font-size:22px;font-weight:700;}
+  .sh p{color:var(--muted);font-size:13.5px;margin:7px 0 0 0;max-width:720px;line-height:1.6;}
+
+  .panel{background:#fff;box-shadow:var(--shadow);padding:22px;}
+  .panel h3{font-family:'Lora',serif;font-size:16.5px;font-weight:700;margin-bottom:4px;}
+  .panel .ph{font-size:12.5px;color:var(--muted);margin-bottom:16px;line-height:1.5;}
+
+  .g2{display:grid;grid-template-columns:1.4fr 1fr;gap:18px;}
+  .g2e{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+
+  /* ===== Aviso destacado ===== */
+  .alert{display:flex;gap:14px;align-items:flex-start;background:#fff;box-shadow:var(--shadow);border-left:4px solid var(--amber);padding:18px 20px;margin-bottom:20px;}
+  .alert.bad{border-left-color:var(--red);}
+  .alert .ai{width:34px;height:34px;border-radius:50%;background:var(--amber-tint);color:var(--amber);display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;}
+  .alert.bad .ai{background:var(--red-tint);color:var(--red);}
+  .alert .at{font-size:14.5px;font-weight:700;color:var(--ink);}
+  .alert .ad{font-size:13px;color:var(--muted);margin-top:4px;line-height:1.55;}
+  .alert .aa{margin-left:auto;display:flex;gap:8px;align-items:center;flex-shrink:0;}
+
+  /* ===== Tarjetas de servicio ===== */
+  .svc{background:#fff;box-shadow:var(--shadow);display:flex;flex-direction:column;}
+  .svc-h{background:var(--ink);color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+  .svc-h .t{font-family:'Lora',serif;font-weight:700;font-size:15.5px;}
+  .svc-b{padding:18px 16px;flex:1;}
+  .kv{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:8px 0;border-bottom:1px dashed var(--line);}
+  .kv:last-child{border-bottom:none;}
+  .kv .k{color:var(--muted);}
+  .kv .v{font-weight:600;color:var(--ink);text-align:right;}
+  .svc-f{padding:0 16px 18px 16px;display:flex;gap:8px;}
+
+  /* ===== Barra de progreso ===== */
+  .prog{height:8px;background:#EDEFF0;margin:10px 0 6px 0;}
+  .prog i{display:block;height:8px;background:var(--green);}
+  .prog i.mid{background:var(--amber);} .prog i.low{background:var(--red);}
+  .prog-l{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);}
+
+  .bignum{font-family:'Lora',serif;font-size:38px;font-weight:700;color:var(--ink);line-height:1;}
+  .bignum small{font-family:'Albert Sans',sans-serif;font-size:13px;font-weight:500;color:var(--muted);margin-left:6px;}
+
+  /* ===== Tablas ===== */
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{text-align:left;font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:9px 10px;border-bottom:2px solid var(--line);}
+  td{padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#FAFBFB;}
+  .nm{font-weight:600;color:var(--ink);}
+  .sb{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .mono{font-family:'IBM Plex Mono',monospace;font-size:12px;}
+  .money{font-variant-numeric:tabular-nums;white-space:nowrap;}
+
+  .bg{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;}
+  .bg.red{background:var(--red-tint);color:var(--red);}
+  .bg.amb{background:var(--amber-tint);color:var(--amber);}
+  .bg.grn{background:var(--green-tint);color:var(--green-dark);}
+  .bg.blu{background:var(--blue-tint);color:var(--blue);}
+  .bg.gry{background:#EDEFF0;color:#5B646C;}
+
+  .btn{border:none;border-radius:3px;padding:11px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:.3px;}
+  .btn-g{background:var(--green);color:#fff;text-transform:uppercase;}
+  .btn-g:hover{background:var(--green-dark);}
+  .btn-d{background:var(--ink);color:#fff;}
+  .btn-o{background:#fff;color:var(--text);border:1px solid var(--line);}
+  .btn-o:hover{border-color:#C3C9CE;}
+  .btn-s{padding:7px 13px;font-size:12.5px;}
+  .btn-w{width:100%;}
+
+  .note{font-size:12.5px;color:var(--muted);margin-top:16px;padding:13px 15px;background:#fff;border-left:3px solid var(--green);line-height:1.6;box-shadow:var(--shadow);}
+  .note.warn{border-left-color:var(--amber);}
+
+  .steps{display:flex;flex-direction:column;}
+  .st{display:flex;gap:13px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line);}
+  .st:last-child{border-bottom:none;}
+  .sd{width:24px;height:24px;border-radius:50%;background:#C3C9CE;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;flex-shrink:0;}
+  .st.done .sd{background:var(--green);} .st.now .sd{background:var(--amber);}
+  .st .t{font-size:13.5px;font-weight:600;color:var(--ink);}
+  .st .d{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.5;}
+  .st .r{margin-left:auto;font-size:11px;font-weight:700;text-transform:uppercase;color:#B4BBC1;}
+  .st.done .r{color:var(--green-dark);} .st.now .r{color:var(--amber);}
+
+  .empty{text-align:center;padding:34px 20px;color:var(--muted);font-size:13.5px;}
+
+  footer{background:var(--ink);color:#B9BFC5;padding:26px 34px;font-size:12px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;}
+
+  /* ===== Pantalla de acceso del cliente ===== */
+  .gate{min-height:78vh;display:flex;align-items:center;justify-content:center;padding:52px 20px;background:var(--bg);}
+  .gate-card{background:#fff;box-shadow:var(--shadow);width:100%;max-width:420px;}
+  .gate-head{padding:30px 32px 20px 32px;border-bottom:1px solid var(--line);}
+  .gate-head h2{font-family:'Lora',serif;font-size:22px;font-weight:700;}
+  .gate-head p{font-size:13px;color:var(--muted);margin:8px 0 0 0;line-height:1.55;}
+  .gate-body{padding:26px 32px 30px 32px;}
+  .gf{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+  .gf label{font-size:12.5px;color:var(--muted);font-weight:600;}
+  .gf input{border:1px solid var(--line);border-radius:3px;padding:11px 12px;font-size:14px;font-family:inherit;color:var(--text);background:#fff;}
+  .gf input:focus{outline:none;border-color:var(--green);}
+  .pw-wrap{position:relative;display:flex;}
+  .pw-wrap input{flex:1;padding-right:70px;}
+  .pw-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:none;font-family:inherit;font-size:11.5px;font-weight:600;color:var(--green-dark);cursor:pointer;padding:5px;}
+  .gate-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+  .chk{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);}
+  .link{font-size:12.5px;color:var(--green-dark);font-weight:600;cursor:pointer;}
+  .gate-foot{border-top:1px dashed var(--line);margin-top:20px;padding-top:16px;font-size:12.5px;color:var(--muted);line-height:1.6;}
+  .demo-note{background:var(--amber-tint);color:#7A5209;font-size:11.5px;padding:9px 12px;margin-top:14px;line-height:1.5;}
+
+  @media(max-width:960px){ .g2,.g2e,.g3{grid-template-columns:1fr;} .strip,.nav,.tabs{padding-left:18px;padding-right:18px;} }
+</style>
+</head>
+<body>
+
+<div class="flag">MOCKUP DE PROPUESTA — Easy Office · panel privado del cliente. Datos de ejemplo; planes y precios tomados de easyoffice.cl</div>
+
+<div class="strip">
+  <div>Más de <b>5000</b> emprendimientos exitosos</div>
+  <div class="phone">✆ +56222777781</div>
+</div>
+
+<div class="nav">
+  <div class="logo">
+    <svg width="34" height="20" viewBox="0 0 34 20" fill="none"><circle cx="10" cy="10" r="7.5" stroke="#24D356" stroke-width="3"/><circle cx="23" cy="10" r="7.5" stroke="#24D356" stroke-width="3"/></svg>
+    <div><div class="lw">EASY OFFICE</div><div class="ls">mi cuenta</div></div>
+  </div>
+  <div class="userbox" id="userbox" style="display:none;">
+    <div class="avatar">CT</div>
+    <div>
+      <div class="un">Camila Andrea Torres Reyes</div>
+      <div class="ur">RUT 18.204.331-5 · correo verificado</div>
+    </div>
+    <button class="logout" onclick="logout()">Salir</button>
+  </div>
+  <div class="userbox" id="userboxOut">
+    <span style="color:var(--muted);font-size:12.5px;">Zona privada de clientes</span>
+  </div>
+</div>
+
+<!-- ================= ACCESO ================= -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="gate-head">
+      <h2>Ingrese a su cuenta</h2>
+      <p>Revise el estado de sus trámites, descargue sus documentos firmados y renueve sus servicios sin llamar por teléfono.</p>
+    </div>
+    <div class="gate-body">
+      <div class="gf">
+        <label>Correo electrónico</label>
+        <input type="email" id="cMail" placeholder="camila.torres@correo.cl" autocomplete="off">
+      </div>
+      <div class="gf">
+        <label>Contraseña</label>
+        <div class="pw-wrap">
+          <input type="password" id="cPw" placeholder="••••••••" autocomplete="off">
+          <button type="button" class="pw-toggle" onclick="togglePw('cPw',this)">Mostrar</button>
+        </div>
+      </div>
+      <div class="gate-row">
+        <label class="chk"><input type="checkbox" checked> Mantener la sesión iniciada</label>
+        <span class="link">¿Olvidó su contraseña?</span>
+      </div>
+      <button class="btn btn-g btn-w" onclick="login()">Ingresar</button>
+      <div class="gate-foot">
+        ¿Aún no tiene cuenta? <span class="link">Créela aquí</span> con su RUT y correo. Si ya contrató por teléfono o transferencia, use el mismo correo con el que le escribimos y podrá ver su historial.
+      </div>
+      <div class="demo-note">Pantalla de demostración: no valida credenciales ni envía datos a ningún servidor. Presione «Ingresar» para ver el panel.</div>
+    </div>
+  </div>
+</div>
+
+<div class="tabs" id="tabs" style="display:none;"></div>
+
+<div class="wrap" id="panelWrap" style="display:none;">
+
+  <!-- ================= RESUMEN ================= -->
+  <div class="view on" id="v-resumen">
+    <div class="alert">
+      <div class="ai">!</div>
+      <div>
+        <div class="at">Su domicilio tributario vence el 8 de septiembre de 2026</div>
+        <div class="ad">Quedan 3 días. Si no renueva, el servicio se suspende y su dirección deja de estar vigente ante el S.I.I. y la municipalidad. Renovación del Plan Semestral: $39.990 (o pase al Plan Anual por $59.990).</div>
+      </div>
+      <div class="aa"><button class="btn btn-g">Renovar ahora</button></div>
+    </div>
+
+    <div class="sh">
+      <h2>Mis servicios</h2>
+      <p>Todo lo que tiene contratado con Easy Office, con su vigencia real. Sin llamar ni escribir para preguntar hasta cuándo está cubierto.</p>
+    </div>
+
+    <div class="g3" style="margin-bottom:20px;">
+      <div class="svc">
+        <div class="svc-h"><span class="t">Domicilio tributario</span><span class="bg amb">Por vencer</span></div>
+        <div class="svc-b">
+          <div class="kv"><span class="k">Plan</span><span class="v">Plan Semestral</span></div>
+          <div class="kv"><span class="k">Dirección</span><span class="v">Sucursal RM · ZIP 8260183</span></div>
+          <div class="kv"><span class="k">Vigente hasta</span><span class="v" style="color:var(--amber)">8 sep 2026</span></div>
+          <div class="kv"><span class="k">Valor renovación</span><span class="v">$39.990</span></div>
+          <div class="prog"><i class="mid" style="width:94%"></i></div>
+          <div class="prog-l"><span>Inicio 8 mar</span><span>3 días restantes</span></div>
+        </div>
+        <div class="svc-f"><button class="btn btn-g btn-w">Renovar</button></div>
+      </div>
+
+      <div class="svc">
+        <div class="svc-h"><span class="t">Firmas electrónicas</span><span class="bg grn">Activo</span></div>
+        <div class="svc-b">
+          <div class="kv"><span class="k">Plan</span><span class="v">Plan · 25 firmas</span></div>
+          <div class="kv"><span class="k">Vigente hasta</span><span class="v">2 sep 2027</span></div>
+          <div style="padding-top:12px;"><span class="bignum">18<small>de 25 disponibles</small></span></div>
+          <div class="prog"><i style="width:72%"></i></div>
+          <div class="prog-l"><span>7 firmas usadas</span><span>72% disponible</span></div>
+        </div>
+        <div class="svc-f"><button class="btn btn-d btn-w">Firmar documento</button></div>
+      </div>
+
+      <div class="svc">
+        <div class="svc-h"><span class="t">Contabilidad</span><span class="bg gry">No contratado</span></div>
+        <div class="svc-b">
+          <div style="font-size:13px;color:var(--muted);line-height:1.6;">Usted declara su IVA por su cuenta. Con su giro y volumen de facturación, el <b style="color:var(--ink)">Plan Básico</b> cubre la declaración mensual de IVA, los libros electrónicos y la Renta anual.</div>
+          <div class="kv" style="margin-top:12px;"><span class="k">Desde</span><span class="v">$22.990 / mes</span></div>
+          <div class="kv"><span class="k">Incluye</span><span class="v">Hasta 5 facturas / mes</span></div>
+        </div>
+        <div class="svc-f"><button class="btn btn-o btn-w">Ver planes</button></div>
+      </div>
+    </div>
+
+    <div class="g2">
+      <div class="panel">
+        <h3>Trámite en curso</h3>
+        <div class="ph">Certificación notarial digital · orden EO-2026-04417</div>
+        <div class="steps">
+          <div class="st done"><div class="sd">✓</div><div><div class="t">Pago confirmado</div><div class="d">$13.490 recibidos vía Webpay Plus · 5 sep 10:31</div></div><div class="r">Listo</div></div>
+          <div class="st done"><div class="sd">✓</div><div><div class="t">Documento generado</div><div class="d">Armado automáticamente con los datos de su cuenta</div></div><div class="r">Listo</div></div>
+          <div class="st now"><div class="sd">…</div><div><div class="t">Verificación de un ejecutivo</div><div class="d">Camila R. está revisando el documento · estimado hoy 15:00</div></div><div class="r">En curso</div></div>
+          <div class="st"><div class="sd">4</div><div><div class="t">Su firma electrónica avanzada</div><div class="d">Le llegará un enlace para firmar desde cualquier dispositivo</div></div><div class="r">Pendiente</div></div>
+          <div class="st"><div class="sd">5</div><div><div class="t">Servicio activo</div><div class="d">Documento firmado disponible para descarga</div></div><div class="r">Pendiente</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Correspondencia reciente</h3>
+        <div class="ph">Digitalizada y enviada a su correo el mismo día de recepción.</div>
+        <table>
+          <tbody>
+            <tr><td><div class="nm">Servicio de Impuestos Internos</div><div class="sb">Notificación F29 · 4 sep</div></td><td style="text-align:right"><span class="bg red">Urgente</span></td></tr>
+            <tr><td><div class="nm">Tesorería General de la República</div><div class="sb">Certificado de deuda · 1 sep</div></td><td style="text-align:right"><span class="bg grn">Leída</span></td></tr>
+            <tr><td><div class="nm">Dirección del Trabajo</div><div class="sb">Acuse de recibo · 28 ago</div></td><td style="text-align:right"><span class="bg grn">Leída</span></td></tr>
+            <tr><td><div class="nm">Banco Estado</div><div class="sb">Correspondencia comercial · 25 ago</div></td><td style="text-align:right"><span class="bg gry">Comercial</span></td></tr>
+          </tbody>
+        </table>
+        <button class="btn btn-o btn-w" style="margin-top:14px;" onclick="setTab('correspondencia')">Ver toda la correspondencia</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= DOCUMENTOS ================= -->
+  <div class="view" id="v-documentos">
+    <div class="sh">
+      <h2>Mis documentos</h2>
+      <p>Todos sus contratos y documentos firmados con Easy Office, con su código de verificación. Un tercero puede validar la firma sin depender de que usted le reenvíe nada.</p>
+    </div>
+    <div class="alert bad" style="border-left-color:var(--green);">
+      <div class="ai" style="background:var(--green-tint);color:var(--green-dark)">✎</div>
+      <div>
+        <div class="at">Tiene 1 documento esperando su firma</div>
+        <div class="ad">Certificación notarial digital DOC-2026-04417. Firmar descuenta 1 firma de su plan (le quedan 18).</div>
+      </div>
+      <div class="aa"><button class="btn btn-g">Firmar ahora</button></div>
+    </div>
+    <div class="panel" style="padding:10px 22px;">
+      <table>
+        <thead><tr><th>Documento</th><th>Emitido</th><th>Firmas</th><th>Estado</th><th>Código de verificación</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><div class="nm">Certificación notarial digital</div><div class="sb">Contrato de arriendo comercial</div></td><td>5 sep 2026</td><td>1 de 2</td><td><span class="bg amb">Falta su firma</span></td><td class="mono">—</td><td><button class="btn btn-g btn-s">Firmar</button></td></tr>
+          <tr><td><div class="nm">Contrato de arriendo de oficina</div><div class="sb">Anexo · uso de sala de reuniones</div></td><td>12 ago 2026</td><td>2 de 2</td><td><span class="bg grn">Firmado</span></td><td class="mono">EO-8F4C-2211</td><td><button class="btn btn-o btn-s">Descargar</button></td></tr>
+          <tr><td><div class="nm">Inicio de actividades S.I.I.</div><div class="sb">Persona natural con giro</div></td><td>8 mar 2026</td><td>2 de 2</td><td><span class="bg grn">Firmado</span></td><td class="mono">EO-3A19-7740</td><td><button class="btn btn-o btn-s">Descargar</button></td></tr>
+          <tr><td><div class="nm">Poder notarial simple</div><div class="sb">Protocolización notarial digital</div></td><td>2 feb 2026</td><td>2 de 2</td><td><span class="bg grn">Firmado</span></td><td class="mono">EO-5C02-9183</td><td><button class="btn btn-o btn-s">Descargar</button></td></tr>
+          <tr><td><div class="nm">Contrato de domicilio tributario</div><div class="sb">Periodo anterior · sep 2025 – mar 2026</div></td><td>6 sep 2025</td><td>2 de 2</td><td><span class="bg gry">Vencido</span></td><td class="mono">EO-1B77-4402</td><td><button class="btn btn-o btn-s">Descargar</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">Cada documento firmado lleva un código de verificación público. Quien lo reciba puede comprobar en el sitio que la firma es válida y que el documento no fue alterado, sin necesidad de una notaría.</div>
+  </div>
+
+  <!-- ================= CORRESPONDENCIA ================= -->
+  <div class="view" id="v-correspondencia">
+    <div class="sh">
+      <h2>Correspondencia</h2>
+      <p>Todo lo que llega a su domicilio tributario, escaneado y clasificado. La correspondencia del S.I.I., Tesorería, tribunales y Dirección del Trabajo tiene plazos legales, por eso se marca aparte.</p>
+    </div>
+    <div class="g3" style="margin-bottom:20px;">
+      <div class="panel"><div class="ph" style="margin:0 0 8px 0;">Recibidas este año</div><div class="bignum">47<small>documentos</small></div></div>
+      <div class="panel"><div class="ph" style="margin:0 0 8px 0;">Sin leer</div><div class="bignum" style="color:var(--red)">1<small>urgente (S.I.I.)</small></div></div>
+      <div class="panel"><div class="ph" style="margin:0 0 8px 0;">Tiempo medio de aviso</div><div class="bignum">4,2<small>horas desde la recepción</small></div></div>
+    </div>
+    <div class="panel" style="padding:10px 22px;">
+      <table>
+        <thead><tr><th>Recibida</th><th>Remitente</th><th>Tipo</th><th>Descripción</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>4 sep 2026<div class="sb">16:40</div></td><td class="nm">Servicio de Impuestos Internos</td><td><span class="bg red">Fiscal</span></td><td>Notificación por F29 fuera de plazo</td><td><span class="bg red">Sin leer</span></td><td><button class="btn btn-g btn-s">Abrir</button></td></tr>
+          <tr><td>1 sep 2026<div class="sb">11:15</div></td><td class="nm">Tesorería General de la República</td><td><span class="bg red">Fiscal</span></td><td>Certificado de deuda fiscal — sin deuda</td><td><span class="bg grn">Leída</span></td><td><button class="btn btn-o btn-s">Ver</button></td></tr>
+          <tr><td>28 ago 2026<div class="sb">09:50</div></td><td class="nm">Dirección del Trabajo</td><td><span class="bg blu">Laboral</span></td><td>Acuse de recibo de contrato de trabajo</td><td><span class="bg grn">Leída</span></td><td><button class="btn btn-o btn-s">Ver</button></td></tr>
+          <tr><td>25 ago 2026<div class="sb">14:22</div></td><td class="nm">Banco Estado</td><td><span class="bg gry">Comercial</span></td><td>Estado de cuenta corriente</td><td><span class="bg grn">Leída</span></td><td><button class="btn btn-o btn-s">Ver</button></td></tr>
+          <tr><td>19 ago 2026<div class="sb">10:08</div></td><td class="nm">Municipalidad de La Florida</td><td><span class="bg blu">Municipal</span></td><td>Comprobante de patente comercial</td><td><span class="bg grn">Leída</span></td><td><button class="btn btn-o btn-s">Ver</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note warn">Este es el diferenciador real del domicilio tributario frente a una dirección barata: no es solo tener un domicilio, es que alguien reciba, digitalice y le avise a tiempo cuando llega algo con plazo legal.</div>
+  </div>
+
+  <!-- ================= PAGOS ================= -->
+  <div class="view" id="v-pagos">
+    <div class="sh">
+      <h2>Pagos y boletas</h2>
+      <p>Historial completo de lo pagado, con su boleta electrónica descargable. Los cobros recurrentes se pueden pausar desde aquí, sin llamar.</p>
+    </div>
+    <div class="g2e" style="margin-bottom:20px;">
+      <div class="panel">
+        <h3>Próximo cobro</h3>
+        <div class="ph">Renovación del domicilio tributario</div>
+        <div class="kv"><span class="k">Servicio</span><span class="v">Domicilio · Plan Semestral</span></div>
+        <div class="kv"><span class="k">Monto</span><span class="v">$39.990</span></div>
+        <div class="kv"><span class="k">Fecha</span><span class="v" style="color:var(--amber)">8 sep 2026</span></div>
+        <div class="kv"><span class="k">Medio</span><span class="v">Webpay ·  ···· 6411</span></div>
+        <div style="display:flex;gap:8px;margin-top:16px;">
+          <button class="btn btn-g" style="flex:1">Pagar ahora</button>
+          <button class="btn btn-o" style="flex:1">Cambiar tarjeta</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Medio de pago guardado</h3>
+        <div class="ph">Usado para las renovaciones automáticas que usted autorice.</div>
+        <div style="border:1px solid var(--line);padding:16px;display:flex;align-items:center;gap:14px;">
+          <div style="width:44px;height:30px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">VISA</div>
+          <div><div class="nm">Visa terminada en 6411</div><div class="sb">Vence 09/28 · Webpay Plus</div></div>
+          <span class="bg grn" style="margin-left:auto">Predeterminada</span>
+        </div>
+        <div class="note" style="box-shadow:none;margin-top:14px;">La renovación automática está <b style="color:var(--ink)">desactivada</b>. Actívela y no volverá a arriesgar la suspensión del servicio por olvido.</div>
+      </div>
+    </div>
+    <div class="panel" style="padding:10px 22px;">
+      <table>
+        <thead><tr><th>Fecha</th><th>Orden</th><th>Concepto</th><th>Monto</th><th>Medio</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>5 sep 2026</td><td class="mono">EO-2026-04417</td><td>Certificación notarial digital</td><td class="money">$13.490</td><td>Webpay Plus</td><td><span class="bg grn">Pagada</span></td><td><button class="btn btn-o btn-s">Boleta</button></td></tr>
+          <tr><td>2 sep 2026</td><td class="mono">EO-2026-04390</td><td>Plan · 25 firmas avanzadas</td><td class="money">$34.990</td><td>Webpay Plus</td><td><span class="bg grn">Pagada</span></td><td><button class="btn btn-o btn-s">Boleta</button></td></tr>
+          <tr><td>2 feb 2026</td><td class="mono">EO-2026-01188</td><td>Protocolización notarial</td><td class="money">$13.490</td><td>Mercado Pago</td><td><span class="bg grn">Pagada</span></td><td><button class="btn btn-o btn-s">Boleta</button></td></tr>
+          <tr><td>8 mar 2026</td><td class="mono">EO-2026-00742</td><td>Domicilio tributario · Plan Semestral</td><td class="money">$39.990</td><td>Transferencia</td><td><span class="bg grn">Pagada</span></td><td><button class="btn btn-o btn-s">Boleta</button></td></tr>
+          <tr><td>6 sep 2025</td><td class="mono">EO-2025-03911</td><td>Domicilio tributario · Plan Semestral</td><td class="money">$39.990</td><td>Transferencia</td><td><span class="bg gry">Cerrada</span></td><td><button class="btn btn-o btn-s">Boleta</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ================= CONTRATAR ================= -->
+  <div class="view" id="v-contratar">
+    <div class="sh">
+      <h2>Contratar más servicios</h2>
+      <p>Compra directa con la tarjeta ya guardada y los datos ya validados. Sin volver a escribir su RUT ni esperar una cotización por correo.</p>
+    </div>
+    <div class="g3" style="margin-bottom:18px;">
+      <div class="svc">
+        <div class="svc-h"><span class="t">Bolsa · 10 firmas</span></div>
+        <div class="svc-b">
+          <div class="bignum">$24.990</div>
+          <div class="ph" style="margin-top:6px;">Vigencia 3 meses</div>
+          <div class="kv"><span class="k">Precio por firma</span><span class="v">$2.499</span></div>
+          <div class="kv"><span class="k">Uso sugerido</span><span class="v">Contratos puntuales</span></div>
+        </div>
+        <div class="svc-f"><button class="btn btn-g btn-w">Comprar</button></div>
+      </div>
+      <div class="svc">
+        <div class="svc-h"><span class="t">Plan · 50 firmas</span><span class="bg grn">Mejor precio</span></div>
+        <div class="svc-b">
+          <div class="bignum">$49.990</div>
+          <div class="ph" style="margin-top:6px;">Vigencia 1 año</div>
+          <div class="kv"><span class="k">Precio por firma</span><span class="v">$1.000</span></div>
+          <div class="kv"><span class="k">Uso sugerido</span><span class="v">Contratos recurrentes</span></div>
+        </div>
+        <div class="svc-f"><button class="btn btn-g btn-w">Comprar</button></div>
+      </div>
+      <div class="svc">
+        <div class="svc-h"><span class="t">Contabilidad · Básico</span></div>
+        <div class="svc-b">
+          <div class="bignum">$22.990<small>/ mes</small></div>
+          <div class="ph" style="margin-top:6px;">Pro Pyme y Transparente</div>
+          <div class="kv"><span class="k">Incluye</span><span class="v">IVA, libros y Renta</span></div>
+          <div class="kv"><span class="k">Facturas</span><span class="v">Hasta 5 al mes</span></div>
+        </div>
+        <div class="svc-f"><button class="btn btn-d btn-w">Suscribirme</button></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>¿Necesita crear una empresa o rebajar impuestos?</h3>
+      <div class="ph">Empresa en 1 Día y Rebaja Tributaria dependen del tipo de sociedad y del capital declarado, así que no tienen precio fijo. Agende 30 minutos y le entregamos la propuesta con el valor exacto.</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-d">Agendar 30 minutos</button>
+        <button class="btn btn-o">Ver cómo funciona la Rebaja Tributaria</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <span>Mockup de propuesta — no es el sitio productivo de Easy Office.</span>
+  <span>info@easyoffice.cl · +56 22 277 7781 · Lun a jue 08:30–17:30 · vie 08:30–14:30</span>
+</footer>
+
+<script>
+const TABS = [
+  {id:'resumen', t:'Resumen'},
+  {id:'documentos', t:'Mis documentos', b:'1'},
+  {id:'correspondencia', t:'Correspondencia', b:'1'},
+  {id:'pagos', t:'Pagos y boletas'},
+  {id:'contratar', t:'Contratar servicios'}
+];
+let tab = 'resumen';
+function renderTabs(){
+  document.getElementById('tabs').innerHTML = TABS.map(x=>
+    `<button class="tab ${x.id===tab?'on':''}" onclick="setTab('${x.id}')">${x.t}${x.b?`<span class="b">${x.b}</span>`:''}</button>`).join('');
+}
+function setTab(id){
+  tab = id; renderTabs();
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.getElementById('v-'+id).classList.add('on');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ---------- acceso ---------- */
+function togglePw(id, btn){
+  const el = document.getElementById(id);
+  const show = el.type === 'password';
+  el.type = show ? 'text' : 'password';
+  btn.textContent = show ? 'Ocultar' : 'Mostrar';
+}
+function login(){
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('tabs').style.display = 'flex';
+  document.getElementById('panelWrap').style.display = 'block';
+  document.getElementById('userbox').style.display = 'flex';
+  document.getElementById('userboxOut').style.display = 'none';
+  setTab('resumen');
+  window.scrollTo({top:0});
+}
+function logout(){
+  document.getElementById('gate').style.display = 'flex';
+  document.getElementById('tabs').style.display = 'none';
+  document.getElementById('panelWrap').style.display = 'none';
+  document.getElementById('userbox').style.display = 'none';
+  document.getElementById('userboxOut').style.display = 'flex';
+  window.scrollTo({top:0});
+}
+renderTabs();
+</script>
+</body>
+</html>

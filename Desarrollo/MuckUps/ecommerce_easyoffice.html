@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Easy Office — Contratación en línea (mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=Albert+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green:#24D356;
+    --green-dark:#18B644;
+    --green-tint:#EAF9F0;
+    --green-line:#BEEBCE;
+    --ink:#282828;
+    --text:#333333;
+    --muted:#69727D;
+    --line:#E4E7E9;
+    --bg:#F5F7F7;
+    --white:#FFFFFF;
+    --red:#D8402F;
+    --red-tint:#FCEBE8;
+    --amber:#B8790F;
+    --amber-tint:#FBF0DC;
+    --shadow:0 5px 15px rgba(0,0,0,.10);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Albert Sans',sans-serif;font-size:15px;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3,h4{font-family:'Lora',serif;margin:0;color:var(--ink);}
+  a{color:inherit;text-decoration:none;}
+  button{font-family:inherit;}
+
+  /* ===== Header replicando easyoffice.cl ===== */
+  .strip{background:var(--green-tint);display:flex;align-items:center;justify-content:space-between;padding:10px 40px;font-size:13.5px;font-weight:600;color:var(--ink);}
+  .strip .phone{background:var(--white);border:1.5px solid var(--green);color:var(--green);border-radius:6px;padding:6px 26px;font-weight:700;font-size:14px;}
+  .nav{background:var(--white);display:flex;align-items:center;justify-content:space-between;padding:14px 40px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:40;}
+  .logo{display:flex;align-items:center;gap:10px;}
+  .logo svg{display:block;}
+  .logo .lw{font-family:'Albert Sans',sans-serif;font-weight:700;font-size:15px;letter-spacing:.5px;color:var(--ink);line-height:1;}
+  .logo .ls{font-size:9.5px;letter-spacing:2.4px;color:var(--muted);text-transform:uppercase;margin-top:3px;}
+  .menu{display:flex;gap:26px;font-size:14px;font-weight:500;color:var(--ink);}
+  .menu span{cursor:pointer;padding-bottom:2px;border-bottom:2px solid transparent;}
+  .menu span:hover{color:var(--green);}
+  .menu span.on{color:var(--green);border-color:var(--green);}
+  .nav-right{display:flex;align-items:center;gap:16px;}
+  .session{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;}
+  .avatar{width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;}
+
+  /* ===== Hero ===== */
+  .hero{background:linear-gradient(rgba(24,26,28,.80),rgba(24,26,28,.80)),url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="%23333"/></svg>');background-size:cover;color:#fff;text-align:center;padding:52px 24px 74px 24px;position:relative;}
+  .hero h1{color:#fff;font-size:40px;font-weight:700;line-height:1.12;max-width:760px;margin:0 auto;}
+  .hero p{max-width:600px;margin:16px auto 0 auto;font-size:14.5px;color:#D6DADD;line-height:1.6;}
+  .hero .tags{display:flex;gap:10px;justify-content:center;margin-top:22px;flex-wrap:wrap;}
+  .hero .tag{border:1px solid rgba(255,255,255,.28);border-radius:3px;padding:6px 14px;font-size:12.5px;color:#EDEFF1;}
+  .wave{display:block;width:100%;height:44px;margin-top:-1px;}
+
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px 70px 24px;}
+  .lift{margin-top:-38px;position:relative;z-index:5;}
+
+  /* ===== Stepper ===== */
+  .stepper{background:var(--white);box-shadow:var(--shadow);display:flex;align-items:center;padding:18px 26px;margin-bottom:26px;}
+  .step{display:flex;align-items:center;gap:10px;}
+  .step-circle{width:28px;height:28px;border-radius:50%;background:var(--white);border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;color:#B4BBC1;flex-shrink:0;}
+  .step-label{font-size:13px;font-weight:500;color:#B4BBC1;white-space:nowrap;}
+  .step.done .step-circle{background:var(--green);border-color:var(--green);color:#fff;}
+  .step.current .step-circle{background:var(--ink);border-color:var(--ink);color:#fff;}
+  .step.done .step-label,.step.current .step-label{color:var(--ink);}
+  .step-line{flex:1;height:2px;background:var(--line);margin:0 14px;}
+  .step-line.done{background:var(--green);}
+
+  .card{background:var(--white);box-shadow:var(--shadow);padding:30px;}
+  .stage{display:none;}
+  .stage.active{display:block;animation:fade .22s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  .head h2{font-size:26px;font-weight:700;}
+  .head p{color:var(--muted);font-size:14px;margin:8px 0 0 0;line-height:1.6;max-width:640px;}
+  .head{margin-bottom:24px;}
+
+  /* ===== Familias de servicio (tabs) ===== */
+  .famtabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:26px;}
+  .fam{border:none;background:none;padding:11px 16px;font-size:13.5px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
+  .fam:hover{color:var(--ink);}
+  .fam.on{color:var(--ink);border-color:var(--green);}
+
+  /* ===== Tarjetas de plan (estilo easyoffice.cl) ===== */
+  .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  .plan{background:var(--white);box-shadow:var(--shadow);display:flex;flex-direction:column;cursor:pointer;border:2px solid transparent;transition:transform .15s,border-color .15s;}
+  .plan:hover{transform:translateY(-3px);}
+  .plan.sel{border-color:var(--green);}
+  .plan-head{background:var(--ink);color:#fff;padding:16px 14px;text-align:center;font-family:'Lora',serif;font-weight:700;font-size:17px;line-height:1.25;min-height:70px;display:flex;align-items:center;justify-content:center;}
+  .plan.sel .plan-head{background:var(--green);}
+  .plan-price{font-family:'Lora',serif;font-size:34px;font-weight:700;text-align:center;padding:22px 10px 4px 10px;color:var(--ink);}
+  .plan-per{text-align:center;font-size:12px;color:var(--muted);padding-bottom:16px;}
+  .plan ul{list-style:none;margin:0;padding:0 22px 20px 22px;flex:1;}
+  .plan li{font-size:13px;line-height:1.5;color:var(--text);padding:7px 0 7px 22px;position:relative;border-bottom:1px dashed var(--line);}
+  .plan li:last-child{border-bottom:none;}
+  .plan li:before{content:"";position:absolute;left:0;top:13px;width:7px;height:7px;border-radius:50%;background:var(--green);}
+  .plan-foot{padding:0 22px 22px 22px;}
+  .plan-cta{width:100%;background:var(--green);color:#fff;border:none;border-radius:3px;padding:12px;font-size:13px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;cursor:pointer;}
+  .plan.sel .plan-cta{background:var(--ink);}
+  .plan-tag{position:absolute;}
+  .ribbon{background:var(--green-tint);color:var(--green-dark);font-size:11px;font-weight:700;text-align:center;padding:5px;letter-spacing:.4px;text-transform:uppercase;}
+
+  .fam-note{background:var(--green-tint);border-left:3px solid var(--green);padding:14px 16px;font-size:13px;color:var(--ink);margin-top:22px;line-height:1.6;}
+
+  /* ===== Cuenta / inicio de sesión ===== */
+  .cu{display:flex;align-items:center;gap:14px;background:var(--green-tint);border:1px solid var(--green-line);padding:16px 18px;margin-bottom:24px;}
+  .cu .ico{width:34px;height:34px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+  .cu .t{font-size:14px;font-weight:600;color:var(--ink);}
+  .cu .s{font-size:12.5px;color:var(--muted);margin-top:2px;}
+  .cu .chg{margin-left:auto;font-size:12.5px;color:var(--green-dark);font-weight:600;cursor:pointer;}
+
+  .auth{border:1px solid var(--line);margin-bottom:24px;}
+  .auth-tabs{display:flex;border-bottom:1px solid var(--line);background:#FAFBFB;}
+  .at{flex:1;border:none;background:none;padding:14px;font-family:inherit;font-size:13.5px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
+  .at:hover{color:var(--ink);}
+  .at.on{color:var(--ink);background:#fff;border-color:var(--green);}
+  .auth-body{padding:24px;}
+  .auth-narrow{max-width:440px;margin:0 auto;}
+  .pw-wrap{position:relative;display:flex;}
+  .pw-wrap input{flex:1;padding-right:70px;}
+  .pw-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:none;font-family:inherit;font-size:11.5px;font-weight:600;color:var(--green-dark);cursor:pointer;padding:5px;}
+  .auth-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;flex-wrap:wrap;}
+  .chk{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--muted);line-height:1.5;}
+  .chk input{margin-top:2px;}
+  .link{font-size:12.5px;color:var(--green-dark);font-weight:600;cursor:pointer;}
+  .auth-alt{border-top:1px dashed var(--line);margin-top:20px;padding-top:16px;font-size:12.5px;color:var(--muted);line-height:1.6;}
+  .demo-note{background:var(--amber-tint);color:#7A5209;font-size:11.5px;padding:9px 12px;margin-top:16px;line-height:1.5;}
+  .idnote{background:#F7F8F9;border-left:3px solid var(--ink);padding:14px 16px;font-size:12.5px;color:var(--muted);line-height:1.6;margin-top:22px;}
+  .idnote b{color:var(--ink);}
+  .btn-link{border:none;background:none;font-family:inherit;font-size:12.5px;color:var(--green-dark);font-weight:600;cursor:pointer;padding:0;}
+  .nav-btn{border:1px solid var(--green);background:#fff;color:var(--green-dark);border-radius:3px;padding:8px 18px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;}
+  .nav-btn.solid{background:var(--green);border-color:var(--green);color:#fff;}
+
+  /* ===== Formulario ===== */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .f{display:flex;flex-direction:column;gap:6px;}
+  .f.full{grid-column:1/-1;}
+  .f label{font-size:12.5px;color:var(--muted);font-weight:600;}
+  .f input,.f select,.f textarea{border:1px solid var(--line);border-radius:3px;padding:11px 12px;font-size:14px;font-family:inherit;color:var(--text);background:#fff;}
+  .f input:focus,.f select:focus{outline:none;border-color:var(--green);}
+  .f input:disabled{background:#F4F5F6;color:var(--muted);}
+  .f .hint{font-size:11.5px;color:var(--muted);}
+
+  /* ===== Pago ===== */
+  .paygrid{display:grid;grid-template-columns:1.25fr .95fr;gap:24px;align-items:start;}
+  .sum{border:1px solid var(--line);}
+  .sum-h{background:var(--ink);color:#fff;padding:13px 18px;font-family:'Lora',serif;font-weight:700;font-size:15px;}
+  .sum-b{padding:6px 18px 18px 18px;}
+  .srow{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;padding:11px 0;border-bottom:1px dashed var(--line);}
+  .srow .lb{color:var(--muted);}
+  .srow.tot{border-bottom:none;font-weight:700;font-size:16px;color:var(--ink);padding-top:14px;}
+  .modes{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;}
+  .mode{border:1px solid var(--line);padding:14px 16px;cursor:pointer;display:flex;gap:12px;align-items:flex-start;}
+  .mode.on{border-color:var(--green);background:var(--green-tint);}
+  .mode .rd{width:16px;height:16px;border-radius:50%;border:1.5px solid #C3C9CE;flex-shrink:0;margin-top:2px;}
+  .mode.on .rd{border-color:var(--green);border-width:5px;}
+  .mode .mt{font-size:13.5px;font-weight:600;color:var(--ink);}
+  .mode .ms{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5;}
+  .pms{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .pm{border:1px solid var(--line);padding:16px 12px;text-align:center;cursor:pointer;}
+  .pm.on{border-color:var(--green);background:var(--green-tint);}
+  .pm .n{font-weight:600;font-size:13.5px;color:var(--ink);}
+  .pm .s{font-size:11.5px;color:var(--muted);margin-top:3px;}
+  .legal{font-size:11.5px;color:var(--muted);line-height:1.6;margin-top:16px;display:flex;gap:9px;align-items:flex-start;}
+  .legal input{margin-top:2px;}
+
+  /* ===== Confirmación ===== */
+  .ok{text-align:center;padding:6px 0 26px 0;}
+  .ok-ico{width:62px;height:62px;border-radius:50%;background:var(--green);color:#fff;font-size:30px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px auto;}
+  .ok h2{font-size:26px;font-weight:700;}
+  .ok p{color:var(--muted);font-size:14px;margin-top:8px;}
+  .pipe{border:1px solid var(--line);margin-bottom:22px;}
+  .pstage{display:flex;align-items:center;gap:14px;padding:15px 18px;border-bottom:1px solid var(--line);}
+  .pstage:last-child{border-bottom:none;}
+  .pdot{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;color:#fff;background:#C3C9CE;}
+  .pstage.done .pdot{background:var(--green);}
+  .pstage.now .pdot{background:var(--amber);}
+  .ptitle{font-size:14px;font-weight:600;color:var(--ink);}
+  .psub{font-size:12px;color:var(--muted);margin-top:2px;}
+  .pst{margin-left:auto;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#B4BBC1;}
+  .pstage.done .pst{color:var(--green-dark);}
+  .pstage.now .pst{color:var(--amber);}
+  .okgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+  /* ===== Botones ===== */
+  .acts{display:flex;justify-content:space-between;align-items:center;margin-top:28px;padding-top:22px;border-top:1px solid var(--line);}
+  .btn{border:none;border-radius:3px;padding:13px 30px;font-size:13.5px;font-weight:600;cursor:pointer;letter-spacing:.4px;}
+  .btn-g{background:var(--green);color:#fff;text-transform:uppercase;}
+  .btn-g:hover{background:var(--green-dark);}
+  .btn-g:disabled{background:#C9CFD3;cursor:not-allowed;}
+  .btn-o{background:none;color:var(--muted);border:1px solid var(--line);}
+  .btn-o:hover{color:var(--ink);border-color:#C3C9CE;}
+  .btn-d{background:var(--ink);color:#fff;text-transform:uppercase;}
+  .btn-w{width:100%;}
+
+  /* ===== Footer ===== */
+  footer{background:var(--ink);color:#B9BFC5;padding:44px 40px 26px 40px;font-size:13px;}
+  .fgrid{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:1.1fr 1.2fr 1fr;gap:34px;}
+  footer h4{color:#fff;font-family:'Lora',serif;font-size:15px;margin-bottom:14px;}
+  footer ul{list-style:none;margin:0;padding:0;line-height:2;}
+  footer .fine{max-width:1080px;margin:30px auto 0 auto;padding-top:16px;border-top:1px solid rgba(255,255,255,.12);font-size:11.5px;color:#7C848B;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .mock-flag{background:var(--amber-tint);color:#7A5209;font-size:12px;text-align:center;padding:8px;font-weight:600;letter-spacing:.3px;}
+
+  @media(max-width:900px){
+    .plans{grid-template-columns:1fr;}
+    .paygrid{grid-template-columns:1fr;}
+    .grid2{grid-template-columns:1fr;}
+    .menu{display:none;}
+    .hero h1{font-size:30px;}
+    .fgrid{grid-template-columns:1fr;}
+  }
+  @media(max-width:760px){
+    .strip{padding:10px 16px;font-size:12px;gap:10px;}
+    .strip .phone{padding:5px 14px;font-size:12.5px;}
+    .nav{padding:12px 16px;flex-wrap:wrap;gap:10px;}
+    .session{flex-wrap:wrap;justify-content:flex-end;}
+    .auth-body{padding:18px 16px;}
+    .wrap{padding-left:14px;padding-right:14px;}
+    .card{padding:20px 16px;}
+    .stepper{overflow-x:auto;padding:16px;}
+    .step-line{min-width:18px;margin:0 8px;}
+    .acts{flex-direction:column;align-items:stretch;gap:12px;}
+    .acts .btn{width:100%;}
+    .pms{grid-template-columns:1fr;}
+    .okgrid{grid-template-columns:1fr;}
+    footer{padding:34px 18px 22px 18px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="mock-flag">MOCKUP DE PROPUESTA — Easy Office · contratación y pago en línea. Datos y clientes de ejemplo; planes y precios tomados de easyoffice.cl</div>
+
+<div class="strip">
+  <div>Más de <b>5000</b> emprendimientos exitosos</div>
+  <div class="phone">✆ +56222777781</div>
+</div>
+
+<div class="nav">
+  <div class="logo">
+    <svg width="34" height="20" viewBox="0 0 34 20" fill="none">
+      <circle cx="10" cy="10" r="7.5" stroke="#24D356" stroke-width="3"/>
+      <circle cx="23" cy="10" r="7.5" stroke="#24D356" stroke-width="3"/>
+    </svg>
+    <div>
+      <div class="lw">EASY OFFICE</div>
+      <div class="ls">contratar en línea</div>
+    </div>
+  </div>
+  <div class="menu">
+    <span>Inicio</span>
+    <span>Domicilio tributario</span>
+    <span>Contabilidad</span>
+    <span>Firmas Electrónicas</span>
+    <span>Asesoría Empresas</span>
+    <span class="on">Contratar</span>
+  </div>
+  <div class="nav-right">
+    <div class="session" id="sess">
+      <button class="nav-btn" onclick="go(2)">Iniciar sesión</button>
+      <button class="nav-btn solid" onclick="go(2); setAuth('reg')">Crear cuenta</button>
+    </div>
+  </div>
+</div>
+
+<div class="hero">
+  <h1>Contrate su servicio en línea, en minutos</h1>
+  <p>Elija su plan, cree su cuenta y pague con Webpay o Mercado Pago. Su documento se genera, se revisa y se firma electrónicamente sin que usted mueva un papel.</p>
+  <div class="tags">
+    <div class="tag">Firma electrónica avanzada · Ley 19.799</div>
+    <div class="tag">Pago seguro Transbank / Mercado Pago</div>
+    <div class="tag">Su cuenta con historial y documentos</div>
+  </div>
+</div>
+<svg class="wave" viewBox="0 0 1440 44" preserveAspectRatio="none"><path d="M0,26 C240,50 480,0 720,14 C960,28 1200,48 1440,26 L1440,44 L0,44 Z" fill="#F5F7F7"/></svg>
+
+<div class="wrap">
+
+  <div class="stepper lift" id="stepper"></div>
+
+  <!-- ============ ETAPA 1 ============ -->
+  <div class="stage active" id="s1">
+    <div class="card">
+      <div class="head">
+        <h2>Elija el servicio que necesita</h2>
+        <p>Los mismos planes del sitio, ahora contratables en línea. Seleccione una familia de servicio y luego su plan.</p>
+      </div>
+
+      <div class="famtabs" id="famtabs"></div>
+      <div class="plans" id="plans"></div>
+      <div class="fam-note" id="famnote"></div>
+
+      <div class="acts">
+        <span style="font-size:12.5px;color:var(--muted)" id="selinfo">Ningún plan seleccionado</span>
+        <button class="btn btn-g" id="b1" disabled onclick="go(2)">Continuar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ETAPA 2 ============ -->
+  <div class="stage" id="s2">
+    <div class="card">
+      <div class="head">
+        <h2 id="s2title">Ingrese a su cuenta</h2>
+        <p id="s2sub">Con su cuenta guarda sus datos, ve el estado de sus trámites y descarga sus documentos firmados cuando quiera.</p>
+      </div>
+
+      <!-- Bloque de autenticación -->
+      <div class="auth" id="auth">
+        <div class="auth-tabs">
+          <button class="at on" id="atLogin" onclick="setAuth('login')">Ya tengo cuenta</button>
+          <button class="at" id="atReg" onclick="setAuth('reg')">Crear cuenta</button>
+        </div>
+
+        <!-- Ingresar -->
+        <div class="auth-body" id="paneLogin">
+          <div class="auth-narrow">
+            <div class="grid2" style="grid-template-columns:1fr;">
+              <div class="f"><label>Correo electrónico</label><input type="email" id="loginMail" placeholder="camila.torres@correo.cl" autocomplete="off"></div>
+              <div class="f"><label>Contraseña</label>
+                <div class="pw-wrap">
+                  <input type="password" id="loginPw" placeholder="••••••••" autocomplete="off">
+                  <button type="button" class="pw-toggle" onclick="togglePw('loginPw',this)">Mostrar</button>
+                </div>
+              </div>
+            </div>
+            <div class="auth-row">
+              <label class="chk"><input type="checkbox" checked> Mantener la sesión iniciada</label>
+              <span class="link">¿Olvidó su contraseña?</span>
+            </div>
+            <button class="btn btn-g btn-w" style="margin-top:18px;" onclick="login()">Ingresar</button>
+            <div class="auth-alt">
+              ¿Primera vez en Easy Office? <button class="btn-link" onclick="setAuth('reg')">Cree su cuenta en 30 segundos</button>, o
+              <button class="btn-link" onclick="login(true)">continúe como invitado</button> y créela al final de la compra.
+            </div>
+            <div class="demo-note">Pantalla de demostración: no valida credenciales ni envía datos a ningún servidor. Presione «Ingresar» para continuar el recorrido.</div>
+          </div>
+        </div>
+
+        <!-- Crear cuenta -->
+        <div class="auth-body" id="paneReg" style="display:none;">
+          <div class="grid2">
+            <div class="f"><label>Nombre completo</label><input placeholder="Camila Andrea Torres Reyes" autocomplete="off"></div>
+            <div class="f"><label>RUT</label><input placeholder="18.204.331-5" autocomplete="off"></div>
+            <div class="f"><label>Correo electrónico</label><input type="email" placeholder="camila.torres@correo.cl" autocomplete="off"><span class="hint">Le enviaremos un enlace para confirmar el correo.</span></div>
+            <div class="f"><label>Teléfono</label><input placeholder="+56 9 0000 0000" autocomplete="off"></div>
+            <div class="f"><label>Contraseña</label>
+              <div class="pw-wrap">
+                <input type="password" id="regPw" placeholder="Mínimo 8 caracteres" autocomplete="off">
+                <button type="button" class="pw-toggle" onclick="togglePw('regPw',this)">Mostrar</button>
+              </div>
+            </div>
+            <div class="f"><label>Repita la contraseña</label>
+              <div class="pw-wrap">
+                <input type="password" id="regPw2" placeholder="Repita la contraseña" autocomplete="off">
+                <button type="button" class="pw-toggle" onclick="togglePw('regPw2',this)">Mostrar</button>
+              </div>
+            </div>
+          </div>
+          <div class="auth-row">
+            <label class="chk"><input type="checkbox" checked> Acepto los términos del servicio y la política de privacidad de Easy Office.</label>
+          </div>
+          <button class="btn btn-g" style="margin-top:18px;" onclick="login()">Crear cuenta y continuar</button>
+          <div class="auth-alt">¿Ya tiene cuenta? <button class="btn-link" onclick="setAuth('login')">Inicie sesión</button></div>
+          <div class="demo-note">Pantalla de demostración: no valida credenciales ni envía datos a ningún servidor.</div>
+        </div>
+      </div>
+
+      <!-- Sesión iniciada -->
+      <div class="cu" id="logged" style="display:none;">
+        <div class="ico">✓</div>
+        <div>
+          <div class="t" id="loggedT">Sesión iniciada</div>
+          <div class="s" id="loggedS">camila.torres@correo.cl · correo confirmado</div>
+        </div>
+        <div class="chg" onclick="logout()">Cerrar sesión</div>
+      </div>
+
+      <div id="datosForm" style="display:none;">
+      <div class="grid2">
+        <div class="f"><label>Nombre completo del titular</label><input id="dNombre" value="Camila Andrea Torres Reyes"></div>
+        <div class="f"><label>RUT</label><input id="dRut" value="18.204.331-5"><span class="hint">Se usa para emitir la boleta y para el documento.</span></div>
+        <div class="f"><label>Correo electrónico</label><input id="dMail" value="camila.torres@correo.cl"><span class="hint">Aquí llegarán las notificaciones y el documento firmado.</span></div>
+        <div class="f"><label>Teléfono de contacto</label><input placeholder="+56 9 0000 0000"></div>
+        <div class="f"><label>¿Contrata como…?</label>
+          <select id="tipo" onchange="tipoChange()">
+            <option value="persona">Persona natural con giro</option>
+            <option value="empresa">Empresa ya constituida</option>
+            <option value="nueva">Aún no tengo empresa</option>
+          </select>
+        </div>
+        <div class="f" id="fRut"><label>RUT de la empresa</label><input placeholder="76.000.000-0"></div>
+        <div class="f full" id="fExtra"><label>Nombre o razón social</label><input placeholder="Ej: Torres Diseño y Marketing SpA"></div>
+        <div class="f full" id="fRegion"><label>Región donde necesita el domicilio</label>
+          <select>
+            <option>Región Metropolitana — Sucursal ZIP 8260183</option>
+            <option>Región de Valparaíso — Casa Matriz ZIP 2362633</option>
+          </select>
+          <span class="hint">Cobertura verificada ante SII y municipalidades en ambas regiones.</span>
+        </div>
+      </div>
+
+      <div class="idnote">
+        <b>Sobre la verificación de identidad.</b> Los datos que usted ingresa son declarados. La verificación de identidad se realiza en el momento de firmar, a cargo del proveedor de firma electrónica avanzada acreditado, conforme a la Ley 19.799. Easy Office no solicita ni almacena su ClaveÚnica: su uso está reservado a organismos del Estado.
+      </div>
+      </div><!-- /datosForm -->
+
+      <div class="acts">
+        <button class="btn btn-o" onclick="go(1)">Volver</button>
+        <button class="btn btn-g" id="b2" onclick="go(3)" disabled>Ir a pagar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ETAPA 3 ============ -->
+  <div class="stage" id="s3">
+    <div class="card">
+      <div class="head">
+        <h2>Resumen y pago</h2>
+        <p>Pago en línea con Webpay Plus o Mercado Pago. La transferencia sigue disponible, pero deja de ser la única vía.</p>
+      </div>
+
+      <div class="paygrid">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">Modalidad de pago</div>
+          <div class="modes" id="modes"></div>
+
+          <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">Medio de pago</div>
+          <div class="pms">
+            <div class="pm on" data-pm="tbk" onclick="pm('tbk')"><div class="n">Webpay Plus</div><div class="s">Transbank · débito y crédito</div></div>
+            <div class="pm" data-pm="mp" onclick="pm('mp')"><div class="n">Mercado Pago</div><div class="s">Tarjetas y saldo en cuenta</div></div>
+          </div>
+
+          <label class="legal"><input type="checkbox" checked> Acepto las condiciones del servicio y autorizo la emisión de la boleta electrónica a mi RUT. Declaro que los datos ingresados son correctos y de mi titularidad.</label>
+        </div>
+
+        <div class="sum">
+          <div class="sum-h">Resumen de su contratación</div>
+          <div class="sum-b" id="sum"></div>
+        </div>
+      </div>
+
+      <div class="acts">
+        <button class="btn btn-o" onclick="go(2)">Volver</button>
+        <button class="btn btn-g" id="bPay" onclick="go(4)">Pagar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ETAPA 4 ============ -->
+  <div class="stage" id="s4">
+    <div class="card">
+      <div class="ok">
+        <div class="ok-ico">✓</div>
+        <h2>Pago recibido</h2>
+        <p id="okmsg">Orden EO-2026-04417 · comprobante enviado a su correo.</p>
+      </div>
+
+      <div class="pipe">
+        <div class="pstage done"><div class="pdot">✓</div><div><div class="ptitle">Pago confirmado</div><div class="psub" id="pay1">—</div></div><div class="pst">Listo</div></div>
+        <div class="pstage done"><div class="pdot">✓</div><div><div class="ptitle">Contrato generado automáticamente</div><div class="psub">Armado desde plantilla con los datos de su cuenta</div></div><div class="pst">Listo</div></div>
+        <div class="pstage now"><div class="pdot">…</div><div><div class="ptitle">Verificación humana</div><div class="psub">Un ejecutivo revisa el documento antes de habilitar la firma · estimado 2 h hábiles</div></div><div class="pst">En curso</div></div>
+        <div class="pstage"><div class="pdot">4</div><div><div class="ptitle">Firma electrónica avanzada</div><div class="psub">Verificación de identidad y firma de ambas partes ante proveedor acreditado · Ley 19.799</div></div><div class="pst">Pendiente</div></div>
+        <div class="pstage"><div class="pdot">5</div><div><div class="ptitle">Servicio activo</div><div class="psub">Documento disponible en su panel y activación del servicio contratado</div></div><div class="pst">Pendiente</div></div>
+      </div>
+
+      <div class="okgrid">
+        <button class="btn btn-d btn-w">Ir a mi panel</button>
+        <button class="btn btn-o btn-w" disabled style="opacity:.6;cursor:not-allowed;">Descargar documento (al firmar)</button>
+      </div>
+
+      <div class="fam-note" style="margin-top:22px;">Le avisaremos por correo y WhatsApp en cada cambio de estado. No necesita llamar para saber en qué va su trámite.</div>
+
+      <div class="acts">
+        <button class="btn btn-o" onclick="go(1)">Contratar otro servicio</button>
+        <span style="font-size:12.5px;color:var(--muted)">¿Dudas? info@easyoffice.cl · +56 22 277 7781</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="fgrid">
+    <div>
+      <h4>Easy Office</h4>
+      <p style="line-height:1.7;margin:0;">Centro de emprendimiento, red de oficinas equipadas y servicios digitales para la creación, activación y operación de emprendimientos 100% digitales.</p>
+    </div>
+    <div>
+      <h4>Enlaces útiles</h4>
+      <ul>
+        <li>Domicilio tributario</li>
+        <li>Contabilidad &amp; Tributaria</li>
+        <li>Firmas Electrónicas</li>
+        <li>Empresa en 1 Día</li>
+        <li>Rebaja Tributaria</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Contáctanos</h4>
+      <ul>
+        <li>Casa Matriz: ZIP 2362633 — Región de Valparaíso</li>
+        <li>Sucursal: ZIP 8260183 — Región Metropolitana</li>
+        <li>info@easyoffice.cl</li>
+        <li>+56 22 277 7781</li>
+        <li>Lun a jue 08:30–17:30 · vie 08:30–14:30</li>
+      </ul>
+    </div>
+  </div>
+  <div class="fine">
+    <span>Mockup de propuesta — no es el sitio productivo de Easy Office.</span>
+    <span>Firma electrónica avanzada conforme a Ley 19.799</span>
+  </div>
+</footer>
+
+<script>
+/* ====== Catálogo real tomado de easyoffice.cl ====== */
+const CAT = [
+  {
+    id:'domicilio', tab:'Domicilio tributario',
+    note:'Cobertura verificada en las regiones Metropolitana y de Valparaíso. Incluye recepción, digitalización y envío de correspondencia fiscal (SII, TGR, Judicial y Dirección del Trabajo).',
+    plans:[
+      {id:'dom-anual', name:'Plan Anual', price:59990, per:'12 meses · pago único', recur:'anual',
+       feats:['Domicilio tributario, postal y comercial x 12 meses','Recepción de correspondencia','Digitalización y envío de correspondencia fiscal','Inicio de actividad ante S.I.I.','Firmas electrónicas avanzadas del contrato']},
+      {id:'dom-sem', name:'Plan Semestral', price:39990, per:'6 meses · pago único', recur:'semestral',
+       feats:['Domicilio tributario, postal y comercial x 6 meses','Recepción de correspondencia','Digitalización y envío de correspondencia fiscal','Inicio de actividad ante S.I.I.','Firmas avanzadas por $5.000 adicionales']},
+      {id:'dom-bod', name:'Plan Anual de Bodega Virtual', price:59990, per:'12 meses · pago único', recur:'anual',
+       feats:['Domicilio bodega x 12 meses','Inmueble con rol de bodega','Válido ante S.I.I.','Firmas electrónicas avanzadas del contrato']}
+    ]
+  },
+  {
+    id:'contabilidad', tab:'Contabilidad & Tributaria',
+    note:'Planes mensuales válidos para regímenes Pro Pyme y Transparente. Otros regímenes requieren cotización personalizada con un ejecutivo.',
+    plans:[
+      {id:'cont-bas', name:'Plan Básico', price:22990, per:'mensual', recur:'mensual',
+       feats:['Declaración mensual de IVA','Libros electrónicos de ventas y compras','Declaración Anual de Renta','Domicilio tributario, postal y comercial','Hasta 5 facturas mensuales']},
+      {id:'cont-est', name:'Plan Estándar', price:37900, per:'mensual', recur:'mensual',
+       feats:['Declaración mensual de IVA','Libros electrónicos de ventas y compras','Declaración Anual de Renta','Domicilio tributario, postal y comercial','Hasta 10 facturas mensuales']},
+      {id:'cont-pyme', name:'Plan Pyme', price:59000, per:'mensual', recur:'mensual',
+       feats:['Declaración mensual de IVA','Libros electrónicos de ventas y compras','Declaración Anual de Renta','Domicilio tributario, postal y comercial','Hasta 15 facturas mensuales']}
+    ]
+  },
+  {
+    id:'firmas', tab:'Firmas Electrónicas',
+    note:'Las bolsas tienen vigencia de 3 meses; los planes, de 1 año. El saldo disponible queda visible en el panel del cliente y se descuenta por cada documento firmado.',
+    plans:[
+      {id:'fir-1', name:'Bolsa · 1 firma avanzada', price:3490, per:'vigencia 3 meses', recur:'bolsa',
+       feats:['1 firma electrónica avanzada','Validez legal Ley 19.799','Firma desde cualquier dispositivo','Sin ir a notaría']},
+      {id:'fir-3', name:'Bolsa · 3 firmas avanzadas', price:8990, per:'vigencia 3 meses', recur:'bolsa',
+       feats:['3 firmas electrónicas avanzadas','Validez legal Ley 19.799','Firma desde cualquier dispositivo','Saldo visible en su panel']},
+      {id:'fir-10', name:'Bolsa · 10 firmas avanzadas', price:24990, per:'vigencia 3 meses', recur:'bolsa',
+       feats:['10 firmas electrónicas avanzadas','Validez legal Ley 19.799','Firma desde cualquier dispositivo','Saldo visible en su panel']},
+      {id:'fir-5a', name:'Plan · 5 firmas avanzadas', price:9990, per:'vigencia 1 año', recur:'anual',
+       feats:['5 firmas electrónicas avanzadas','Vigencia 12 meses','Recordatorio antes de vencer','Saldo visible en su panel']},
+      {id:'fir-25', name:'Plan · 25 firmas avanzadas', price:34990, per:'vigencia 1 año', recur:'anual',
+       feats:['25 firmas electrónicas avanzadas','Vigencia 12 meses','Recordatorio antes de vencer','Ideal para contratos recurrentes']},
+      {id:'fir-50', name:'Plan · 50 firmas avanzadas', price:49990, per:'vigencia 1 año', recur:'anual',
+       feats:['50 firmas electrónicas avanzadas','Vigencia 12 meses','Recordatorio antes de vencer','Mejor precio por firma']}
+    ]
+  },
+  {
+    id:'digitales', tab:'Servicios digitales',
+    note:'Servicios de apoyo a la gestión documental. El acceso a la API permite a estudios contables y plataformas integrar la firma en sus propios sistemas.',
+    plans:[
+      {id:'dig-not', name:'Certificación o protocolización notarial', price:13490, per:'por documento', recur:'unico',
+       feats:['1 certificación o protocolización','Red de notarios digitales','Documento con validez legal','Entrega digital']},
+      {id:'dig-api', name:'Acceso a la API', price:8990, per:'mensual · desde', recur:'mensual',
+       feats:['Integración de firma en su sistema','Documentación técnica','Ambiente de pruebas','Soporte de implementación']},
+      {id:'dig-simple', name:'Bolsa · 100 firmas simples', price:24990, per:'por bolsa', recur:'bolsa',
+       feats:['100 firmas electrónicas simples','Para documentos de uso interno','Descuento por volumen','Saldo visible en su panel']}
+    ]
+  },
+  {
+    id:'empresa', tab:'Empresa en 1 Día · Rebaja Tributaria',
+    note:'Estos dos servicios no tienen precio publicado en el sitio: dependen del tipo de sociedad y del capital declarado. Por eso el flujo termina en agendamiento con un ejecutivo, no en pago directo.',
+    plans:[
+      {id:'emp-crea', name:'Creación de empresa', price:null, per:'según tipo de sociedad', recur:'cotiza',
+       feats:['Constitución en el Registro de Empresas y Sociedades','Empresa creada en menos de 3 horas','Asesoría sobre el tipo de sociedad','Firmas del estatuto incluidas']},
+      {id:'emp-rebaja', name:'Rebaja Tributaria', price:null, per:'según capital propio', recur:'cotiza',
+       feats:['Reduce 50% el impuesto al capital propio','Beneficio Municipalidad de La Florida','Incorporado a su planificación tributaria','Aplicable en Declaración Anual de Renta']},
+      {id:'emp-ases', name:'Asesoría Empresas', price:null, per:'reunión de 30 minutos', recur:'cotiza',
+       feats:['Diagnóstico de su situación tributaria','Recomendación de plan','Sin costo ni compromiso','Presencial o por videollamada']}
+    ]
+  }
+];
+
+let famActive = 'domicilio';
+let sel = null;
+let payMode = 'total';
+let payPM = 'tbk';
+
+const clp = n => '$' + n.toLocaleString('es-CL');
+
+/* ---------- render catálogo ---------- */
+function renderTabs(){
+  document.getElementById('famtabs').innerHTML = CAT.map(f =>
+    `<button class="fam ${f.id===famActive?'on':''}" onclick="setFam('${f.id}')">${f.tab}</button>`).join('');
+}
+function setFam(id){ famActive = id; renderTabs(); renderPlans(); }
+
+function renderPlans(){
+  const fam = CAT.find(f => f.id === famActive);
+  document.getElementById('plans').innerHTML = fam.plans.map(p => `
+    <div class="plan ${sel && sel.id===p.id ? 'sel':''}" onclick="pick('${p.id}')">
+      <div class="plan-head">${p.name}</div>
+      ${p.price===null ? '<div class="ribbon">requiere cotización</div>' : ''}
+      <div class="plan-price">${p.price===null ? 'A convenir' : clp(p.price)}</div>
+      <div class="plan-per">${p.per}</div>
+      <ul>${p.feats.map(f=>`<li>${f}</li>`).join('')}</ul>
+      <div class="plan-foot"><button class="plan-cta">${sel && sel.id===p.id ? 'Seleccionado' : (p.price===null?'Agendar asesoría':'Contratar aquí')}</button></div>
+    </div>`).join('');
+  document.getElementById('famnote').textContent = fam.note;
+}
+
+function pick(id){
+  const fam = CAT.find(f => f.plans.some(p=>p.id===id));
+  sel = Object.assign({}, fam.plans.find(p=>p.id===id), {fam:fam.tab, famId:fam.id});
+  renderPlans();
+  document.getElementById('b1').disabled = false;
+  document.getElementById('selinfo').innerHTML =
+    `Seleccionado: <b style="color:var(--ink)">${sel.name}</b> · ${sel.fam}`;
+}
+
+/* ---------- etapa 2: cuenta ---------- */
+let logged = false;
+let guest = false;
+
+function setAuth(which){
+  document.getElementById('atLogin').classList.toggle('on', which==='login');
+  document.getElementById('atReg').classList.toggle('on', which==='reg');
+  document.getElementById('paneLogin').style.display = which==='login' ? 'block' : 'none';
+  document.getElementById('paneReg').style.display   = which==='reg'   ? 'block' : 'none';
+  document.getElementById('s2title').textContent = which==='reg' ? 'Cree su cuenta' : 'Ingrese a su cuenta';
+}
+
+function togglePw(id, btn){
+  const el = document.getElementById(id);
+  const show = el.type === 'password';
+  el.type = show ? 'text' : 'password';
+  btn.textContent = show ? 'Ocultar' : 'Mostrar';
+}
+
+function login(asGuest){
+  logged = true; guest = !!asGuest;
+  document.getElementById('auth').style.display = 'none';
+  document.getElementById('logged').style.display = 'flex';
+  document.getElementById('datosForm').style.display = 'block';
+  document.getElementById('b2').disabled = false;
+  document.getElementById('s2title').textContent = 'Confirme sus datos';
+  document.getElementById('s2sub').textContent = guest
+    ? 'Está comprando como invitado. Revise sus datos; al finalizar podrá crear su cuenta con un clic para conservar el historial.'
+    : 'Estos datos vienen de su cuenta. Puede corregirlos antes de pagar; los cambios quedan guardados en su perfil.';
+  document.getElementById('loggedT').textContent = guest ? 'Compra como invitado' : 'Sesión iniciada · Camila Andrea Torres Reyes';
+  document.getElementById('loggedS').textContent = guest
+    ? 'Sin cuenta. Podrá crearla al terminar para ver sus documentos después.'
+    : 'camila.torres@correo.cl · correo confirmado · último acceso hoy 10:24';
+  document.getElementById('logged').style.background = guest ? '#F7F8F9' : 'var(--green-tint)';
+  document.getElementById('logged').style.borderColor = guest ? 'var(--line)' : 'var(--green-line)';
+  document.getElementById('logged').querySelector('.ico').style.background = guest ? '#9AA3AB' : 'var(--green)';
+  if(guest){
+    document.getElementById('dNombre').value = '';
+    document.getElementById('dRut').value = '';
+    document.getElementById('dMail').value = '';
+  }
+  updateNav();
+}
+
+function logout(){
+  logged = false; guest = false;
+  document.getElementById('auth').style.display = 'block';
+  document.getElementById('logged').style.display = 'none';
+  document.getElementById('datosForm').style.display = 'none';
+  document.getElementById('b2').disabled = true;
+  setAuth('login');
+  updateNav();
+  go(2);
+}
+
+function updateNav(){
+  const sess = document.getElementById('sess');
+  if(logged && !guest){
+    sess.innerHTML = '<span class="avatar">CT</span> <span style="color:var(--ink);font-weight:600">Camila Torres</span> · <span class="link" onclick="logout()">Salir</span>';
+  } else if(logged && guest){
+    sess.innerHTML = '<span style="color:var(--muted)">Compra como invitado</span> · <span class="link" onclick="logout()">Iniciar sesión</span>';
+  } else {
+    sess.innerHTML = '<button class="nav-btn" onclick="go(2)">Iniciar sesión</button><button class="nav-btn solid" onclick="go(2); setAuth(\'reg\')">Crear cuenta</button>';
+  }
+}
+
+function tipoChange(){
+  const t = document.getElementById('tipo').value;
+  document.getElementById('fRut').style.display = t==='empresa' ? 'flex' : 'none';
+  document.getElementById('fExtra').querySelector('label').textContent =
+    t==='nueva' ? 'Nombre que desea para su empresa' : 'Nombre o razón social';
+}
+
+/* ---------- etapa 3 ---------- */
+function renderModes(){
+  const cotiza = !sel || sel.price === null;
+  const total = cotiza ? 0 : sel.price;
+  const half = Math.round(total/2);
+  const splitOk = !cotiza && sel.recur !== 'mensual' && total >= 30000;
+  const opts = [
+    {id:'total', t:'Pago total ahora', s: cotiza ? 'Se define tras la asesoría.' : `Un solo cargo de ${clp(total)}. Servicio activo apenas se confirma el pago.`},
+  ];
+  if(splitOk) opts.push({id:'split', t:'50% ahora y 50% al entregar',
+    s:`Dos abonos de ${clp(half)}. El segundo se cobra al habilitarse la firma del documento.`});
+  if(sel && sel.recur==='mensual') opts.push({id:'susc', t:'Suscripción mensual automática',
+    s:`Cargo recurrente de ${clp(total)} el día 5 de cada mes. Puede pausarla desde su panel.`});
+  if(!splitOk && payMode==='split') payMode='total';
+  if(sel && sel.recur!=='mensual' && payMode==='susc') payMode='total';
+  document.getElementById('modes').innerHTML = opts.map(o=>
+    `<div class="mode ${o.id===payMode?'on':''}" onclick="mode('${o.id}')"><div class="rd"></div><div><div class="mt">${o.t}</div><div class="ms">${o.s}</div></div></div>`).join('');
+}
+function mode(m){ payMode = m; renderModes(); renderSum(); }
+function pm(p){ payPM = p; document.querySelectorAll('.pm').forEach(e=>e.classList.toggle('on', e.dataset.pm===p)); }
+
+function renderSum(){
+  if(!sel) return;
+  const cotiza = sel.price === null;
+  const total = cotiza ? 0 : sel.price;
+  const half = Math.round(total/2);
+  let rows = `
+    <div class="srow"><span class="lb">Servicio</span><span style="text-align:right">${sel.fam}</span></div>
+    <div class="srow"><span class="lb">Plan</span><span style="text-align:right"><b>${sel.name}</b></span></div>
+    <div class="srow"><span class="lb">Vigencia</span><span style="text-align:right">${sel.per}</span></div>`;
+  if(cotiza){
+    rows += `<div class="srow tot"><span>Valor</span><span>A convenir</span></div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;padding-top:10px;">Este servicio no se paga en línea: al continuar queda agendada una reunión de 30 minutos con un ejecutivo, que emite la propuesta con el valor final.</div>`;
+    document.getElementById('bPay').textContent = 'Agendar asesoría';
+  } else {
+    rows += `<div class="srow"><span class="lb">Valor del plan</span><span>${clp(total)}</span></div>`;
+    if(payMode==='split'){
+      rows += `<div class="srow"><span class="lb">Primer abono (50%) — hoy</span><span><b>${clp(half)}</b></span></div>
+               <div class="srow"><span class="lb">Segundo abono (50%) — al entregar</span><span>${clp(total-half)}</span></div>
+               <div class="srow tot"><span>Paga hoy</span><span>${clp(half)}</span></div>`;
+    } else if(payMode==='susc'){
+      rows += `<div class="srow"><span class="lb">Cobro recurrente</span><span>${clp(total)} / mes</span></div>
+               <div class="srow tot"><span>Paga hoy</span><span>${clp(total)}</span></div>`;
+    } else {
+      rows += `<div class="srow tot"><span>Paga hoy</span><span>${clp(total)}</span></div>`;
+    }
+    rows += `<div style="font-size:11.5px;color:var(--muted);line-height:1.6;padding-top:10px;">Valores en pesos chilenos, IVA incluido. Boleta electrónica emitida al RUT registrado en su cuenta.</div>`;
+    document.getElementById('bPay').textContent = payMode==='split' ? 'Pagar primer abono' : 'Pagar';
+  }
+  document.getElementById('sum').innerHTML = rows;
+}
+
+/* ---------- etapa 4 ---------- */
+function renderOk(){
+  if(!sel) return;
+  const cotiza = sel.price === null;
+  const total = cotiza ? 0 : sel.price;
+  const half = Math.round(total/2);
+  const medio = payPM==='tbk' ? 'Webpay Plus (Transbank)' : 'Mercado Pago';
+  document.getElementById('okmsg').textContent = `Orden EO-2026-04417 · ${sel.name} · comprobante enviado a su correo.`;
+  document.getElementById('pay1').textContent = cotiza
+    ? 'Asesoría agendada — sin cargo'
+    : (payMode==='split' ? `Primer abono de ${clp(half)} recibido vía ${medio}` : `${clp(total)} recibidos vía ${medio}`);
+}
+
+/* ---------- stepper / navegación ---------- */
+const STEPS = ['Servicio','Datos','Pago','Documento'];
+function renderStepper(cur){
+  document.getElementById('stepper').innerHTML = STEPS.map((l,i)=>{
+    const n=i+1, cls = n<cur?'done':(n===cur?'current':'');
+    const line = i<STEPS.length-1 ? `<div class="step-line ${n<cur?'done':''}"></div>` : '';
+    return `<div class="step ${cls}"><div class="step-circle">${n<cur?'✓':n}</div><div class="step-label">${l}</div></div>${line}`;
+  }).join('');
+}
+
+function go(n){
+  if(n>=3 && !sel) pick('dom-anual');   // red de seguridad para la demo
+  if(n>=3 && !logged) login();          // no se llega al pago sin cuenta o invitado
+  document.querySelectorAll('.stage').forEach(s=>s.classList.remove('active'));
+  document.getElementById('s'+n).classList.add('active');
+  renderStepper(n);
+  if(n===3){ renderModes(); renderSum(); }
+  if(n===4){ renderOk(); }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+renderTabs(); renderPlans(); renderStepper(1); tipoChange(); updateNav();
+</script>
+</body>
+</html>
