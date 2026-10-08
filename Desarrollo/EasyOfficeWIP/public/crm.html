@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CRM operativo · Easy Office</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=Albert+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/crm.css">
+</head>
+<body class="pg-crm">
+
+<!-- ================= ACCESO DEL PERSONAL ================= -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="gate-head">
+      <div class="mk">
+        <a class="logo" href="/">
+          <svg width="34" height="20" viewBox="0 0 34 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7.5" stroke="#24D356" stroke-width="3"/><circle cx="23" cy="10" r="7.5" stroke="#24D356" stroke-width="3"/></svg>
+          <div><div class="lw">EASY OFFICE</div><div class="ls">CRM operativo</div></div>
+        </a>
+      </div>
+      <h2>Acceso del personal</h2>
+      <p>Sistema interno. El acceso queda registrado en Auditoría con usuario, hora y dirección IP.</p>
+    </div>
+    <div class="gate-body">
+      <div class="gf">
+        <label for="gMail">Correo corporativo</label>
+        <input type="email" id="gMail" placeholder="nombre@easyoffice.cl" autocomplete="off">
+      </div>
+      <div class="gf">
+        <label for="gPw">Contraseña</label>
+        <div class="pw-wrap">
+          <input type="password" id="gPw" placeholder="••••••••" autocomplete="off">
+          <button type="button" class="pw-toggle" data-pw="gPw">Mostrar</button>
+        </div>
+      </div>
+      <div class="gf">
+        <label for="gOtp">Código de verificación</label>
+        <input id="gOtp" placeholder="6 dígitos de su app de autenticación" autocomplete="off" inputmode="numeric">
+        <span class="hint">Segundo factor obligatorio: el sistema contiene datos tributarios de terceros.</span>
+      </div>
+      <div class="gate-row">
+        <label class="chk"><input type="checkbox"> Confiar en este equipo</label>
+        <span class="link">¿Olvidó su contraseña?</span>
+      </div>
+      <button class="btn btn-g btn-w" data-action="enter">Ingresar</button>
+      <div class="gate-foot">
+        ¿Es cliente de Easy Office? Su panel está en <a class="link" href="/mi-cuenta">easyoffice.cl / mi cuenta</a>, no en esta dirección.
+      </div>
+      <div class="demo-note">Pantalla de demostración: no valida credenciales ni envía datos a ningún servidor. Presione «Ingresar» para ver el CRM.</div>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="app" hidden>
+  <aside class="side">
+    <div class="brand">
+      <a class="logo" href="/">
+        <svg width="30" height="18" viewBox="0 0 34 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7.5" stroke="#24D356" stroke-width="3"/><circle cx="23" cy="10" r="7.5" stroke="#24D356" stroke-width="3"/></svg>
+        <div><div class="lw">EASY OFFICE</div><div class="ls">CRM operativo</div></div>
+      </a>
+    </div>
+    <nav id="nav" aria-label="Módulos del CRM"></nav>
+    <div class="side-foot">Base de datos propia · PostgreSQL con Row-Level Security<br>Sesión: <span id="sessName">Diego M. · Administrador</span></div>
+  </aside>
+
+  <div class="main">
+    <div class="top">
+      <div>
+        <h1 id="tt">Dashboard</h1>
+        <div class="sub" id="ts">Resumen operativo · 5 de septiembre de 2026</div>
+      </div>
+      <div class="top-right">
+        <div class="roles">
+          <button class="rb on" data-role="admin">Administrador</button>
+          <button class="rb" data-role="oper">Operativo · Camila R.</button>
+        </div>
+        <div class="who">
+          <div class="av" id="whoAv">DM</div>
+          <div><div class="nmm" id="whoName">Diego Muñoz</div><div class="rr" id="whoMail">diego.munoz@easyoffice.cl</div></div>
+          <button class="btn-out" data-action="exit">Salir</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ================= DASHBOARD ================= -->
+      <section class="view on" id="v-dashboard">
+        <div class="kpis">
+          <div class="kpi"><div class="l">Servicios activos</div><div class="v">1.284</div><div class="d up">+38 este mes</div></div>
+          <div class="kpi bad"><div class="l">Renovaciones vencidas</div><div class="v">17</div><div class="d dn">$847.830 en riesgo</div></div>
+          <div class="kpi warn"><div class="l">Vencen en 30 días</div><div class="v">63</div><div class="d nu">41 sin contactar</div></div>
+          <div class="kpi"><div class="l">Ingreso recurrente mensual</div><div class="v">$8,4M</div><div class="d up">+6,2% vs. agosto</div></div>
+        </div>
+
+        <div class="g2 mb18">
+          <div class="panel">
+            <h3>Renovaciones por vencer</h3>
+            <div class="ph">Contratos de domicilio y planes de firmas que expiran en los próximos 6 meses. Es la caja recurrente del negocio: si nadie los toca, se pierden.</div>
+            <div class="bars" id="bars"></div>
+            <div class="legend">
+              <div class="lg"><span class="sw" style="background:var(--green)"></span> Bajo control</div>
+              <div class="lg"><span class="sw" style="background:var(--amber)"></span> Requiere gestión</div>
+              <div class="lg"><span class="sw" style="background:var(--red)"></span> Carga crítica</div>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Requiere acción hoy</h3>
+            <div class="ph">Ordenado por impacto en ingresos, no por fecha de creación.</div>
+            <div class="list">
+              <div class="li"><div><div class="n">Constructora Rilán SpA</div><div class="s">Domicilio anual · venció hace 4 días · $59.990</div></div><div class="r"><span class="bg red">Vencido</span></div></div>
+              <div class="li"><div><div class="n">Distribuidora Andes Ltda.</div><div class="s">Plan Pyme contabilidad · F29 sin declarar · vence 12 sep</div></div><div class="r"><span class="bg red">Plazo SII</span></div></div>
+              <div class="li"><div><div class="n">María Fernanda Ossa</div><div class="s">Domicilio semestral · vence en 3 días · $39.990</div></div><div class="r"><span class="bg amb">Por vencer</span></div></div>
+              <div class="li"><div><div class="n">Roberto Silva E.I.R.L.</div><div class="s">Bolsa de 10 firmas · queda 1 firma, vence 22 sep</div></div><div class="r"><span class="bg amb">Recompra</span></div></div>
+              <div class="li"><div><div class="n">Ana Lagos Peralta</div><div class="s">Contrato de domicilio generado, esperando revisión</div></div><div class="r"><span class="bg blu">Revisar</span></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="g2b">
+          <div class="panel">
+            <h3>Ventas en línea · últimos 7 días</h3>
+            <div class="ph">Desde que existe carro de compra, el ingreso deja de depender de que alguien revise transferencias.</div>
+            <table>
+              <thead><tr><th>Canal</th><th>Órdenes</th><th>Monto</th><th>Conversión</th></tr></thead>
+              <tbody>
+                <tr><td class="nm">Webpay Plus</td><td>34</td><td class="money">$1.104.660</td><td>62%</td></tr>
+                <tr><td class="nm">Mercado Pago</td><td>19</td><td class="money">$623.810</td><td>58%</td></tr>
+                <tr><td class="nm">Transferencia (heredado)</td><td>7</td><td class="money">$419.930</td><td>—</td></tr>
+                <tr><td class="nm">Carros abandonados</td><td>23</td><td class="money">$742.300</td><td><span class="bg amb">Recuperable</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="panel">
+            <h3>Carga por ejecutivo</h3>
+            <div class="ph">Casos abiertos y tiempo medio de cierre.</div>
+            <table>
+              <thead><tr><th>Ejecutivo</th><th>Casos</th><th>Carga</th><th>Cierre medio</th></tr></thead>
+              <tbody>
+                <tr><td class="nm">Camila R.</td><td>48</td><td><span class="barmini"><i class="low" style="width:92%"></i></span></td><td>1,8 días</td></tr>
+                <tr><td class="nm">Diego M.</td><td>31</td><td><span class="barmini"><i class="mid" style="width:62%"></i></span></td><td>2,1 días</td></tr>
+                <tr><td class="nm">Paula V.</td><td>19</td><td><span class="barmini"><i style="width:38%"></i></span></td><td>1,4 días</td></tr>
+                <tr><td class="nm">Sin asignar</td><td>6</td><td><span class="barmini"><i class="mid" style="width:12%"></i></span></td><td>—</td></tr>
+              </tbody>
+            </table>
+            <div class="note warn flat">Camila R. concentra el 49% de los casos abiertos. El reparto automático por carga evita este cuello de botella.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= CLIENTES ================= -->
+      <section class="view" id="v-clientes">
+        <div class="sh">
+          <p>Ficha única por RUT declarado y correo verificado. El rol operativo ve solo sus casos asignados y no puede eliminar registros: solo modificarlos, quedando registrado en auditoría.</p>
+        </div>
+        <div class="toolbar">
+          <input class="search" id="qClientes" placeholder="Buscar por nombre, RUT o razón social…">
+          <select class="fl"><option>Todos los servicios</option><option>Domicilio tributario</option><option>Contabilidad</option><option>Firmas electrónicas</option></select>
+          <select class="fl" id="fEstado"><option value="">Todos los estados</option><option>Activo</option><option>Al día</option><option>Por vencer</option><option>Vencido</option></select>
+          <button class="btn btn-g">Nuevo cliente</button>
+        </div>
+        <div class="panel tbl-panel">
+          <table>
+            <thead><tr><th>Cliente</th><th>RUT</th><th>Servicios contratados</th><th>Ejecutivo</th><th>Vigencia</th><th>Estado</th><th></th></tr></thead>
+            <tbody id="tbClientes"></tbody>
+          </table>
+        </div>
+        <div class="note" id="ntClientes"></div>
+      </section>
+
+      <!-- ================= RENOVACIONES ================= -->
+      <section class="view" id="v-renovaciones">
+        <div class="sh">
+          <p>El domicilio tributario se vende por 6 o 12 meses y los planes de firmas por 3 o 12 meses. Cada vencimiento sin gestionar es una baja silenciosa: aquí se ven todos con anticipación y con el cobro asociado.</p>
+        </div>
+        <div class="pipe">
+          <div class="ps"><div class="num">D-60</div><div class="t">Aviso temprano</div><div class="d">Correo automático 60 días antes</div><div class="c">128</div></div>
+          <div class="ps"><div class="num">D-30</div><div class="t">Oferta de renovación</div><div class="d">Link de pago prellenado</div><div class="c">63</div></div>
+          <div class="ps"><div class="num">D-7</div><div class="t">Llamado del ejecutivo</div><div class="d">Gestión humana asignada</div><div class="c">22</div></div>
+          <div class="ps"><div class="num">D-0</div><div class="t">Vencido</div><div class="d">Servicio suspendido, no eliminado</div><div class="c">17</div></div>
+          <div class="ps"><div class="num">D+30</div><div class="t">Recuperación</div><div class="d">Última oferta antes de baja</div><div class="c">9</div></div>
+        </div>
+        <div class="toolbar">
+          <input class="search" placeholder="Buscar cliente…">
+          <select class="fl"><option>Próximos 30 días</option><option>Próximos 60 días</option><option>Vencidos</option></select>
+          <button class="btn btn-o">Exportar</button>
+          <button class="btn btn-d">Enviar links de pago (63)</button>
+        </div>
+        <div class="panel tbl-panel">
+          <table>
+            <thead><tr><th>Cliente</th><th>Servicio</th><th>Monto</th><th>Vence</th><th>Gestión</th><th>Estado</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><div class="nm">Constructora Rilán SpA</div><div class="sb">76.450.221-3</div></td><td>Domicilio · Plan Anual</td><td class="money">$59.990</td><td>1 sep 2026 <div class="sb">hace 4 días</div></td><td><span class="dot r"></span>2 correos, sin respuesta</td><td><span class="bg red">Vencido</span></td><td><button class="btn btn-o btn-row">Llamar</button></td></tr>
+              <tr><td><div class="nm">María Fernanda Ossa</div><div class="sb">18.204.331-5</div></td><td>Domicilio · Plan Semestral</td><td class="money">$39.990</td><td>8 sep 2026 <div class="sb">en 3 días</div></td><td><span class="dot a"></span>Link de pago enviado</td><td><span class="bg amb">Por vencer</span></td><td><button class="btn btn-o btn-row">Reenviar</button></td></tr>
+              <tr><td><div class="nm">Roberto Silva E.I.R.L.</div><div class="sb">76.221.678-9</div></td><td>Bolsa · 10 firmas avanzadas</td><td class="money">$24.990</td><td>22 sep 2026 <div class="sb">queda 1 firma</div></td><td><span class="dot a"></span>Oferta de recompra</td><td><span class="bg amb">Por vencer</span></td><td><button class="btn btn-o btn-row">Ofertar</button></td></tr>
+              <tr><td><div class="nm">Ana Lagos Peralta</div><div class="sb">15.887.410-2</div></td><td>Domicilio · Bodega Virtual</td><td class="money">$59.990</td><td>29 sep 2026 <div class="sb">en 24 días</div></td><td><span class="dot"></span>Aviso automático D-30</td><td><span class="bg grn">En plazo</span></td><td><button class="btn btn-o btn-row">Ver</button></td></tr>
+              <tr><td><div class="nm">Juan Carlos Peña</div><div class="sb">14.552.098-2</div></td><td>Plan · 25 firmas avanzadas</td><td class="money">$34.990</td><td>2 sep 2026 <div class="sb">renovado</div></td><td><span class="dot"></span>Pagó con Webpay</td><td><span class="bg grn">Renovado</span></td><td><button class="btn btn-o btn-row">Ver</button></td></tr>
+              <tr><td><div class="nm">Distribuidora Andes Ltda.</div><div class="sb">77.910.442-1</div></td><td>Contabilidad · Plan Pyme</td><td class="money">$59.000 / mes</td><td>5 sep 2026 <div class="sb">suscripción activa</div></td><td><span class="dot"></span>Cargo automático día 5</td><td><span class="bg grn">Al día</span></td><td><button class="btn btn-o btn-row">Ver</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note">Mejora sobre la operación actual: hoy el vencimiento se detecta cuando el cliente reclama o cuando alguien revisa una planilla. Con avisos en D-60 / D-30 / D-7 y link de pago prellenado, la renovación deja de depender de que un ejecutivo se acuerde.</div>
+      </section>
+
+      <!-- ================= DOCUMENTOS ================= -->
+      <section class="view" id="v-documentos">
+        <div class="sh">
+          <p>Todo documento se genera automáticamente desde plantilla; solo algunos exigen verificación humana antes de habilitar la firma electrónica avanzada. El sistema distingue ambos casos en vez de tratarlos igual.</p>
+        </div>
+        <div class="pipe">
+          <div class="ps"><div class="num">01</div><div class="t">Solicitud</div><div class="d">Cliente completa datos en su cuenta</div><div class="c">12</div></div>
+          <div class="ps"><div class="num">02</div><div class="t">Generación automática</div><div class="d">Armado desde plantilla</div><div class="c">9</div></div>
+          <div class="ps"><div class="num">03</div><div class="t">Verificación humana</div><div class="d">Solo documentos que lo requieren</div><div class="c">6</div></div>
+          <div class="ps"><div class="num">04</div><div class="t">Firma avanzada</div><div class="d">Proveedor acreditado verifica identidad · Ley 19.799</div><div class="c">4</div></div>
+          <div class="ps"><div class="num">05</div><div class="t">Entrega</div><div class="d">Disponible en panel del cliente</div><div class="c">231</div></div>
+        </div>
+        <div class="toolbar">
+          <input class="search" placeholder="Buscar documento o cliente…">
+          <select class="fl"><option>Todos los tipos</option><option>Automático</option><option>Requiere revisión</option></select>
+          <button class="btn btn-g">Revisar cola (6)</button>
+        </div>
+        <div class="panel tbl-panel">
+          <table>
+            <thead><tr><th>Documento</th><th>Cliente</th><th>Origen</th><th>Firmas</th><th>Estado</th><th>Responsable</th></tr></thead>
+            <tbody>
+              <tr><td><div class="nm">Certificación notarial digital</div><div class="sb mono">DOC-2026-04417</div></td><td>Camila A. Torres Reyes</td><td><span class="bg blu">Requiere revisión</span></td><td>1 de 2</td><td><span class="bg amb">Esperando firma cliente</span></td><td>Camila R.</td></tr>
+              <tr><td><div class="nm">Inicio de actividades S.I.I.</div><div class="sb mono">DOC-2026-04412</div></td><td>María Fernanda Ossa</td><td><span class="bg blu">Requiere revisión</span></td><td>0 de 2</td><td><span class="bg blu">En verificación</span></td><td>Camila R.</td></tr>
+              <tr><td><div class="nm">Poder notarial simple</div><div class="sb mono">DOC-2026-04408</div></td><td>Distribuidora Andes Ltda.</td><td><span class="bg blu">Requiere revisión</span></td><td>0 de 2</td><td><span class="bg amb">Pendiente</span></td><td>Diego M.</td></tr>
+              <tr><td><div class="nm">Contrato de bodega virtual</div><div class="sb mono">DOC-2026-04401</div></td><td>Ana Lagos Peralta</td><td><span class="bg gry">Automático</span></td><td>2 de 2</td><td><span class="bg grn">Firmado</span></td><td>Paula V.</td></tr>
+              <tr><td><div class="nm">Contrato de arriendo oficina</div><div class="sb mono">DOC-2026-04388</div></td><td>Constructora Rilán SpA</td><td><span class="bg gry">Automático</span></td><td>2 de 2</td><td><span class="bg grn">Firmado</span></td><td>Diego M.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note">Regla del sistema: un documento no puede pasar a firma sin que un humano identificado lo apruebe cuando su plantilla está marcada como "requiere revisión". Esa aprobación queda en auditoría con nombre, hora y versión del documento.</div>
+      </section>
+
+      <!-- ================= CORRESPONDENCIA ================= -->
+      <section class="view" id="v-correspondencia">
+        <div class="sh">
+          <p>Es el trabajo diario que sostiene el domicilio tributario: recibir, digitalizar y despachar la correspondencia fiscal. Hoy se lleva a mano; aquí queda con trazabilidad y con reloj de servicio.</p>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="l">Recibidas hoy</div><div class="v">34</div><div class="d nu">Casa Matriz 19 · Sucursal 15</div></div>
+          <div class="kpi warn"><div class="l">Sin digitalizar</div><div class="v">11</div><div class="d dn">3 fuera del plazo de 24 h</div></div>
+          <div class="kpi bad"><div class="l">Urgentes (SII / Judicial)</div><div class="v">4</div><div class="d dn">Notificar de inmediato</div></div>
+          <div class="kpi"><div class="l">Despachadas este mes</div><div class="v">612</div><div class="d up">98,4% dentro de plazo</div></div>
+        </div>
+        <div class="panel tbl-panel">
+          <table>
+            <thead><tr><th>Recepción</th><th>Destinatario</th><th>Remitente</th><th>Tipo</th><th>Plazo</th><th>Estado</th></tr></thead>
+            <tbody>
+              <tr><td>05 sep · 09:12<div class="sb">Sucursal RM</div></td><td class="nm">Distribuidora Andes Ltda.</td><td>Servicio de Impuestos Internos</td><td><span class="bg red">Fiscal urgente</span></td><td>Hoy 17:30</td><td><span class="bg amb">Por digitalizar</span></td></tr>
+              <tr><td>05 sep · 08:47<div class="sb">Casa Matriz</div></td><td class="nm">Constructora Rilán SpA</td><td>Tesorería General de la República</td><td><span class="bg red">Fiscal urgente</span></td><td>Hoy 17:30</td><td><span class="bg amb">Por digitalizar</span></td></tr>
+              <tr><td>04 sep · 16:20<div class="sb">Casa Matriz</div></td><td class="nm">María Fernanda Ossa</td><td>Dirección del Trabajo</td><td><span class="bg blu">Laboral</span></td><td>Cumplido</td><td><span class="bg grn">Enviada</span></td></tr>
+              <tr><td>04 sep · 11:05<div class="sb">Sucursal RM</div></td><td class="nm">Roberto Silva E.I.R.L.</td><td>Juzgado Civil de Santiago</td><td><span class="bg red">Judicial</span></td><td>Cumplido</td><td><span class="bg grn">Enviada</span></td></tr>
+              <tr><td>03 sep · 15:40<div class="sb">Casa Matriz</div></td><td class="nm">Ana Lagos Peralta</td><td>Banco Estado</td><td><span class="bg gry">Comercial</span></td><td>Cumplido</td><td><span class="bg grn">Enviada</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note warn">La correspondencia del SII, TGR, Judicial y Dirección del Trabajo tiene efecto legal con plazos. Marcar el tipo al recibir permite alertar al cliente el mismo día y deja evidencia de cumplimiento si después reclama que "nunca le avisaron".</div>
+      </section>
+
+      <!-- ================= VENTAS ONLINE ================= -->
+      <section class="view" id="v-ventas">
+        <div class="sh">
+          <p>El carro de compra reemplaza el cobro exclusivo por transferencia. Cada orden queda conciliada con su pasarela, su boleta y su documento, sin revisar cartolas a mano.</p>
+        </div>
+        <div class="g2 mb18">
+          <div class="panel">
+            <h3>Órdenes recientes</h3>
+            <div class="ph">Conciliación automática con Webpay Plus y Mercado Pago.</div>
+            <table>
+              <thead><tr><th>Orden</th><th>Cliente</th><th>Plan</th><th>Monto</th><th>Medio</th><th>Estado</th></tr></thead>
+              <tbody>
+                <tr><td class="mono">EO-2026-04417</td><td class="nm">Camila A. Torres</td><td>Certificación notarial</td><td class="money">$13.490</td><td>Webpay</td><td><span class="bg grn">Pagada</span></td></tr>
+                <tr><td class="mono">EO-2026-04416</td><td class="nm">Sergio Bravo M.</td><td>Bolsa · 10 firmas</td><td class="money">$24.990</td><td>Mercado Pago</td><td><span class="bg grn">Pagada</span></td></tr>
+                <tr><td class="mono">EO-2026-04415</td><td class="nm">Inversiones Cerro SpA</td><td>Contabilidad · Estándar</td><td class="money">$37.900</td><td>Webpay</td><td><span class="bg blu">Suscripción</span></td></tr>
+                <tr><td class="mono">EO-2026-04414</td><td class="nm">Paulina Reyes O.</td><td>Domicilio · Semestral</td><td class="money">$39.990</td><td>Webpay</td><td><span class="bg red">Rechazada</span></td></tr>
+                <tr><td class="mono">EO-2026-04413</td><td class="nm">Textiles Maipo Ltda.</td><td>Plan · 50 firmas</td><td class="money">$49.990</td><td>Transferencia</td><td><span class="bg amb">Por conciliar</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="panel">
+            <h3>Dónde se cae la venta</h3>
+            <div class="ph">Embudo de los últimos 30 días.</div>
+            <div class="list">
+              <div class="li"><div><div class="n">Visitas al catálogo</div><div class="s">1.940 sesiones</div></div><div class="r"><span class="barmini"><i style="width:100%"></i></span></div></div>
+              <div class="li"><div><div class="n">Plan seleccionado</div><div class="s">612 · 32%</div></div><div class="r"><span class="barmini"><i style="width:32%"></i></span></div></div>
+              <div class="li"><div><div class="n">Cuenta creada</div><div class="s">308 · 16%</div></div><div class="r"><span class="barmini"><i class="mid" style="width:16%"></i></span></div></div>
+              <div class="li"><div><div class="n">Llegó al pago</div><div class="s">241 · 12%</div></div><div class="r"><span class="barmini"><i class="mid" style="width:12%"></i></span></div></div>
+              <div class="li"><div><div class="n">Pago exitoso</div><div class="s">168 · 8,7%</div></div><div class="r"><span class="barmini"><i class="low" style="width:9%"></i></span></div></div>
+            </div>
+            <div class="note warn flat">La mitad de los que eligen plan abandona al tener que crear cuenta. Vale la pena habilitar compra como invitado y ofrecer la cuenta al final, cuando ya pagó.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= AUDITORÍA ================= -->
+      <section class="view" id="v-auditoria">
+        <div class="sh">
+          <p>Cada acción queda registrada con usuario, rol, hora y registro afectado. El rol operativo no tiene permiso de eliminación; el administrador sí, y su eliminación también queda registrada.</p>
+        </div>
+        <div class="toolbar">
+          <input class="search" placeholder="Buscar por usuario, acción o cliente…">
+          <select class="fl"><option>Todos los roles</option><option>Administrador</option><option>Operativo</option><option>Sistema</option></select>
+          <select class="fl"><option>Últimos 7 días</option><option>Últimos 30 días</option></select>
+          <button class="btn btn-o">Exportar registro</button>
+        </div>
+        <div class="panel tbl-panel">
+          <table>
+            <thead><tr><th>Fecha / hora</th><th>Usuario</th><th>Rol</th><th>Acción</th><th>Registro afectado</th><th>Origen</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">05 sep · 09:12</td><td class="nm">Camila R.</td><td><span class="bg gry">Operativo</span></td><td>Aprobó documento para firma</td><td>DOC-2026-04412 · M. F. Ossa</td><td class="mono">10.4.2.19</td></tr>
+              <tr><td class="mono">05 sep · 08:58</td><td class="nm">Sistema</td><td><span class="bg blu">Automático</span></td><td>Conciliación de pago Webpay</td><td>EO-2026-04417</td><td class="mono">cron</td></tr>
+              <tr><td class="mono">05 sep · 08:47</td><td class="nm">Diego M.</td><td><span class="bg grn">Administrador</span></td><td>Eliminó registro duplicado</td><td>Cliente de prueba #044</td><td class="mono">10.4.2.7</td></tr>
+              <tr><td class="mono">04 sep · 17:30</td><td class="nm">Camila R.</td><td><span class="bg gry">Operativo</span></td><td>Modificó teléfono de contacto</td><td>Constructora Rilán SpA</td><td class="mono">10.4.2.19</td></tr>
+              <tr><td class="mono">04 sep · 16:05</td><td class="nm">Sistema</td><td><span class="bg blu">Automático</span></td><td>Generó alerta de vencimiento D-7</td><td>M. F. Ossa · domicilio semestral</td><td class="mono">cron</td></tr>
+              <tr><td class="mono">04 sep · 11:22</td><td class="nm">Paula V.</td><td><span class="bg gry">Operativo</span></td><td>Intento de eliminación denegado</td><td>Ana Lagos Peralta</td><td class="mono">10.4.2.31</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note">El intento denegado también se registra. Sin ese dato no hay forma de distinguir un error de operación de un intento deliberado de borrar evidencia.</div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script src="/js/crm.js"></script>
+</body>
+</html>

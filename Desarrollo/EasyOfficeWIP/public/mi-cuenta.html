@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mi cuenta · Easy Office</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=Albert+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/sitio.css">
+<link rel="stylesheet" href="/css/cuenta.css">
+</head>
+<body class="pg-cuenta">
+
+<div class="flag">VERSIÓN DE DESARROLLO — panel privado del cliente. Datos de ejemplo; planes y precios tomados de easyoffice.cl</div>
+<header id="cabecera" data-sub="mi cuenta" data-menu="no" data-derecha="cuenta"></header>
+
+<!-- ================= ACCESO ================= -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="gate-head">
+      <h2>Ingrese a su cuenta</h2>
+      <p>Revise el estado de sus trámites, descargue sus documentos firmados y renueve sus servicios sin llamar por teléfono.</p>
+    </div>
+    <div class="gate-body">
+      <div class="gf">
+        <label for="cMail">Correo electrónico</label>
+        <input type="email" id="cMail" placeholder="camila.torres@correo.cl" autocomplete="off">
+      </div>
+      <div class="gf">
+        <label for="cPw">Contraseña</label>
+        <div class="pw-wrap">
+          <input type="password" id="cPw" placeholder="••••••••" autocomplete="off">
+          <button type="button" class="pw-toggle" data-pw="cPw">Mostrar</button>
+        </div>
+      </div>
+      <div class="gate-row">
+        <label class="chk"><input type="checkbox" checked> Mantener la sesión iniciada</label>
+        <span class="link">¿Olvidó su contraseña?</span>
+      </div>
+      <button class="btn btn-g btn-w" data-action="login">Ingresar</button>
+      <div class="gate-foot">
+        ¿Aún no tiene cuenta? <a class="link" href="/contratar">Créela aquí</a> con su RUT y correo. Si ya contrató por teléfono o transferencia, use el mismo correo con el que le escribimos y podrá ver su historial.
+      </div>
+      <div class="demo-note">Pantalla de demostración: no valida credenciales ni envía datos a ningún servidor. Presione «Ingresar» para ver el panel.</div>
+    </div>
+  </div>
+</div>
+
+<nav class="tabs" id="tabs" hidden aria-label="Secciones de la cuenta">
+  <button class="tab on" data-tab="resumen">Resumen</button>
+  <button class="tab" data-tab="documentos">Mis documentos<span class="b">1</span></button>
+  <button class="tab" data-tab="correspondencia">Correspondencia<span class="b">1</span></button>
+  <button class="tab" data-tab="pagos">Pagos y boletas</button>
+  <button class="tab" data-tab="contratar">Contratar servicios</button>
+</nav>
+
+<main class="pwrap" id="panelWrap" hidden>
+
+  <!-- ================= RESUMEN ================= -->
+  <section class="view on" id="v-resumen">
+    <div class="alert">
+      <div class="ai">!</div>
+      <div>
+        <div class="at">Su domicilio tributario vence el 8 de septiembre de 2026</div>
+        <div class="ad">Quedan 3 días. Si no renueva, el servicio se suspende y su dirección deja de estar vigente ante el S.I.I. y la municipalidad. Renovación del Plan Semestral: $39.990 (o pase al Plan Anual por $59.990).</div>
+      </div>
+      <div class="aa"><a class="btn btn-g" href="/contratar?plan=dom-sem">Renovar ahora</a></div>
+    </div>
+
+    <div class="sh">
+      <h2>Mis servicios</h2>
+      <p>Todo lo que tiene contratado con Easy Office, con su vigencia real. Sin llamar ni escribir para preguntar hasta cuándo está cubierto.</p>
+    </div>
+
+    <div class="g3 mb20">
+      <div class="svc">
+        <div class="svc-h"><span class="t">Domicilio tributario</span><span class="bg amb">Por vencer</span></div>
+        <div class="svc-b">
+          <div class="kv"><span class="k">Plan</span><span class="v">Plan Semestral</span></div>
+          <div class="kv"><span class="k">Dirección</span><span class="v">Sucursal RM · ZIP 8260183</span></div>
+          <div class="kv"><span class="k">Vigente hasta</span><span class="v" style="color:var(--amber)">8 sep 2026</span></div>
+          <div class="kv"><span class="k">Valor renovación</span><span class="v">$39.990</span></div>
+          <div class="prog"><i class="mid" style="width:94%"></i></div>
+          <div class="prog-l"><span>Inicio 8 mar</span><span>3 días restantes</span></div>
+        </div>
+        <div class="svc-f"><a class="btn btn-g btn-w" href="/contratar?plan=dom-sem">Renovar</a></div>
+      </div>
+
+      <div class="svc">
+        <div class="svc-h"><span class="t">Firmas electrónicas</span><span class="bg grn">Activo</span></div>
+        <div class="svc-b">
+          <div class="kv"><span class="k">Plan</span><span class="v">Plan · 25 firmas</span></div>
+          <div class="kv"><span class="k">Vigente hasta</span><span class="v">2 sep 2027</span></div>
+          <div style="padding-top:12px;"><span class="bignum">18<small>de 25 disponibles</small></span></div>
+          <div class="prog"><i style="width:72%"></i></div>
+          <div class="prog-l"><span>7 firmas usadas</span><span>72% disponible</span></div>
+        </div>
+        <div class="svc-f"><button class="btn btn-d btn-w" data-tab="documentos">Firmar documento</button></div>
+      </div>
+
+      <div class="svc">
+        <div class="svc-h"><span class="t">Contabilidad</span><span class="bg gry">No contratado</span></div>
+        <div class="svc-b">
+          <div class="txt">Usted declara su IVA por su cuenta. Con su giro y volumen de facturación, el <b>Plan Básico</b> cubre la declaración mensual de IVA, los libros electrónicos y la Renta anual.</div>
+          <div class="kv" style="margin-top:12px;"><span class="k">Desde</span><span class="v">$22.990 / mes</span></div>
+          <div class="kv"><span class="k">Incluye</span><span class="v">Hasta 5 facturas / mes</span></div>
+        </div>
+        <div class="svc-f"><a class="btn btn-o btn-w" href="/contabilidad">Ver planes</a></div>
+      </div>
+    </div>
+
+    <div class="g2">
+      <div class="panel">
+        <h3>Trámite en curso</h3>
+        <div class="ph">Certificación notarial digital · orden EO-2026-04417</div>
+        <div class="steps">
+          <div class="st done"><div class="sd">✓</div><div><div class="t">Pago confirmado</div><div class="d">$13.490 recibidos vía Webpay Plus · 5 sep 10:31</div></div><div class="r">Listo</div></div>
+          <div class="st done"><div class="sd">✓</div><div><div class="t">Documento generado</div><div class="d">Armado automáticamente con los datos de su cuenta</div></div><div class="r">Listo</div></div>
+          <div class="st now"><div class="sd">…</div><div><div class="t">Verificación de un ejecutivo</div><div class="d">Camila R. está revisando el documento · estimado hoy 15:00</div></div><div class="r">En curso</div></div>
+          <div class="st"><div class="sd">4</div><div><div class="t">Su firma electrónica avanzada</div><div class="d">Le llegará un enlace para firmar desde cualquier dispositivo</div></div><div class="r">Pendiente</div></div>
+          <div class="st"><div class="sd">5</div><div><div class="t">Servicio activo</div><div class="d">Documento firmado disponible para descarga</div></div><div class="r">Pendiente</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Correspondencia reciente</h3>
+        <div class="ph">Digitalizada y enviada a su correo el mismo día de recepción.</div>
+        <table>
+          <tbody>
+            <tr><td><div class="nm">Servicio de Impuestos Internos</div><div class="sb">Notificación F29 · 4 sep</div></td><td class="right"><span class="bg red">Urgente</span></td></tr>
+            <tr><td><div class="nm">Tesorería General de la República</div><div class="sb">Certificado de deuda · 1 sep</div></td><td class="right"><span class="bg grn">Leída</span></td></tr>
+            <tr><td><div class="nm">Dirección del Trabajo</div><div class="sb">Acuse de recibo · 28 ago</div></td><td class="right"><span class="bg grn">Leída</span></td></tr>
+            <tr><td><div class="nm">Banco Estado</div><div class="sb">Correspondencia comercial · 25 ago</div></td><td class="right"><span class="bg gry">Comercial</span></td></tr>
+          </tbody>
+        </table>
+        <button class="btn btn-o btn-w" style="margin-top:14px;" data-tab="correspondencia">Ver toda la correspondencia</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= DOCUMENTOS ================= -->
+  <section class="view" id="v-documentos">
+    <div class="sh">
+      <h2>Mis documentos</h2>
+      <p>Todos sus contratos y documentos firmados con Easy Office, con su código de verificación. Un tercero puede validar la firma sin depender de que usted le reenvíe nada.</p>
+    </div>
+    <div class="alert ok">
+      <div class="ai">✎</div>
+      <div>
+        <div class="at">Tiene 1 documento esperando su firma</div>
+        <div class="ad">Certificación notarial digital DOC-2026-04417. Firmar descuenta 1 firma de su plan (le quedan 18).</div>
+      </div>
+      <div class="aa"><button class="btn btn-g">Firmar ahora</button></div>
+    </div>
+    <div class="panel tbl-wrap" style="padding:10px 22px;">
+      <table>
+        <thead><tr><th>Documento</th><th>Emitido</th><th>Firmas</th><th>Estado</th><th>Código de verificación</th><th></th></tr></thead>
+        <tbody>
+          <tr><td><div class="nm">Certificación notarial digital</div><div class="sb">Contrato de arriendo comercial</div></td><td>5 sep 2026</td><td>1 de 2</td><td><span class="bg amb">Falta su firma</span></td><td class="mono">—</td><td><button class="btn btn-g btn-s">Firmar</button></td></tr>
+          <tr><td><div class="nm">Contrato de arriendo de oficina</div><div class="sb">Anexo · uso de sala de reuniones</div></td><td>12 ago 2026</td><td>2 de 2</td><td><span class="bg grn">Firmado</span></td><td class="mono">EO-8F4C-2211</td><td><button class="btn btn-o btn-s">Descargar</button></td></tr>
+          <tr><td><div class="nm">Inicio de actividades S.I.I.</div><div class="sb">Persona natural con giro</div></td><td>8 mar 2026</td><td>2 de 2</td><td><span class="bg grn">Firmado</span></td><td class="mono">EO-3A19-7740</td><td><button class="btn btn-o btn-s">Descargar</button></td></tr>
+          <tr><td><div class="nm">Poder notarial simple</div><div class="sb">Protocolización notarial digital</div></td><td>2 feb 2026</td><td>2 de 2</td><td><span class="bg grn">Firmado</span></td><td class="mono">EO-5C02-9183</td><td><button class="btn btn-o btn-s">Descargar</button></td></tr>
+          <tr><td><div class="nm">Contrato de domicilio tributario</div><div class="sb">Periodo anterior · sep 2025 – mar 2026</div></td><td>6 sep 2025</td><td>2 de 2</td><td><span class="bg gry">Vencido</span></td><td class="mono">EO-1B77-4402</td><td><button class="btn btn-o btn-s">Descargar</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">Cada documento firmado lleva un código de verificación público. Quien lo reciba puede comprobar en el sitio que la firma es válida y que el documento no fue alterado, sin necesidad de una notaría.</div>
+  </section>
+
+  <!-- ================= CORRESPONDENCIA ================= -->
+  <section class="view" id="v-correspondencia">
+    <div class="sh">
+      <h2>Correspondencia</h2>
+      <p>Todo lo que llega a su domicilio tributario, escaneado y clasificado. La correspondencia del S.I.I., Tesorería, tribunales y Dirección del Trabajo tiene plazos legales, por eso se marca aparte.</p>
+    </div>
+    <div class="g3 mb20">
+      <div class="panel"><div class="ph" style="margin:0 0 8px 0;">Recibidas este año</div><div class="bignum">47<small>documentos</small></div></div>
+      <div class="panel"><div class="ph" style="margin:0 0 8px 0;">Sin leer</div><div class="bignum" style="color:var(--red)">1<small>urgente (S.I.I.)</small></div></div>
+      <div class="panel"><div class="ph" style="margin:0 0 8px 0;">Tiempo medio de aviso</div><div class="bignum">4,2<small>horas desde la recepción</small></div></div>
+    </div>
+    <div class="panel tbl-wrap" style="padding:10px 22px;">
+      <table>
+        <thead><tr><th>Recibida</th><th>Remitente</th><th>Tipo</th><th>Descripción</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>4 sep 2026<div class="sb">16:40</div></td><td class="nm">Servicio de Impuestos Internos</td><td><span class="bg red">Fiscal</span></td><td>Notificación por F29 fuera de plazo</td><td><span class="bg red">Sin leer</span></td><td><button class="btn btn-g btn-s">Abrir</button></td></tr>
+          <tr><td>1 sep 2026<div class="sb">11:15</div></td><td class="nm">Tesorería General de la República</td><td><span class="bg red">Fiscal</span></td><td>Certificado de deuda fiscal — sin deuda</td><td><span class="bg grn">Leída</span></td><td><button class="btn btn-o btn-s">Ver</button></td></tr>
+          <tr><td>28 ago 2026<div class="sb">09:50</div></td><td class="nm">Dirección del Trabajo</td><td><span class="bg blu">Laboral</span></td><td>Acuse de recibo de contrato de trabajo</td><td><span class="bg grn">Leída</span></td><td><button class="btn btn-o btn-s">Ver</button></td></tr>
+          <tr><td>25 ago 2026<div class="sb">14:22</div></td><td class="nm">Banco Estado</td><td><span class="bg gry">Comercial</span></td><td>Estado de cuenta corriente</td><td><span class="bg grn">Leída</span></td><td><button class="btn btn-o btn-s">Ver</button></td></tr>
+          <tr><td>19 ago 2026<div class="sb">10:08</div></td><td class="nm">Municipalidad de La Florida</td><td><span class="bg blu">Municipal</span></td><td>Comprobante de patente comercial</td><td><span class="bg grn">Leída</span></td><td><button class="btn btn-o btn-s">Ver</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note warn">No es solo tener un domicilio: alguien recibe, digitaliza y le avisa a tiempo cuando llega algo con plazo legal.</div>
+  </section>
+
+  <!-- ================= PAGOS ================= -->
+  <section class="view" id="v-pagos">
+    <div class="sh">
+      <h2>Pagos y boletas</h2>
+      <p>Historial completo de lo pagado, con su boleta electrónica descargable. Los cobros recurrentes se pueden pausar desde aquí, sin llamar.</p>
+    </div>
+    <div class="g2e mb20">
+      <div class="panel">
+        <h3>Próximo cobro</h3>
+        <div class="ph">Renovación del domicilio tributario</div>
+        <div class="kv"><span class="k">Servicio</span><span class="v">Domicilio · Plan Semestral</span></div>
+        <div class="kv"><span class="k">Monto</span><span class="v">$39.990</span></div>
+        <div class="kv"><span class="k">Fecha</span><span class="v" style="color:var(--amber)">8 sep 2026</span></div>
+        <div class="kv"><span class="k">Medio</span><span class="v">Webpay · ···· 6411</span></div>
+        <div style="display:flex;gap:8px;margin-top:16px;">
+          <a class="btn btn-g" style="flex:1" href="/contratar?plan=dom-sem">Pagar ahora</a>
+          <button class="btn btn-o" style="flex:1">Cambiar tarjeta</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Medio de pago guardado</h3>
+        <div class="ph">Usado para las renovaciones automáticas que usted autorice.</div>
+        <div class="card-visa">
+          <div class="vs">VISA</div>
+          <div><div class="nm">Visa terminada en 6411</div><div class="sb">Vence 09/28 · Webpay Plus</div></div>
+          <span class="bg grn" style="margin-left:auto">Predeterminada</span>
+        </div>
+        <div class="note flat" style="margin-top:14px;">La renovación automática está <b style="color:var(--ink)">desactivada</b>. Actívela y no volverá a arriesgar la suspensión del servicio por olvido.</div>
+      </div>
+    </div>
+    <div class="panel tbl-wrap" style="padding:10px 22px;">
+      <table>
+        <thead><tr><th>Fecha</th><th>Orden</th><th>Concepto</th><th>Monto</th><th>Medio</th><th>Estado</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>5 sep 2026</td><td class="mono">EO-2026-04417</td><td>Certificación notarial digital</td><td class="money">$13.490</td><td>Webpay Plus</td><td><span class="bg grn">Pagada</span></td><td><button class="btn btn-o btn-s">Boleta</button></td></tr>
+          <tr><td>2 sep 2026</td><td class="mono">EO-2026-04390</td><td>Plan · 25 firmas avanzadas</td><td class="money">$34.990</td><td>Webpay Plus</td><td><span class="bg grn">Pagada</span></td><td><button class="btn btn-o btn-s">Boleta</button></td></tr>
+          <tr><td>2 feb 2026</td><td class="mono">EO-2026-01188</td><td>Protocolización notarial</td><td class="money">$13.490</td><td>Mercado Pago</td><td><span class="bg grn">Pagada</span></td><td><button class="btn btn-o btn-s">Boleta</button></td></tr>
+          <tr><td>8 mar 2026</td><td class="mono">EO-2026-00742</td><td>Domicilio tributario · Plan Semestral</td><td class="money">$39.990</td><td>Transferencia</td><td><span class="bg grn">Pagada</span></td><td><button class="btn btn-o btn-s">Boleta</button></td></tr>
+          <tr><td>6 sep 2025</td><td class="mono">EO-2025-03911</td><td>Domicilio tributario · Plan Semestral</td><td class="money">$39.990</td><td>Transferencia</td><td><span class="bg gry">Cerrada</span></td><td><button class="btn btn-o btn-s">Boleta</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================= CONTRATAR ================= -->
+  <section class="view" id="v-contratar">
+    <div class="sh">
+      <h2>Contratar más servicios</h2>
+      <p>Compra directa con la tarjeta ya guardada y los datos ya validados. Sin volver a escribir su RUT ni esperar una cotización por correo.</p>
+    </div>
+    <div class="g3" style="margin-bottom:18px;">
+      <div class="svc">
+        <div class="svc-h"><span class="t">Bolsa · 10 firmas</span></div>
+        <div class="svc-b">
+          <div class="bignum">$24.990</div>
+          <div class="vig">Vigencia 3 meses</div>
+          <div class="kv"><span class="k">Precio por firma</span><span class="v">$2.499</span></div>
+          <div class="kv"><span class="k">Uso sugerido</span><span class="v">Contratos puntuales</span></div>
+        </div>
+        <div class="svc-f"><a class="btn btn-g btn-w" href="/contratar?plan=fir-10">Comprar</a></div>
+      </div>
+      <div class="svc">
+        <div class="svc-h"><span class="t">Plan · 50 firmas</span><span class="bg grn">Mejor precio</span></div>
+        <div class="svc-b">
+          <div class="bignum">$49.990</div>
+          <div class="vig">Vigencia 1 año</div>
+          <div class="kv"><span class="k">Precio por firma</span><span class="v">$1.000</span></div>
+          <div class="kv"><span class="k">Uso sugerido</span><span class="v">Contratos recurrentes</span></div>
+        </div>
+        <div class="svc-f"><a class="btn btn-g btn-w" href="/contratar?plan=fir-50">Comprar</a></div>
+      </div>
+      <div class="svc">
+        <div class="svc-h"><span class="t">Contabilidad · Básico</span></div>
+        <div class="svc-b">
+          <div class="bignum">$22.990<small>/ mes</small></div>
+          <div class="vig">Pro Pyme y Transparente</div>
+          <div class="kv"><span class="k">Incluye</span><span class="v">IVA, libros y Renta</span></div>
+          <div class="kv"><span class="k">Facturas</span><span class="v">Hasta 5 al mes</span></div>
+        </div>
+        <div class="svc-f"><a class="btn btn-d btn-w" href="/contratar?plan=cont-bas">Suscribirme</a></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3>¿Necesita crear una empresa o rebajar impuestos?</h3>
+      <div class="ph">La Rebaja Tributaria depende del capital declarado y la creación de empresa del tipo de sociedad. Agende 30 minutos y le entregamos la propuesta con el valor exacto.</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a class="btn btn-d" data-agenda>Agendar 30 minutos</a>
+        <a class="btn btn-o" href="/rebaja-tributaria">Ver cómo funciona la Rebaja Tributaria</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer id="pie" data-tipo="simple"></footer>
+
+<script src="/js/layout.js"></script>
+<script src="/js/cuenta.js"></script>
+</body>
+</html>

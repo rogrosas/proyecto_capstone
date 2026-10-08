@@ -1,0 +1,69 @@
+/* =========================================================
+   /mi-cuenta · Panel privado del cliente
+   ========================================================= */
+.pg-cuenta .strip{padding:9px 34px;font-size:13px;}
+.pg-cuenta .strip .phone{padding:5px 22px;font-size:13.5px;}
+.pg-cuenta .nav{padding:13px 34px;position:static;}
+
+/* ===== Pestañas ===== */
+.tabs{background:#fff;display:flex;gap:2px;padding:0 34px;border-bottom:1px solid var(--line);overflow-x:auto;position:sticky;top:0;z-index:20;}
+.tab{border:none;background:none;padding:14px 16px;font-family:inherit;font-size:13.5px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;}
+.tab:hover{color:var(--ink);}
+.tab.on{color:var(--ink);border-color:var(--green);}
+.tab .b{background:var(--red);color:#fff;font-size:10px;font-weight:700;border-radius:20px;padding:1px 6px;margin-left:6px;vertical-align:1px;}
+
+.pwrap{max-width:1120px;margin:0 auto;padding:26px 24px 70px 24px;}
+
+.g2{display:grid;grid-template-columns:1.4fr 1fr;gap:18px;}
+.g2e{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+.mb20{margin-bottom:20px;}
+
+/* ===== Aviso destacado ===== */
+.alert{display:flex;gap:14px;align-items:flex-start;background:#fff;box-shadow:var(--shadow);border-left:4px solid var(--amber);padding:18px 20px;margin-bottom:20px;}
+.alert.ok{border-left-color:var(--green);}
+.alert .ai{width:34px;height:34px;border-radius:50%;background:var(--amber-tint);color:var(--amber);display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;}
+.alert.ok .ai{background:var(--green-tint);color:var(--green-dark);}
+.alert .at{font-size:14.5px;font-weight:700;color:var(--ink);}
+.alert .ad{font-size:13px;color:var(--muted);margin-top:4px;line-height:1.55;}
+.alert .aa{margin-left:auto;display:flex;gap:8px;align-items:center;flex-shrink:0;}
+
+/* ===== Tarjetas de servicio ===== */
+.svc{background:#fff;box-shadow:var(--shadow);display:flex;flex-direction:column;}
+.svc-h{background:var(--ink);color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.svc-h .t{font-family:'Lora',serif;font-weight:700;font-size:15.5px;}
+.svc-b{padding:18px 16px;flex:1;}
+.svc-b .txt{font-size:13px;color:var(--muted);line-height:1.6;}
+.svc-b .txt b{color:var(--ink);}
+.svc-b .vig{font-size:12.5px;color:var(--muted);margin:6px 0 10px 0;}
+.svc-f{padding:0 16px 18px 16px;display:flex;gap:8px;}
+
+.prog{height:8px;background:#EDEFF0;margin:10px 0 6px 0;}
+.prog i{display:block;height:8px;background:var(--green);}
+.prog i.mid{background:var(--amber);} .prog i.low{background:var(--red);}
+.prog-l{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);}
+
+/* ===== Línea de pasos del trámite ===== */
+.steps{display:flex;flex-direction:column;}
+.st{display:flex;gap:13px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line);}
+.st:last-child{border-bottom:none;}
+.sd{width:24px;height:24px;border-radius:50%;background:#C3C9CE;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;flex-shrink:0;}
+.st.done .sd{background:var(--green);} .st.now .sd{background:var(--amber);}
+.st .t{font-size:13.5px;font-weight:600;color:var(--ink);}
+.st .d{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.5;}
+.st .r{margin-left:auto;font-size:11px;font-weight:700;text-transform:uppercase;color:#B4BBC1;}
+.st.done .r{color:var(--green-dark);} .st.now .r{color:var(--amber);}
+
+.card-visa{border:1px solid var(--line);padding:16px;display:flex;align-items:center;gap:14px;}
+.card-visa .vs{width:44px;height:30px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;}
+
+/* ===== Acceso ===== */
+.gate{min-height:78vh;display:flex;align-items:center;justify-content:center;padding:52px 20px;background:var(--bg);}
+
+@media(max-width:960px){
+  .g2,.g2e,.g3{grid-template-columns:1fr;}
+  .pg-cuenta .strip,.pg-cuenta .nav,.tabs{padding-left:18px;padding-right:18px;}
+  .panel{overflow-x:auto;}
+  .alert{flex-wrap:wrap;}
+  .alert .aa{margin-left:48px;}
+}
