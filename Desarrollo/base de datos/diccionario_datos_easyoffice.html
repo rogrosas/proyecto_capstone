@@ -1,0 +1,1765 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Diccionario de datos · Easy Office</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=Albert+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--green:#24D356;--green-dark:#18B644;--green-tint:#EAF9F0;--ink:#282828;--text:#333;--muted:#69727D;--line:#E4E7E9;--bg:#F5F7F7;
+        --red:#D8402F;--red-tint:#FCEBE8;--amber:#B8790F;--amber-tint:#FBF0DC;--blue:#2E6FCE;--blue-tint:#E7EFFB;--shadow:0 5px 15px rgba(0,0,0,.07);}
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Albert Sans',sans-serif;font-size:14.5px;line-height:1.55;}
+  h1,h2,h3,h4{font-family:'Lora',serif;color:var(--ink);margin:0;}
+  a{color:var(--green-dark);text-decoration:none;} a:hover{text-decoration:underline;}
+  code{font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
+  .top{background:var(--ink);color:#fff;padding:40px 0 34px;}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px;}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:22px;font-size:13px;font-weight:700;letter-spacing:.6px;}
+  .brand small{display:block;font-size:9.5px;letter-spacing:2.2px;color:#8E969D;font-weight:500;margin-top:3px;}
+  .top h1{color:#fff;font-size:34px;}
+  .top p{color:#C2C9CF;max-width:760px;margin:12px 0 0;}
+  .top code{background:rgba(255,255,255,.12);color:#fff;padding:1px 5px;border-radius:3px;}
+  .layout{display:grid;grid-template-columns:250px 1fr;gap:28px;align-items:start;padding-top:26px;padding-bottom:60px;}
+  nav.toc{position:sticky;top:16px;background:#fff;box-shadow:var(--shadow);padding:16px 14px;font-size:13px;max-height:calc(100vh - 32px);overflow:auto;}
+  nav.toc h4{font-family:'Albert Sans',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:0 0 8px;}
+  nav.toc ul{list-style:none;margin:0;padding:0;}
+  nav.toc > ul > li{margin-bottom:8px;}
+  nav.toc > ul > li > a{font-weight:600;color:var(--ink);}
+  nav.toc ul ul{padding-left:10px;margin-top:3px;}
+  nav.toc ul ul li{padding:1px 0;}
+  nav.toc ul ul a{color:var(--muted);}
+  .mini{display:inline-block;width:7px;height:7px;border-radius:50%;vertical-align:1px;margin-left:4px;}
+  .mini.ok{background:var(--green);} .mini.par{background:var(--amber);} .mini.pend{background:#C3C9CE;} .mini.int{background:var(--blue);}
+  section{margin-bottom:34px;}
+  .sec-h{margin-bottom:14px;} .sec-h h2{font-size:23px;} .sec-h p{color:var(--muted);margin:6px 0 0;max-width:820px;}
+  .panel{background:#fff;box-shadow:var(--shadow);padding:20px;}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
+  .kpi{background:#fff;box-shadow:var(--shadow);padding:14px 16px;border-top:3px solid var(--green);}
+  .kpi .v{font-family:'Lora',serif;font-size:28px;font-weight:700;color:var(--ink);line-height:1.1;}
+  .kpi .l{font-size:12px;color:var(--muted);}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;font-size:10.5px;color:var(--muted);font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:8px 9px;border-bottom:2px solid var(--line);}
+  td{padding:9px;border-bottom:1px solid var(--line);vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  .c{text-align:center;}
+  .tw{overflow-x:auto;}
+  .st{font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;}
+  .st.ok{background:var(--green-tint);color:var(--green-dark);} .st.par{background:var(--amber-tint);color:var(--amber);}
+  .st.pend{background:#EDEFF0;color:#5B646C;} .st.int{background:var(--blue-tint);color:var(--blue);}
+  .flow{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin:6px 0 4px;}
+  .fs{background:#fff;box-shadow:var(--shadow);padding:14px;border-right:1px solid var(--line);}
+  .fs:last-child{border-right:none;}
+  .fs .n{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--green-dark);}
+  .fs .t{font-weight:700;color:var(--ink);margin:3px 0;}
+  .fs .d{font-size:12.5px;color:var(--muted);}
+  pre{background:#1F2326;color:#E6E9EB;padding:14px 16px;font-size:12.5px;overflow-x:auto;margin:12px 0 0;border-radius:3px;}
+  pre code{font-size:12.5px;}
+  .tabla{background:#fff;box-shadow:var(--shadow);margin-bottom:18px;}
+  .th{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding:16px 18px 10px;}
+  .th h3{font-size:17px;} .th h3 code{font-size:16px;font-family:'IBM Plex Mono',monospace;}
+  .th p{margin:4px 0 0;color:var(--muted);font-size:13.5px;max-width:820px;}
+  .tags{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;}
+  .tag{font-size:10.5px;font-weight:600;border:1px solid var(--line);border-radius:3px;padding:1px 7px;color:var(--muted);}
+  .uso{margin:0 18px 10px;padding:10px 12px;background:var(--green-tint);border-left:3px solid var(--green);font-size:13px;}
+  .cols td:first-child{white-space:nowrap;}
+  .cols code.col{font-weight:500;color:var(--ink);}
+  .cols tr.usada td:first-child{box-shadow:inset 3px 0 0 var(--green);}
+  .k{font-size:9.5px;font-weight:700;border-radius:3px;padding:1px 4px;margin-left:5px;vertical-align:1px;}
+  .k.pk{background:var(--ink);color:#fff;} .k.fk{background:var(--blue-tint);color:var(--blue);} .k.uq{background:var(--amber-tint);color:var(--amber);}
+  .rg{font-size:12px;color:var(--muted);margin-top:4px;}
+  .rg code{font-size:11.5px;word-break:break-word;}
+  .dot.ok{color:var(--green);} .dot.no{color:#C3C9CE;}
+  .extra{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:12px 18px 16px;border-top:1px solid var(--line);font-size:12.5px;}
+  .extra h4{font-family:'Albert Sans',sans-serif;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px;}
+  .extra ul{margin:0;padding-left:16px;} .extra code{font-size:11.5px;word-break:break-word;}
+  .muted{color:var(--muted);}
+  .grupo-h{font-size:19px;margin:26px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--green);}
+  .leyenda{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:12px;}
+  footer{color:var(--muted);font-size:12px;padding:20px 0 40px;}
+  @media(max-width:960px){.layout{grid-template-columns:1fr;} nav.toc{position:static;max-height:none;} .kpis{grid-template-columns:1fr 1fr;} .flow{grid-template-columns:1fr;} .fs{border-right:none;border-bottom:1px solid var(--line);} .extra{grid-template-columns:1fr;}}
+  @media print{body{background:#fff;font-size:11.5px;} nav.toc{display:none;} .layout{grid-template-columns:1fr;} .tabla,.panel,.kpi,.fs{box-shadow:none;border:1px solid var(--line);} .tabla{break-inside:avoid-page;} .top{padding:16px 0;}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><svg width="34" height="20" viewBox="0 0 34 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7.5" stroke="#24D356" stroke-width="3"/><circle cx="23" cy="10" r="7.5" stroke="#24D356" stroke-width="3"/></svg><div>EASY OFFICE<small>BASE DE DATOS EO_ER</small></div></div>
+    <h1>Diccionario de datos y uso en la aplicación</h1>
+    <p>Generado desde <code>easyoffice_er.sql</code> (PostgreSQL 18): tablas, columnas, tipos, reglas, relaciones, seguridad y automatizaciones, con la explicación de cómo los usa la aplicación web de <code>EasyOfficeWIP</code> (arquitectura por capas, Node.js).</p>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-label="Índice">
+    <h4>Contenido</h4>
+    <ul>
+      <li><a href="#resumen">Resumen</a></li>
+      <li><a href="#como">Cómo se conecta la app</a></li>
+      <li><a href="#seguridad">Seguridad y roles</a></li>
+      <li><a href="#g-territorio">1. Territorio y direcciones</a><ul><li><a href="#t-regiones"><code>regiones</code></a> <i class="mini ok"></i></li><li><a href="#t-comunas"><code>comunas</code></a> <i class="mini ok"></i></li><li><a href="#t-direcciones"><code>direcciones</code></a> <i class="mini ok"></i></li></ul></li><li><a href="#g-personas">2. Personas y entidades</a><ul><li><a href="#t-representantes_legales"><code>representantes_legales</code></a> <i class="mini ok"></i></li><li><a href="#t-empresas_emisoras"><code>empresas_emisoras</code></a> <i class="mini ok"></i></li><li><a href="#t-propietarios_inmueble"><code>propietarios_inmueble</code></a> <i class="mini ok"></i></li><li><a href="#t-sucursales"><code>sucursales</code></a> <i class="mini ok"></i></li><li><a href="#t-cuentas_recaudacion"><code>cuentas_recaudacion</code></a> <i class="mini ok"></i></li></ul></li><li><a href="#g-acceso">3. Roles, permisos y usuarios</a><ul><li><a href="#t-roles"><code>roles</code></a> <i class="mini ok"></i></li><li><a href="#t-permisos"><code>permisos</code></a> <i class="mini ok"></i></li><li><a href="#t-roles_permisos"><code>roles_permisos</code></a> <i class="mini ok"></i></li><li><a href="#t-usuarios"><code>usuarios</code></a> <i class="mini ok"></i></li></ul></li><li><a href="#g-auditoria">4. Auditoría</a><ul><li><a href="#t-registros_actividad"><code>registros_actividad</code></a> <i class="mini ok"></i></li></ul></li><li><a href="#g-clientes">5. Clientes</a><ul><li><a href="#t-clientes"><code>clientes</code></a> <i class="mini ok"></i></li></ul></li><li><a href="#g-catalogo">6. Catálogo de servicios</a><ul><li><a href="#t-servicios"><code>servicios</code></a> <i class="mini ok"></i></li></ul></li><li><a href="#g-contratos">7. Contratos de servicio</a><ul><li><a href="#t-folios_correlativos"><code>folios_correlativos</code></a> <i class="mini ok"></i></li><li><a href="#t-contratos"><code>contratos</code></a> <i class="mini ok"></i></li><li><a href="#t-contrato_servicios"><code>contrato_servicios</code></a> <i class="mini ok"></i></li></ul></li><li><a href="#g-documentos">8. Documentos por plantilla</a><ul><li><a href="#t-plantillas_documento"><code>plantillas_documento</code></a> <i class="mini ok"></i></li><li><a href="#t-clausulas_documento"><code>clausulas_documento</code></a> <i class="mini ok"></i></li><li><a href="#t-documentos"><code>documentos</code></a> <i class="mini ok"></i></li><li><a href="#t-documento_partes"><code>documento_partes</code></a> <i class="mini ok"></i></li><li><a href="#t-documento_clausulas"><code>documento_clausulas</code></a> <i class="mini ok"></i></li></ul></li><li><a href="#g-pagos">9. Pagos y alertas</a><ul><li><a href="#t-pagos"><code>pagos</code></a> <i class="mini ok"></i></li><li><a href="#t-config_alertas"><code>config_alertas</code></a> <i class="mini ok"></i></li><li><a href="#t-alertas"><code>alertas</code></a> <i class="mini ok"></i></li></ul></li>
+      <li><a href="#vistas">Vistas</a></li>
+      <li><a href="#funciones">Funciones</a></li>
+      <li><a href="#triggers">Automatizaciones (triggers)</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <section id="resumen">
+      <div class="sec-h"><h2>Resumen</h2><p>Estado de integración de cada tabla con la aplicación al 26 de octubre de 2026. "Conectada" = la app la lee o escribe; "Parcial" = solo algunas columnas; "Pendiente" = prevista para los próximos módulos del CRM; "Uso interno" = solo la usan los triggers.</p></div>
+      <div class="kpis">
+        <div class="kpi"><div class="v">26</div><div class="l">tablas · 192 columnas</div></div>
+        <div class="kpi"><div class="v">26</div><div class="l">tablas usadas por la app (0 parcialmente)</div></div>
+        <div class="kpi"><div class="v">188</div><div class="l">columnas leídas o escritas hoy</div></div>
+        <div class="kpi"><div class="v">9</div><div class="l">tablas con seguridad por fila</div></div>
+      </div>
+      <div class="panel tw"><table>
+        <thead><tr><th>Tabla</th><th>Columnas</th><th>Usadas</th><th>Estado en la app</th><th>RLS</th><th>Auditada</th></tr></thead>
+        <tbody><tr><td><a href="#t-regiones"><code>regiones</code></a></td><td>2</td><td>2</td><td><span class="st ok">Conectada</span></td><td>—</td><td>—</td></tr><tr><td><a href="#t-comunas"><code>comunas</code></a></td><td>3</td><td>3</td><td><span class="st ok">Conectada</span></td><td>—</td><td>—</td></tr><tr><td><a href="#t-direcciones"><code>direcciones</code></a></td><td>5</td><td>5</td><td><span class="st ok">Conectada</span></td><td>—</td><td>Sí</td></tr><tr><td><a href="#t-representantes_legales"><code>representantes_legales</code></a></td><td>8</td><td>8</td><td><span class="st ok">Conectada</span></td><td>Sí</td><td>Sí</td></tr><tr><td><a href="#t-empresas_emisoras"><code>empresas_emisoras</code></a></td><td>10</td><td>10</td><td><span class="st ok">Conectada</span></td><td>—</td><td>Sí</td></tr><tr><td><a href="#t-propietarios_inmueble"><code>propietarios_inmueble</code></a></td><td>5</td><td>5</td><td><span class="st ok">Conectada</span></td><td>—</td><td>Sí</td></tr><tr><td><a href="#t-sucursales"><code>sucursales</code></a></td><td>9</td><td>9</td><td><span class="st ok">Conectada</span></td><td>—</td><td>Sí</td></tr><tr><td><a href="#t-cuentas_recaudacion"><code>cuentas_recaudacion</code></a></td><td>8</td><td>8</td><td><span class="st ok">Conectada</span></td><td>—</td><td>Sí</td></tr><tr><td><a href="#t-roles"><code>roles</code></a></td><td>2</td><td>2</td><td><span class="st ok">Conectada</span></td><td>—</td><td>—</td></tr><tr><td><a href="#t-permisos"><code>permisos</code></a></td><td>2</td><td>2</td><td><span class="st ok">Conectada</span></td><td>—</td><td>—</td></tr><tr><td><a href="#t-roles_permisos"><code>roles_permisos</code></a></td><td>2</td><td>2</td><td><span class="st ok">Conectada</span></td><td>—</td><td>—</td></tr><tr><td><a href="#t-usuarios"><code>usuarios</code></a></td><td>6</td><td>6</td><td><span class="st ok">Conectada</span></td><td>—</td><td>—</td></tr><tr><td><a href="#t-registros_actividad"><code>registros_actividad</code></a></td><td>8</td><td>6</td><td><span class="st ok">Conectada</span></td><td>—</td><td>—</td></tr><tr><td><a href="#t-clientes"><code>clientes</code></a></td><td>12</td><td>12</td><td><span class="st ok">Conectada</span></td><td>Sí</td><td>Sí</td></tr><tr><td><a href="#t-servicios"><code>servicios</code></a></td><td>11</td><td>11</td><td><span class="st ok">Conectada</span></td><td>—</td><td>Sí</td></tr><tr><td><a href="#t-folios_correlativos"><code>folios_correlativos</code></a></td><td>2</td><td>2</td><td><span class="st ok">Conectada</span></td><td>—</td><td>—</td></tr><tr><td><a href="#t-contratos"><code>contratos</code></a></td><td>18</td><td>17</td><td><span class="st ok">Conectada</span></td><td>Sí</td><td>Sí</td></tr><tr><td><a href="#t-contrato_servicios"><code>contrato_servicios</code></a></td><td>7</td><td>7</td><td><span class="st ok">Conectada</span></td><td>Sí</td><td>Sí</td></tr><tr><td><a href="#t-plantillas_documento"><code>plantillas_documento</code></a></td><td>9</td><td>9</td><td><span class="st ok">Conectada</span></td><td>—</td><td>Sí</td></tr><tr><td><a href="#t-clausulas_documento"><code>clausulas_documento</code></a></td><td>7</td><td>7</td><td><span class="st ok">Conectada</span></td><td>—</td><td>Sí</td></tr><tr><td><a href="#t-documentos"><code>documentos</code></a></td><td>19</td><td>19</td><td><span class="st ok">Conectada</span></td><td>Sí</td><td>Sí</td></tr><tr><td><a href="#t-documento_partes"><code>documento_partes</code></a></td><td>16</td><td>15</td><td><span class="st ok">Conectada</span></td><td>Sí</td><td>Sí</td></tr><tr><td><a href="#t-documento_clausulas"><code>documento_clausulas</code></a></td><td>5</td><td>5</td><td><span class="st ok">Conectada</span></td><td>Sí</td><td>Sí</td></tr><tr><td><a href="#t-pagos"><code>pagos</code></a></td><td>9</td><td>9</td><td><span class="st ok">Conectada</span></td><td>Sí</td><td>Sí</td></tr><tr><td><a href="#t-config_alertas"><code>config_alertas</code></a></td><td>2</td><td>2</td><td><span class="st ok">Conectada</span></td><td>—</td><td>—</td></tr><tr><td><a href="#t-alertas"><code>alertas</code></a></td><td>5</td><td>5</td><td><span class="st ok">Conectada</span></td><td>Sí</td><td>—</td></tr></tbody>
+      </table></div>
+    </section>
+
+    <section id="como">
+      <div class="sec-h"><h2>Cómo se conecta la aplicación</h2><p>El backend está organizado por capas y solo la capa de datos habla con PostgreSQL. Cada petición del CRM recorre este camino:</p></div>
+      <div class="flow">
+        <div class="fs"><div class="n">01 · public/</div><div class="t">Navegador</div><div class="d">crm.js llama a <code>/api/crm/...</code> con la cookie de sesión.</div></div>
+        <div class="fs"><div class="n">02 · presentacion/</div><div class="t">Ruta y controlador</div><div class="d">Valida la sesión y pasa los datos al servicio. No escribe SQL.</div></div>
+        <div class="fs"><div class="n">03 · negocio/</div><div class="t">Servicio</div><div class="d">Aplica reglas (quién puede qué, filtros válidos) y abre la transacción con <code>conUsuario()</code>.</div></div>
+        <div class="fs"><div class="n">04 · datos/</div><div class="t">Repositorio</div><div class="d">Ejecuta el SQL con parámetros y convierte los tipos.</div></div>
+        <div class="fs"><div class="n">05 · EO_ER</div><div class="t">PostgreSQL</div><div class="d">Aplica RLS, CHECK, triggers y auditoría con la identidad del usuario.</div></div>
+      </div>
+      <div class="panel" style="margin-top:14px;">
+        <b>Qué hace <code>conUsuario()</code> en cada transacción</b> (<code>src/datos/conexion.js</code>):
+<pre><code>BEGIN;
+SELECT set_config('app.usuario_actual', '&lt;id del usuario&gt;', true),
+       set_config('app.rol_actual',     '&lt;rol de la tabla roles&gt;', true);
+SET LOCAL ROLE rol_admin;        -- o rol_ejecutivo, según el rol
+-- ... consultas del repositorio ...
+COMMIT;                          -- ROLLBACK si algo falla</code></pre>
+        <p style="margin:12px 0 0;font-size:13px;">Así <code>app_usuario()</code> y <code>app_es_admin()</code> devuelven al usuario real: las políticas RLS filtran las filas, los GRANT limitan lo que puede hacer el rol, y los triggers de auditoría registran el autor de cada cambio. El inicio de sesión y el registro de LOGIN/LOGOUT usan la conexión directa (antes de conocer al usuario). Los errores de PostgreSQL se traducen a mensajes claros: <code>42501</code> sin permiso, <code>23503</code> registro con dependencias, <code>23505</code> duplicado, <code>23514</code> dato que no cumple una regla (p. ej. RUT inválido).</p>
+      </div>
+    </section>
+
+    <section id="seguridad">
+      <div class="sec-h"><h2>Seguridad y roles</h2><p>La base de datos define dos roles de PostgreSQL. La app elige uno según el rol del usuario en la tabla <a href="#t-roles"><code>roles</code></a>: "admin" y "dueno" trabajan como <code>rol_admin</code>; cualquier otro, como <code>rol_ejecutivo</code>.</p></div>
+      <div class="panel tw"><table>
+        <thead><tr><th>Rol de BD</th><th>Puede</th><th>No puede</th><th>Qué ve</th></tr></thead>
+        <tbody>
+          <tr><td><code>rol_admin</code></td><td>Todo sobre todas las tablas, incluida la lectura de auditoría.</td><td>Modificar o borrar <code>registros_actividad</code>.</td><td>Todas las filas (<code>app_es_admin()</code> es verdadero).</td></tr>
+          <tr><td><code>rol_ejecutivo</code></td><td>Leer, crear y modificar clientes, representantes, direcciones, contratos, servicios del contrato, documentos, partes, cláusulas y pagos; leer y actualizar alertas; leer catálogos y vistas.</td><td>Eliminar nada; leer <code>password_hash</code>, auditoría o <code>folios_correlativos</code>.</td><td>Solo su cartera: contratos donde es ejecutivo, sus documentos y los clientes, pagos, alertas y partes ligados a ellos.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="panel tw" style="margin-top:14px;"><table>
+        <thead><tr><th>Política RLS</th><th>Tabla</th><th>Una fila es visible si…</th></tr></thead>
+        <tbody>
+          <tr><td><code>p_contratos</code></td><td><a href="#t-contratos">contratos</a></td><td>el usuario es su <code>ejecutivo_id</code>, o es administrador.</td></tr>
+          <tr><td><code>p_documentos</code></td><td><a href="#t-documentos">documentos</a></td><td>el usuario es su ejecutivo, es administrador, o el documento pertenece a un contrato visible.</td></tr>
+          <tr><td><code>p_clientes</code></td><td><a href="#t-clientes">clientes</a></td><td>el usuario lo registró, es administrador, o el cliente tiene un contrato o documento visible.</td></tr>
+          <tr><td><code>p_representantes</code></td><td><a href="#t-representantes_legales">representantes_legales</a></td><td>lo registró, es administrador, o representa a un cliente, a una emisora o a un propietario.</td></tr>
+          <tr><td><code>p_contrato_servicios</code>, <code>p_alertas</code></td><td>contrato_servicios, alertas</td><td>su contrato es visible.</td></tr>
+          <tr><td><code>p_documento_partes</code>, <code>p_documento_clausulas</code></td><td>documento_partes, documento_clausulas</td><td>su documento es visible.</td></tr>
+          <tr><td><code>p_pagos</code></td><td><a href="#t-pagos">pagos</a></td><td>su contrato o su documento es visible.</td></tr>
+        </tbody>
+      </table></div>
+      <p class="muted" style="font-size:13px;">Además de la base de datos, la capa de negocio repite las reglas importantes para dar mensajes claros: solo administradores eliminan clientes y ven auditoría (<code>src/negocio/servicios/clientes.servicio.js</code>, <code>auditoria.servicio.js</code>).</p>
+    </section>
+
+    <section id="tablas">
+      <div class="sec-h"><h2>Tablas</h2><p>En cada tabla, las columnas marcadas con <span class="dot ok">●</span> y borde verde son las que la app usa hoy. <span class="k pk">PK</span> clave primaria · <span class="k fk">FK</span> clave foránea · <span class="k uq">UQ</span> valor único.</p>
+        <div class="leyenda"><span><span class="st ok">Conectada</span></span><span><span class="st par">Parcial</span></span><span><span class="st pend">Pendiente</span></span><span><span class="st int">Uso interno de la BD</span></span></div>
+      </div>
+      <h2 class="grupo-h" id="g-territorio">1. Territorio y direcciones</h2>
+  <article class="tabla" id="t-regiones">
+    <header class="th">
+      <div><h3><code>regiones</code></h3><p>Regiones de Chile. Catálogo base para ubicar comunas y direcciones.</p><div class="tags"></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Selector de región en los formularios de dirección (filtra las comunas; GET /api/crm/opciones) y catálogo "Regiones" en Administración (/api/crm/admin/catalogos/regiones). En el contrato impreso, vía fn_dir_region.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Identificador autonumérico.<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">nombre_region</code><span class="k uq">UQ</span></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Nombre de la región (único).</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      
+      
+      <div><h4>Referenciada por</h4><ul><li><a href="#t-comunas"><code>comunas.region_id</code></a></li></ul></div>
+    </div>
+  </article>
+  <article class="tabla" id="t-comunas">
+    <header class="th">
+      <div><h3><code>comunas</code></h3><p>Comunas, cada una perteneciente a una región.</p><div class="tags"></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Selector de comuna de toda dirección (clientes, representantes, sucursales, propietarios) y catálogo "Comunas" en Administración. En el contrato impreso, vía fn_dir_comuna.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Identificador autonumérico.<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">nombre_comuna</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Nombre de la comuna; único dentro de su región.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">region_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Región a la que pertenece.<div class="rg">→ <a href="#t-regiones"><code>regiones.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      <div><h4>Restricciones de tabla</h4><ul><li><code>UNIQUE (nombre_comuna, region_id)</code></li></ul></div>
+      <div><h4>Índices</h4><ul><li><code>ix_comunas_region</code>: <code>region_id</code></li></ul></div>
+      <div><h4>Referenciada por</h4><ul><li><a href="#t-direcciones"><code>direcciones.comuna_id</code></a></li></ul></div>
+    </div>
+  </article>
+  <article class="tabla" id="t-direcciones">
+    <header class="th">
+      <div><h3><code>direcciones</code></h3><p>Direcciones normalizadas (calle, número, complemento, comuna). Las comparten representantes, propietarios, sucursales y partes de documentos.</p><div class="tags"><span class="tag">Auditada por trigger</span></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> direcciones.repositorio.js: obtenerOCrear() busca la dirección sin distinguir mayúsculas (igual que ux_direcciones_completa) y solo inserta si no existe. La usan la ficha del cliente (domicilio del representante) y los catálogos de sucursales, propietarios y representantes.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Identificador autonumérico.<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">calle</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Nombre de la calle.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">numero</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Número (texto: admite "S/N", "1234-B").</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">complemento</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Oficina, depto., etc. Opcional.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">comuna_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Comuna de la dirección.<div class="rg">→ <a href="#t-comunas"><code>comunas.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      
+      <div><h4>Índices</h4><ul><li><code>ux_direcciones_completa</code> (único): <code>lower(calle), numero, COALESCE(lower(complemento), ''), comuna_id</code></li><li><code>ix_direcciones_comuna</code>: <code>comuna_id</code></li></ul></div>
+      <div><h4>Referenciada por</h4><ul><li><a href="#t-representantes_legales"><code>representantes_legales.direccion_id</code></a></li><li><a href="#t-propietarios_inmueble"><code>propietarios_inmueble.direccion_id</code></a></li><li><a href="#t-sucursales"><code>sucursales.direccion_id</code></a></li><li><a href="#t-documento_partes"><code>documento_partes.direccion_id</code></a></li></ul></div>
+    </div>
+  </article><h2 class="grupo-h" id="g-personas">2. Personas y entidades</h2>
+  <article class="tabla" id="t-representantes_legales">
+    <header class="th">
+      <div><h3><code>representantes_legales</code></h3><p>Personas naturales que representan a clientes, a la empresa emisora o a propietarios. Sus datos personales los exige la comparecencia del contrato.</p><div class="tags"><span class="tag">Seguridad por fila (RLS)</span><span class="tag">Auditada por trigger</span></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Ficha y formulario del cliente (POST/PUT /api/crm/clientes): se crea o actualiza por RUT junto con su dirección, en la misma transacción; registrado_por lo completa la BD con app_usuario(). Administración → "Representantes legales" para los de la emisora y los propietarios. RLS: el ejecutivo ve los suyos y los ligados a clientes, emisoras o propietarios.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Identificador autonumérico.<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">rut</code><span class="k uq">UQ</span></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>RUT sin puntos con guion (12345678-K); se valida con fn_rut_valido. Único.<div class="rg">Regla: <code>fn_rut_valido(rut)</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">nombre_completo</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Nombre completo.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">nacionalidad</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Nacionalidad (comparecencia).</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">estado_civil</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Estado civil (comparecencia).</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">profesion</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Profesión u oficio (comparecencia).</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">direccion_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">Sí</td>
+      <td>Domicilio del representante.<div class="rg">→ <a href="#t-direcciones"><code>direcciones.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">registrado_por</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Usuario que lo registró; por defecto app_usuario(). Base de la visibilidad por ejecutivo.<div class="rg">Por defecto <code>app_usuario()</code><br>→ <a href="#t-usuarios"><code>usuarios.id</code></a><br>Agregada con ALTER TABLE</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      
+      <div><h4>Índices</h4><ul><li><code>ix_representantes_direccion</code>: <code>direccion_id</code></li><li><code>ix_representantes_registrado_por</code>: <code>registrado_por</code></li></ul></div>
+      <div><h4>Referenciada por</h4><ul><li><a href="#t-empresas_emisoras"><code>empresas_emisoras.representante_legal_id</code></a></li><li><a href="#t-propietarios_inmueble"><code>propietarios_inmueble.representante_legal_id</code></a></li><li><a href="#t-clientes"><code>clientes.representante_legal_id</code></a></li></ul></div>
+    </div>
+  </article>
+  <article class="tabla" id="t-empresas_emisoras">
+    <header class="th">
+      <div><h3><code>empresas_emisoras</code></h3><p>Marcas que emiten los contratos (EASY OFFICE e INOFFICE). Varias marcas pueden compartir razón social, por eso el RUT no es único.</p><div class="tags"><span class="tag">Auditada por trigger</span></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Selector "Empresa emisora" al crear un contrato (filtra sucursales y cuentas) y catálogo en Administración. Sus datos y su personería se imprimen en el contrato vía v_datos_contrato.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Identificador autonumérico.<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">nombre_comercial</code><span class="k uq">UQ</span></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Marca (única).</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">razon_social</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Razón social legal.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">rut</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>RUT de la empresa (validado).<div class="rg">Regla: <code>fn_rut_valido(rut)</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">representante_legal_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">Sí</td>
+      <td>Quién firma por la emisora.<div class="rg">→ <a href="#t-representantes_legales"><code>representantes_legales.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">personeria_fecha</code></td>
+      <td><code>date</code></td>
+      <td class="c">Sí</td>
+      <td>Fecha de la personería ("con fecha 10 de agosto de 2017").</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">personeria_fuente</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Fuente de la personería (p. ej. Registro de Empresas y Sociedades).</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">telefono</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Teléfono de contacto que aparece en el contrato.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">email</code></td>
+      <td><code>citext</code></td>
+      <td class="c">Sí</td>
+      <td>Correo de contacto.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">activo</code></td>
+      <td><code>boolean</code></td>
+      <td class="c">No</td>
+      <td>Si puede usarse en contratos nuevos.<div class="rg">Por defecto <code>true</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      
+      
+      <div><h4>Referenciada por</h4><ul><li><a href="#t-sucursales"><code>sucursales.empresa_id</code></a></li><li><a href="#t-cuentas_recaudacion"><code>cuentas_recaudacion.empresa_id</code></a></li><li><a href="#t-contratos"><code>contratos.empresa_id</code></a></li></ul></div>
+    </div>
+  </article>
+  <article class="tabla" id="t-propietarios_inmueble">
+    <header class="th">
+      <div><h3><code>propietarios_inmueble</code></h3><p>Dueños de los inmuebles que autorizan el uso del domicilio tributario (hoja "AUTORIZACIÓN" del contrato).</p><div class="tags"><span class="tag">Auditada por trigger</span></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Catálogo en Administración (con dirección y representante). Se asigna a cada sucursal y firma la "Autorización de uso de domicilio" del contrato impreso.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Identificador autonumérico.<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">rut</code><span class="k uq">UQ</span></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>RUT del propietario (validado, único).<div class="rg">Regla: <code>fn_rut_valido(rut)</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">razon_social</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Razón social o nombre.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">representante_legal_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">Sí</td>
+      <td>Representante del propietario.<div class="rg">→ <a href="#t-representantes_legales"><code>representantes_legales.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">direccion_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">Sí</td>
+      <td>Domicilio del propietario.<div class="rg">→ <a href="#t-direcciones"><code>direcciones.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      
+      
+      <div><h4>Referenciada por</h4><ul><li><a href="#t-sucursales"><code>sucursales.propietario_id</code></a></li></ul></div>
+    </div>
+  </article>
+  <article class="tabla" id="t-sucursales">
+    <header class="th">
+      <div><h3><code>sucursales</code></h3><p>Sucursales (inmuebles) de cada emisora. El prefijo de dos letras identifica la sucursal en el folio (LF, VL, SA).</p><div class="tags"><span class="tag">Auditada por trigger</span></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Selector "Sucursal" al crear un contrato: su prefijo_folio encabeza el folio que asigna el trigger. Catálogo en Administración (prefijo de 2 letras en mayúsculas, dirección, rol y propietario). Dirección y rol aparecen en el contrato impreso.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Identificador autonumérico.<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">empresa_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Emisora dueña de la sucursal.<div class="rg">→ <a href="#t-empresas_emisoras"><code>empresas_emisoras.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">nombre</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Nombre de la sucursal; único por emisora.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">direccion_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Dirección del inmueble.<div class="rg">→ <a href="#t-direcciones"><code>direcciones.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">rol_propiedad</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Rol de avalúo del inmueble (formato 123-45).<div class="rg">Regla: <code>rol_propiedad ~ '^[0-9]+-[0-9]+$'</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">prefijo_folio</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Dos letras mayúsculas que encabezan el folio; único.<div class="rg">Regla: <code>prefijo_folio ~ '^[A-Z]{2}$'</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">propietario_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">Sí</td>
+      <td>Propietario que autoriza el domicilio.<div class="rg">→ <a href="#t-propietarios_inmueble"><code>propietarios_inmueble.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">unidad_sii</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Unidad del SII ante la que se presenta la autorización.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">activo</code></td>
+      <td><code>boolean</code></td>
+      <td class="c">No</td>
+      <td>Si recibe contratos nuevos.<div class="rg">Por defecto <code>true</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      <div><h4>Restricciones de tabla</h4><ul><li><code>UNIQUE (id, empresa_id)</code></li><li><code>UNIQUE (empresa_id, nombre)</code></li><li><code>UNIQUE (prefijo_folio)</code></li></ul></div>
+      
+      <div><h4>Referenciada por</h4><ul><li><a href="#t-contratos"><code>contratos.sucursal_id</code></a></li></ul></div>
+    </div>
+  </article>
+  <article class="tabla" id="t-cuentas_recaudacion">
+    <header class="th">
+      <div><h3><code>cuentas_recaudacion</code></h3><p>Cuentas bancarias de cada emisora para recibir transferencias.</p><div class="tags"><span class="tag">Auditada por trigger</span></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Selector "Cuenta para transferencia" al crear un contrato (o link de pago: la BD exige uno de los dos). Catálogo en Administración. v_datos_contrato arma con ella el texto del medio de pago.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Identificador autonumérico.<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">empresa_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Emisora titular de la cuenta.<div class="rg">→ <a href="#t-empresas_emisoras"><code>empresas_emisoras.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">banco</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Banco.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">tipo_cuenta</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Cuenta corriente, vista, etc.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">numero_cuenta</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Número; único por banco.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">titular</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Nombre del titular.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">rut_titular</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>RUT del titular (validado).<div class="rg">Regla: <code>fn_rut_valido(rut_titular)</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">activa</code></td>
+      <td><code>boolean</code></td>
+      <td class="c">No</td>
+      <td>Si se ofrece en contratos nuevos.<div class="rg">Por defecto <code>true</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      <div><h4>Restricciones de tabla</h4><ul><li><code>UNIQUE (id, empresa_id)</code></li><li><code>UNIQUE (banco, numero_cuenta)</code></li></ul></div>
+      
+      <div><h4>Referenciada por</h4><ul><li><a href="#t-contratos"><code>contratos.cuenta_recaudacion_id</code></a></li></ul></div>
+    </div>
+  </article><h2 class="grupo-h" id="g-acceso">3. Roles, permisos y usuarios</h2>
+  <article class="tabla" id="t-roles">
+    <header class="th">
+      <div><h3><code>roles</code></h3><p>Roles del personal. Los nombres "admin" y "dueno" son administradores para la base de datos (función app_es_admin).</p><div class="tags"></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Login: el rol decide si la sesión trabaja como rol_admin ("admin" o "dueno") o como rol_ejecutivo. Administración → "Roles y permisos": crear, renombrar, eliminar (si no tiene usuarios) y asignar permisos.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Identificador autonumérico.<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">rol</code><span class="k uq">UQ</span></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Nombre del rol (único). "admin" y "dueno" ven todo.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      
+      
+      <div><h4>Referenciada por</h4><ul><li><a href="#t-roles_permisos"><code>roles_permisos.rol_id</code></a></li><li><a href="#t-usuarios"><code>usuarios.rol_id</code></a></li></ul></div>
+    </div>
+  </article>
+  <article class="tabla" id="t-permisos">
+    <header class="th">
+      <div><h3><code>permisos</code></h3><p>Catálogo de permisos con nombre (p. ej. "eliminar_cliente", "aprobar_documento").</p><div class="tags"></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Catálogo "Permisos" en Administración. Al iniciar sesión se cargan los permisos del rol del usuario (visibles en la insignia de rol). Las restricciones efectivas siguen siendo las del rol de base de datos (GRANT y RLS).</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Identificador autonumérico.<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">permiso</code><span class="k uq">UQ</span></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Nombre del permiso (único).</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      
+      
+      <div><h4>Referenciada por</h4><ul><li><a href="#t-roles_permisos"><code>roles_permisos.permisos_id</code></a></li></ul></div>
+    </div>
+  </article>
+  <article class="tabla" id="t-roles_permisos">
+    <header class="th">
+      <div><h3><code>roles_permisos</code></h3><p>Relación muchos a muchos entre roles y permisos.</p><div class="tags"></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Administración → "Roles y permisos": casillas de permisos por rol (roles.repositorio.js reemplaza la asignación completa). Se leen al iniciar sesión.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">rol_id</code><span class="k pk">PK</span><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Rol.<div class="rg">→ <a href="#t-roles"><code>roles.id</code></a> (borrado en cascada)</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">permisos_id</code><span class="k pk">PK</span><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Permiso asignado al rol.<div class="rg">→ <a href="#t-permisos"><code>permisos.id</code></a> (borrado en cascada)</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      
+      <div><h4>Índices</h4><ul><li><code>ix_roles_permisos_permiso</code>: <code>permisos_id</code></li></ul></div>
+      
+    </div>
+  </article>
+  <article class="tabla" id="t-usuarios">
+    <header class="th">
+      <div><h3><code>usuarios</code></h3><p>Personal de Easy Office que usa el CRM.</p><div class="tags"></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Login (bcrypt contra password_hash; los inactivos no entran). Administración → "Usuarios": crear con contraseña (mínimo 10 caracteres, guardada como hash), cambiar nombre, correo, rol o contraseña y activar/desactivar (no a uno mismo). El nombre aparece como ejecutivo, revisor y autor en todo el CRM. También: npm run crear-usuario.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Identificador; es el valor de app.usuario_actual durante la sesión.<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">nombre</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Nombre visible en el CRM.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">email</code><span class="k uq">UQ</span></td>
+      <td><code>citext</code></td>
+      <td class="c">No</td>
+      <td>Correo de ingreso (único, sin distinguir mayúsculas: citext).</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">rol_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Rol del usuario.<div class="rg">→ <a href="#t-roles"><code>roles.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">password_hash</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Hash bcrypt de la contraseña. rol_ejecutivo no puede leer esta columna.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">activo</code></td>
+      <td><code>boolean</code></td>
+      <td class="c">No</td>
+      <td>Si puede ingresar.<div class="rg">Por defecto <code>true</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      
+      <div><h4>Índices</h4><ul><li><code>ix_usuarios_rol</code>: <code>rol_id</code></li></ul></div>
+      <div><h4>Referenciada por</h4><ul><li><a href="#t-representantes_legales"><code>representantes_legales.registrado_por</code></a></li><li><a href="#t-registros_actividad"><code>registros_actividad.usuario_id</code></a></li><li><a href="#t-clientes"><code>clientes.registrado_por</code></a></li><li><a href="#t-contratos"><code>contratos.ejecutivo_id</code></a></li><li><a href="#t-documentos"><code>documentos.revisado_por</code></a></li><li><a href="#t-documentos"><code>documentos.ejecutivo_id</code></a></li></ul></div>
+    </div>
+  </article><h2 class="grupo-h" id="g-auditoria">4. Auditoría</h2>
+  <article class="tabla" id="t-registros_actividad">
+    <header class="th">
+      <div><h3><code>registros_actividad</code></h3><p>Bitácora inmutable: cada INSERT/UPDATE/DELETE de las tablas auditadas (por trigger) y cada LOGIN/LOGOUT del CRM. No se puede modificar, borrar ni vaciar.</p><div class="tags"><span class="tag">Inmutable</span></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Escritura: los triggers registran cada cambio y la app inserta LOGIN y LOGOUT del personal y de los clientes del portal (estos con usuario_id NULL, tabla_afectada = clientes y registro_id = id del cliente; la Auditoría los muestra como "Cliente (portal)"). Lectura: módulo Auditoría (solo administradores) con filtros por acción, días y texto. valores_anteriores y valores_nuevos quedan guardados, pero aún no se muestran.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>bigint</code></td>
+      <td class="c">No</td>
+      <td>Identificador autonumérico (bigint).<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">usuario_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">Sí</td>
+      <td>Quién hizo la acción; NULL = acción automática del sistema.<div class="rg">→ <a href="#t-usuarios"><code>usuarios.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">tabla_afectada</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Tabla modificada (o "usuarios" para LOGIN/LOGOUT).</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">registro_id</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Id del registro afectado.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">accion</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>INSERT, UPDATE, DELETE, LOGIN o LOGOUT.<div class="rg">Regla: <code>accion IN ('INSERT', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT')</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="">
+      <td><code class="col">valores_anteriores</code></td>
+      <td><code>jsonb</code></td>
+      <td class="c">Sí</td>
+      <td>Fila completa antes del cambio (JSON).</td>
+      <td class="c"><span class="dot no" title="Aún no se usa">○</span></td>
+    </tr><tr class="">
+      <td><code class="col">valores_nuevos</code></td>
+      <td><code>jsonb</code></td>
+      <td class="c">Sí</td>
+      <td>Fila completa después del cambio (JSON).</td>
+      <td class="c"><span class="dot no" title="Aún no se usa">○</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">fecha</code></td>
+      <td><code>timestamptz</code></td>
+      <td class="c">No</td>
+      <td>Momento de la acción (con zona horaria).<div class="rg">Por defecto <code>now()</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      
+      <div><h4>Índices</h4><ul><li><code>ix_registros_actividad_usuario</code>: <code>usuario_id, fecha DESC</code></li><li><code>ix_registros_actividad_tabla</code>: <code>tabla_afectada, registro_id, fecha DESC</code></li></ul></div>
+      
+    </div>
+  </article><h2 class="grupo-h" id="g-clientes">5. Clientes</h2>
+  <article class="tabla" id="t-clientes">
+    <header class="th">
+      <div><h3><code>clientes</code></h3><p>Clientes de Easy Office: una razón social = un cliente. Puede tener varios contratos (renovaciones).</p><div class="tags"><span class="tag">Seguridad por fila (RLS)</span><span class="tag">Auditada por trigger</span></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Módulo Clientes: listado con búsqueda (nombre, RUT con o sin puntos, folio) y estado calculado; ficha con representante, contratos, documentos y pagos; alta y edición con validación de RUT, correo y celular (normalizados igual que los CHECK); eliminación solo para administradores (falla si tiene contratos, documentos o pagos). Portal de clientes (/mi-cuenta): email es el identificador del acceso por enlace mágico (un enlace firmado por cada cliente con ese correo; si el correo cambia, los enlaces enviados dejan de servir) y el panel muestra sus datos, contratos, documentos y pagos en una transacción de solo lectura filtrada por su id.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Identificador autonumérico.<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">rut</code><span class="k uq">UQ</span></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>RUT sin puntos con guion; validado y único.<div class="rg">Regla: <code>fn_rut_valido(rut)</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">razon_social</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Razón social (búsqueda e índice por minúsculas).</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">nombre_fantasia</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Nombre de fantasía.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">giro_principal</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Giro comercial.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">email</code></td>
+      <td><code>citext</code></td>
+      <td class="c">Sí</td>
+      <td>Correo de contacto (formato validado).<div class="rg">Regla: <code>email ~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$'</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">celular</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Celular chileno de 9 dígitos que empieza en 9.<div class="rg">Regla: <code>celular ~ '^9[0-9]{8}$'</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">representante_legal_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">Sí</td>
+      <td>Representante legal del cliente.<div class="rg">→ <a href="#t-representantes_legales"><code>representantes_legales.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">fecha_escritura</code></td>
+      <td><code>date</code></td>
+      <td class="c">Sí</td>
+      <td>Fecha de la escritura o estatuto vigente.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">sitio_notaria</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Sitio web o notaría de la escritura.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">registrado_por</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Usuario que lo registró (visibilidad por ejecutivo).<div class="rg">→ <a href="#t-usuarios"><code>usuarios.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">creado_en</code></td>
+      <td><code>timestamptz</code></td>
+      <td class="c">No</td>
+      <td>Fecha de alta ("cliente desde").<div class="rg">Por defecto <code>now()</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      
+      <div><h4>Índices</h4><ul><li><code>ix_clientes_representante</code>: <code>representante_legal_id</code></li><li><code>ix_clientes_registrado_por</code>: <code>registrado_por</code></li><li><code>ix_clientes_email</code>: <code>email</code></li><li><code>ix_clientes_razon_social</code>: <code>lower(razon_social)</code></li></ul></div>
+      <div><h4>Referenciada por</h4><ul><li><a href="#t-contratos"><code>contratos.cliente_id</code></a></li><li><a href="#t-documentos"><code>documentos.cliente_id</code></a></li></ul></div>
+    </div>
+  </article><h2 class="grupo-h" id="g-catalogo">6. Catálogo de servicios</h2>
+  <article class="tabla" id="t-servicios">
+    <header class="th">
+      <div><h3><code>servicios</code></h3><p>Catálogo interno de servicios con precio de lista NETO (más IVA) y ciclo de pago por defecto.</p><div class="tags"><span class="tag">Auditada por trigger</span></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Catálogo "Servicios" en Administración (precio neto, ciclo, descripción, activo). Selector de servicios al crear o ampliar un contrato y al crear documentos; si no se indica precio o ciclo, el trigger los copia desde aquí. El sitio público sigue usando su propio catálogo (public/js/catalogo.js).</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Identificador autonumérico.<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">nombre</code><span class="k uq">UQ</span></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Nombre del servicio (único).</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">tipo</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>PRINCIPAL (del formulario) o COMPLEMENTARIO (Anexo 1).<div class="rg">Por defecto <code>'PRINCIPAL'</code><br>Regla: <code>tipo IN ('PRINCIPAL', 'COMPLEMENTARIO')</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">descripcion_base</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Texto por defecto del servicio en el contrato.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">precio_lista</code></td>
+      <td><code>numeric(12, 0)</code></td>
+      <td class="c">Sí</td>
+      <td>Precio neto en CLP; NULL = por cotizar.<div class="rg">Regla: <code>precio_lista &gt;= 0</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">precio_desde</code></td>
+      <td><code>boolean</code></td>
+      <td class="c">No</td>
+      <td>Si el precio se muestra como "desde".<div class="rg">Por defecto <code>false</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">unidad</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Unidad de cobro ("por firma", "por página").</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">incluye_iva</code></td>
+      <td><code>boolean</code></td>
+      <td class="c">No</td>
+      <td>Si el precio ya incluye IVA.<div class="rg">Por defecto <code>false</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">ciclo_pago_defecto</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>UNICO, MENSUAL, TRIMESTRAL, SEMESTRAL o ANUAL.<div class="rg">Por defecto <code>'UNICO'</code><br>Regla: <code>ciclo_pago_defecto IN ('UNICO','MENSUAL','TRIMESTRAL','SEMESTRAL','ANUAL')</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">campos_formulario</code></td>
+      <td><code>jsonb</code></td>
+      <td class="c">Sí</td>
+      <td>Campos extra que pide el servicio (JSON).</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">activo</code></td>
+      <td><code>boolean</code></td>
+      <td class="c">No</td>
+      <td>Si se ofrece.<div class="rg">Por defecto <code>true</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      
+      
+      <div><h4>Referenciada por</h4><ul><li><a href="#t-contrato_servicios"><code>contrato_servicios.servicio_id</code></a></li><li><a href="#t-documentos"><code>documentos.servicio_id</code></a></li></ul></div>
+    </div>
+  </article><h2 class="grupo-h" id="g-contratos">7. Contratos de servicio</h2>
+  <article class="tabla" id="t-folios_correlativos">
+    <header class="th">
+      <div><h3><code>folios_correlativos</code></h3><p>Contador de folios por año, igual que la macro GenerarFolio del Excel: un correlativo único por año para todas las sucursales.</p><div class="tags"></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> La usa el trigger fn_asignar_folio en cada contrato nuevo. Administración → "Correlativos de folio" permite ajustar el último número de un año (para migrar desde el Excel); solo administradores, porque rol_ejecutivo no tiene acceso.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">anio</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Año del correlativo.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">ultimo</code></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Último número usado en ese año.<div class="rg">Por defecto <code>0</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    
+  </article>
+  <article class="tabla" id="t-contratos">
+    <header class="th">
+      <div><h3><code>contratos</code></h3><p>Contratos de servicio; cada uno es un FOLIO (p. ej. LF-0152-2026). Núcleo del negocio: vigencia, estado, ejecutivo y medio de pago.</p><div class="tags"><span class="tag">Seguridad por fila (RLS)</span><span class="tag">Auditada por trigger</span></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Módulo Contratos: listado; detalle con saldo, alertas, servicios, pagos y documentos; alta (folio, vencimiento y alertas los calcula la BD); edición de estado, vencimiento, link de pago, renovación automática y observaciones; reasignar ejecutivo solo administradores; "Renovar" crea el contrato siguiente desde el día posterior al vencimiento. También alimenta el Tablero, Renovaciones y Clientes. datos_formulario queda reservado para el formulario de contratación en línea.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Identificador autonumérico.<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">folio</code><span class="k uq">UQ</span></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>PREFIJO-correlativo-año; lo asigna el trigger si viene vacío. Único.<div class="rg">Regla: <code>folio ~ '^[A-Z]{2}-[0-9]{2,4}-[0-9]{4}$'</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">empresa_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Emisora del contrato.<div class="rg">→ <a href="#t-empresas_emisoras"><code>empresas_emisoras.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">cliente_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Cliente.<div class="rg">→ <a href="#t-clientes"><code>clientes.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">sucursal_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Sucursal (debe ser de la misma emisora).<div class="rg">→ <a href="#t-sucursales"><code>sucursales.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">cuenta_recaudacion_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">Sí</td>
+      <td>Cuenta para transferencias (de la misma emisora).<div class="rg">→ <a href="#t-cuentas_recaudacion"><code>cuentas_recaudacion.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">link_pago</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Link de pago; obligatorio si no hay cuenta.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">lugar_celebracion</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Ciudad de firma ("En Santiago, a ...").<div class="rg">Por defecto <code>'Santiago'</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">fecha_celebracion</code></td>
+      <td><code>date</code></td>
+      <td class="c">No</td>
+      <td>Fecha de firma; define el año del folio.<div class="rg">Por defecto <code>CURRENT_DATE</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">fecha_inicio</code></td>
+      <td><code>date</code></td>
+      <td class="c">No</td>
+      <td>Inicio de la vigencia.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">duracion_meses</code></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Duración: 12, 6, 4, 3 o 1 meses.<div class="rg">Regla: <code>duracion_meses &gt; 0</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">fecha_vencimiento</code></td>
+      <td><code>date</code></td>
+      <td class="c">No</td>
+      <td>Fin de la vigencia; por defecto inicio + duración − 1 día. Base de las alertas.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">renovacion_automatica</code></td>
+      <td><code>boolean</code></td>
+      <td class="c">No</td>
+      <td>Cláusula QUINTO del contrato.<div class="rg">Por defecto <code>true</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">estado</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>pendiente, activo, vencido o cancelado.<div class="rg">Por defecto <code>'activo'</code><br>Regla: <code>estado IN ('pendiente','activo','vencido','cancelado')</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">ejecutivo_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">Sí</td>
+      <td>Ejecutivo a cargo (define quién lo ve).<div class="rg">→ <a href="#t-usuarios"><code>usuarios.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">observaciones</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Notas internas.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="">
+      <td><code class="col">datos_formulario</code></td>
+      <td><code>jsonb</code></td>
+      <td class="c">Sí</td>
+      <td>Respuestas del formulario de contratación (JSON).</td>
+      <td class="c"><span class="dot no" title="Aún no se usa">○</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">creado_en</code></td>
+      <td><code>timestamptz</code></td>
+      <td class="c">No</td>
+      <td>Fecha de registro ("creados este mes").<div class="rg">Por defecto <code>now()</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      <div><h4>Restricciones de tabla</h4><ul><li><code>UNIQUE (id, cliente_id)</code></li><li><code>CHECK (fecha_vencimiento &gt;= fecha_inicio)</code></li><li><code>CHECK (cuenta_recaudacion_id IS NOT NULL OR link_pago IS NOT NULL)</code></li><li><code>FOREIGN KEY (sucursal_id, empresa_id) REFERENCES sucursales (id, empresa_id)</code></li><li><code>FOREIGN KEY (cuenta_recaudacion_id, empresa_id) REFERENCES cuentas_recaudacion (id, empresa_id)</code></li></ul></div>
+      <div><h4>Índices</h4><ul><li><code>ix_contratos_cliente</code>: <code>cliente_id</code></li><li><code>ix_contratos_ejecutivo</code>: <code>ejecutivo_id</code></li><li><code>ix_contratos_sucursal</code>: <code>sucursal_id</code></li><li><code>ix_contratos_vencimiento</code>: <code>fecha_vencimiento</code> <span class="muted">WHERE estado = 'activo'</span></li></ul></div>
+      <div><h4>Referenciada por</h4><ul><li><a href="#t-contrato_servicios"><code>contrato_servicios.contrato_id</code></a></li><li><a href="#t-documentos"><code>documentos.contrato_id</code></a></li><li><a href="#t-pagos"><code>pagos.contrato_id</code></a></li><li><a href="#t-alertas"><code>alertas.contrato_id</code></a></li></ul></div>
+    </div>
+  </article>
+  <article class="tabla" id="t-contrato_servicios">
+    <header class="th">
+      <div><h3><code>contrato_servicios</code></h3><p>Servicios incluidos en cada contrato (Anexo 1), con su precio y ciclo. Si no se indican, el trigger los copia del catálogo.</p><div class="tags"><span class="tag">Seguridad por fila (RLS)</span><span class="tag">Auditada por trigger</span></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Servicios del contrato (Anexo 1): se agregan al crear el contrato o desde su detalle; precio, ciclo y descripción vacíos los completa el trigger desde servicios; quitar es solo para administradores (rol_ejecutivo no tiene DELETE). Base del monto neto, del monto en riesgo y del ingreso recurrente mensual.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Identificador autonumérico.<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">contrato_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Contrato (se borra con él).<div class="rg">→ <a href="#t-contratos"><code>contratos.id</code></a> (borrado en cascada)</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">orden</code></td>
+      <td><code>smallint</code></td>
+      <td class="c">No</td>
+      <td>Posición en el Anexo 1.<div class="rg">Regla: <code>orden &gt; 0</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">servicio_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Servicio del catálogo (una vez por contrato).<div class="rg">→ <a href="#t-servicios"><code>servicios.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">precio</code></td>
+      <td><code>numeric(12, 0)</code></td>
+      <td class="c">No</td>
+      <td>Precio neto acordado.<div class="rg">Regla: <code>precio &gt;= 0</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">ciclo_pago</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Ciclo de cobro de este servicio.<div class="rg">Regla: <code>ciclo_pago IN ('UNICO','MENSUAL','TRIMESTRAL','SEMESTRAL','ANUAL')</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">descripcion</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Contenido del servicio en el contrato.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      <div><h4>Restricciones de tabla</h4><ul><li><code>UNIQUE (contrato_id, orden)</code></li><li><code>UNIQUE (contrato_id, servicio_id)</code></li></ul></div>
+      <div><h4>Índices</h4><ul><li><code>ix_contrato_servicios_servicio</code>: <code>servicio_id</code></li></ul></div>
+      
+    </div>
+  </article><h2 class="grupo-h" id="g-documentos">8. Documentos por plantilla</h2>
+  <article class="tabla" id="t-plantillas_documento">
+    <header class="th">
+      <div><h3><code>plantillas_documento</code></h3><p>Plantillas de documentos (contrato de servicio, poder, acuerdo de accionistas, arriendo...) con sus variables y si requieren revisión humana.</p><div class="tags"><span class="tag">Auditada por trigger</span></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Catálogo "Plantillas de documento" en Administración (contenido con {variables}, campos JSON, requiere revisión). Al crear un documento se elige la plantilla: sus campos generan el formulario y su contenido se completa en la vista previa; el trigger copia requiere_revision. archivo_base guarda la ubicación del .docx, relativa a la carpeta de contratos (CONTRATOS_DIR): se elige de la lista de archivos de la carpeta o se sube uno nuevo, y es la base de "Generar contrato Word".</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Identificador autonumérico.<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">tipo_documento</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Nombre del tipo; único por versión.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">version</code></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Versión de la plantilla.<div class="rg">Por defecto <code>1</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">familia</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>CONTRATO_SERVICIO, PODER, ACUERDO_ACCIONISTAS, ARRIENDO u OTRO.<div class="rg">Regla: <code>familia IN ('CONTRATO_SERVICIO','PODER','ACUERDO_ACCIONISTAS','ARRIENDO','OTRO')</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">archivo_base</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Archivo .docx de origen.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">contenido_plantilla</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Texto con {variables}.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">campos</code></td>
+      <td><code>jsonb</code></td>
+      <td class="c">Sí</td>
+      <td>Variables: [{clave, etiqueta, tipo}] (JSON).</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">requiere_revision</code></td>
+      <td><code>boolean</code></td>
+      <td class="c">No</td>
+      <td>Si necesita aprobación humana antes de firmar.<div class="rg">Por defecto <code>false</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">activo</code></td>
+      <td><code>boolean</code></td>
+      <td class="c">No</td>
+      <td>Si se puede usar.<div class="rg">Por defecto <code>true</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      <div><h4>Restricciones de tabla</h4><ul><li><code>UNIQUE (tipo_documento, version)</code></li></ul></div>
+      
+      <div><h4>Referenciada por</h4><ul><li><a href="#t-documentos"><code>documentos.plantilla_id</code></a></li></ul></div>
+    </div>
+  </article>
+  <article class="tabla" id="t-clausulas_documento">
+    <header class="th">
+      <div><h3><code>clausulas_documento</code></h3><p>Cláusulas reutilizables para armar documentos por artículos (p. ej. cambio de razón social en un acuerdo de accionistas).</p><div class="tags"><span class="tag">Auditada por trigger</span></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Catálogo "Cláusulas" en Administración. Al crear un documento se ofrecen las cláusulas de la familia de su plantilla, con sus propias variables.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Identificador autonumérico.<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">familia</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Familia de documento a la que aplica.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">codigo</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Código de la cláusula; único por familia.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">titulo</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Título.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">texto_plantilla</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Texto con {variables}.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">campos</code></td>
+      <td><code>jsonb</code></td>
+      <td class="c">Sí</td>
+      <td>Variables de la cláusula (JSON).</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">activo</code></td>
+      <td><code>boolean</code></td>
+      <td class="c">No</td>
+      <td>Si se ofrece.<div class="rg">Por defecto <code>true</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      <div><h4>Restricciones de tabla</h4><ul><li><code>UNIQUE (familia, codigo)</code></li></ul></div>
+      
+      <div><h4>Referenciada por</h4><ul><li><a href="#t-documento_clausulas"><code>documento_clausulas.clausula_id</code></a></li></ul></div>
+    </div>
+  </article>
+  <article class="tabla" id="t-documentos">
+    <header class="th">
+      <div><h3><code>documentos</code></h3><p>Documentos generados para un cliente (y, si corresponde, para un contrato), con su ciclo: borrador → en revisión → aprobado → enviado a firma → firmado.</p><div class="tags"><span class="tag">Seguridad por fila (RLS)</span><span class="tag">Auditada por trigger</span></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Módulo Documentos: alta desde plantilla (con partes y cláusulas); detalle con el texto completado y ciclo de vida borrador → en revisión → aprobado → enviado a firma → firmado (o rechazado / anulado). Aprobar registra revisado_por = app_usuario(); firmar registra firmado_en y genera codigo_verificacion. La BD impide aprobar o firmar sin revisor cuando la plantilla lo exige. url_archivo guarda la ubicación del Word generado desde el contrato (generados/&lt;año&gt;/&lt;folio&gt; &lt;tipo&gt;_vN.docx, relativa a la carpeta de contratos) y se descarga con GET /api/crm/documentos/:id/archivo; regenerar crea la versión siguiente mientras el documento esté en borrador o rechazado.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Identificador autonumérico.<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">cliente_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Cliente dueño del documento.<div class="rg">→ <a href="#t-clientes"><code>clientes.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">contrato_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">Sí</td>
+      <td>Contrato de origen (opcional; debe ser del mismo cliente).<div class="rg">→ <a href="#t-contratos"><code>contratos.id</code></a> (borrado en cascada)</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">servicio_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">Sí</td>
+      <td>Servicio vendido (p. ej. "Declaración jurada").<div class="rg">→ <a href="#t-servicios"><code>servicios.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">plantilla_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">Sí</td>
+      <td>Plantilla usada.<div class="rg">→ <a href="#t-plantillas_documento"><code>plantillas_documento.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">tipo</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Tipo de documento visible.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">lugar</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Lugar del documento.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">fecha_documento</code></td>
+      <td><code>date</code></td>
+      <td class="c">Sí</td>
+      <td>Fecha del documento.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">datos</code></td>
+      <td><code>jsonb</code></td>
+      <td class="c">Sí</td>
+      <td>Valores de las variables de la plantilla (JSON).</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">estado</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>borrador, en_revision, aprobado, enviado_firma, firmado, rechazado o anulado.<div class="rg">Por defecto <code>'borrador'</code><br>Regla: <code>estado IN ('borrador','en_revision','aprobado','enviado_firma', 'firmado','rechazado','anulado')</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">requiere_revision</code></td>
+      <td><code>boolean</code></td>
+      <td class="c">No</td>
+      <td>Copiado de la plantilla; obliga a tener revisor.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">revisado_por</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">Sí</td>
+      <td>Usuario que aprobó.<div class="rg">→ <a href="#t-usuarios"><code>usuarios.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">revisado_en</code></td>
+      <td><code>timestamptz</code></td>
+      <td class="c">Sí</td>
+      <td>Momento de la aprobación.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">ejecutivo_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">Sí</td>
+      <td>Ejecutivo que lo gestiona (visibilidad).<div class="rg">→ <a href="#t-usuarios"><code>usuarios.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">url_archivo</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Archivo generado.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">firma_id_externo</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Id en la plataforma de firma electrónica.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">firmado_en</code></td>
+      <td><code>timestamptz</code></td>
+      <td class="c">Sí</td>
+      <td>Momento de la firma.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">codigo_verificacion</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Código público para verificar el documento.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">generado_en</code></td>
+      <td><code>timestamptz</code></td>
+      <td class="c">No</td>
+      <td>Fecha de creación.<div class="rg">Por defecto <code>now()</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      <div><h4>Restricciones de tabla</h4><ul><li><code>FOREIGN KEY (contrato_id, cliente_id) REFERENCES contratos (id, cliente_id) ON DELETE CASCADE</code></li><li><code>CHECK (NOT requiere_revision OR estado NOT IN ('aprobado','enviado_firma','firmado') OR revisado_por IS NOT NULL)</code></li></ul></div>
+      <div><h4>Índices</h4><ul><li><code>ix_documentos_cliente</code>: <code>cliente_id</code></li><li><code>ix_documentos_contrato</code>: <code>contrato_id</code></li><li><code>ix_documentos_estado</code>: <code>estado</code> <span class="muted">WHERE estado IN ('en_revision','enviado_firma')</span></li></ul></div>
+      <div><h4>Referenciada por</h4><ul><li><a href="#t-documento_partes"><code>documento_partes.documento_id</code></a></li><li><a href="#t-documento_clausulas"><code>documento_clausulas.documento_id</code></a></li><li><a href="#t-pagos"><code>pagos.documento_id</code></a></li></ul></div>
+    </div>
+  </article>
+  <article class="tabla" id="t-documento_partes">
+    <header class="th">
+      <div><h3><code>documento_partes</code></h3><p>Personas que comparecen en un documento (arrendador, accionista, apoderado...).</p><div class="tags"><span class="tag">Seguridad por fila (RLS)</span><span class="tag">Auditada por trigger</span></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Sección "Partes que comparecen" del formulario de documento (persona natural o jurídica con su representante, RUT validado y acciones) y del detalle. El domicilio de cada parte (direccion_id) aún no se pide en el formulario.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Identificador autonumérico.<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">documento_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Documento (se borra con él).<div class="rg">→ <a href="#t-documentos"><code>documentos.id</code></a> (borrado en cascada)</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">orden</code></td>
+      <td><code>smallint</code></td>
+      <td class="c">No</td>
+      <td>Orden de aparición; único por documento.<div class="rg">Por defecto <code>1</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">rol</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Papel en el documento.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">tipo_persona</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>natural o juridica.<div class="rg">Regla: <code>tipo_persona IN ('natural','juridica')</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">nombre</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>Nombre o razón social.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">rut</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>RUT (validado si se indica).<div class="rg">Regla: <code>rut IS NULL OR fn_rut_valido(rut)</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">nacionalidad</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Nacionalidad.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">estado_civil</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Estado civil.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">profesion</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Profesión.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="">
+      <td><code class="col">direccion_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">Sí</td>
+      <td>Domicilio.<div class="rg">→ <a href="#t-direcciones"><code>direcciones.id</code></a></div></td>
+      <td class="c"><span class="dot no" title="Aún no se usa">○</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">email</code></td>
+      <td><code>citext</code></td>
+      <td class="c">Sí</td>
+      <td>Correo.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">telefono</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Teléfono.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">representante_nombre</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>Representante si es persona jurídica.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">representante_rut</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>RUT del representante (validado).<div class="rg">Regla: <code>representante_rut IS NULL OR fn_rut_valido(representante_rut)</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">cantidad_acciones</code></td>
+      <td><code>bigint</code></td>
+      <td class="c">Sí</td>
+      <td>Acciones (acuerdos de accionistas).<div class="rg">Regla: <code>cantidad_acciones &gt;= 0</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      <div><h4>Restricciones de tabla</h4><ul><li><code>UNIQUE (documento_id, orden)</code></li></ul></div>
+      
+      
+    </div>
+  </article>
+  <article class="tabla" id="t-documento_clausulas">
+    <header class="th">
+      <div><h3><code>documento_clausulas</code></h3><p>Cláusulas elegidas para un documento, en orden, con sus valores.</p><div class="tags"><span class="tag">Seguridad por fila (RLS)</span><span class="tag">Auditada por trigger</span></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Cláusulas marcadas al crear el documento, en orden y con sus valores; el detalle las muestra completadas a continuación del texto de la plantilla.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Identificador autonumérico.<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">documento_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Documento (se borra con él).<div class="rg">→ <a href="#t-documentos"><code>documentos.id</code></a> (borrado en cascada)</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">orden</code></td>
+      <td><code>smallint</code></td>
+      <td class="c">No</td>
+      <td>Posición; única por documento.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">clausula_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Cláusula del catálogo.<div class="rg">→ <a href="#t-clausulas_documento"><code>clausulas_documento.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">valores</code></td>
+      <td><code>jsonb</code></td>
+      <td class="c">Sí</td>
+      <td>Valores de las variables (JSON).</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      <div><h4>Restricciones de tabla</h4><ul><li><code>UNIQUE (documento_id, orden)</code></li></ul></div>
+      
+      
+    </div>
+  </article><h2 class="grupo-h" id="g-pagos">9. Pagos y alertas</h2>
+  <article class="tabla" id="t-pagos">
+    <header class="th">
+      <div><h3><code>pagos</code></h3><p>Pagos de un contrato o de un documento suelto (servicios instantáneos), con pasarela y cuotas (50/50 = cuota 1 de 2 y 2 de 2).</p><div class="tags"><span class="tag">Seguridad por fila (RLS)</span><span class="tag">Auditada por trigger</span></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Registrar pago desde el detalle de un contrato o de un documento (cuotas 50/50 incluidas; el índice único impide dos cuotas vigentes con el mismo número) y cambiar su estado (al marcar "pagado" se completa la fecha). Módulo Ventas y pagos, Tablero y saldo de v_saldo_contrato.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Identificador autonumérico.<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">contrato_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">Sí</td>
+      <td>Contrato pagado (o documento).<div class="rg">→ <a href="#t-contratos"><code>contratos.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">documento_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">Sí</td>
+      <td>Documento pagado (o contrato).<div class="rg">→ <a href="#t-documentos"><code>documentos.id</code></a></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">monto</code></td>
+      <td><code>numeric(12, 0)</code></td>
+      <td class="c">No</td>
+      <td>Monto en CLP (mayor que 0).<div class="rg">Regla: <code>monto &gt; 0</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">estado</code></td>
+      <td><code>text</code></td>
+      <td class="c">No</td>
+      <td>pendiente, pagado, rechazado o reembolsado.<div class="rg">Por defecto <code>'pendiente'</code><br>Regla: <code>estado IN ('pendiente','pagado','rechazado','reembolsado')</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">pasarela</code></td>
+      <td><code>text</code></td>
+      <td class="c">Sí</td>
+      <td>mercado_pago, transbank o transferencia.<div class="rg">Regla: <code>pasarela IN ('mercado_pago','transbank','transferencia')</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">fecha_pago</code></td>
+      <td><code>timestamptz</code></td>
+      <td class="c">Sí</td>
+      <td>Momento del pago.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">cuota</code></td>
+      <td><code>smallint</code></td>
+      <td class="c">No</td>
+      <td>Número de cuota.<div class="rg">Por defecto <code>1</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">total_cuotas</code></td>
+      <td><code>smallint</code></td>
+      <td class="c">No</td>
+      <td>Total de cuotas del pago.<div class="rg">Por defecto <code>1</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      <div><h4>Restricciones de tabla</h4><ul><li><code>CHECK (contrato_id IS NOT NULL OR documento_id IS NOT NULL)</code></li><li><code>CHECK (cuota BETWEEN 1 AND total_cuotas)</code></li></ul></div>
+      <div><h4>Índices</h4><ul><li><code>ux_pagos_cuota_contrato</code> (único): <code>contrato_id, cuota) WHERE contrato_id IS NOT NULL AND estado IN ('pendiente','pagado'</code></li><li><code>ux_pagos_cuota_documento</code> (único): <code>documento_id, cuota) WHERE documento_id IS NOT NULL AND estado IN ('pendiente','pagado'</code></li><li><code>ix_pagos_contrato</code>: <code>contrato_id</code></li><li><code>ix_pagos_documento</code>: <code>documento_id</code></li></ul></div>
+      
+    </div>
+  </article>
+  <article class="tabla" id="t-config_alertas">
+    <header class="th">
+      <div><h3><code>config_alertas</code></h3><p>Con cuántos días de anticipación se avisa un vencimiento. Viene cargada con 60, 30, 15 y 7.</p><div class="tags"></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Administración → "Plazos de alertas": agregar, activar o desactivar días de anticipación. El trigger los aplica a los contratos que se creen o cuyo vencimiento cambie desde ese momento.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">dias_anticipacion</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Días antes del vencimiento (clave).<div class="rg">Regla: <code>dias_anticipacion &gt; 0</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">activo</code></td>
+      <td><code>boolean</code></td>
+      <td class="c">No</td>
+      <td>Si se generan alertas para ese plazo.<div class="rg">Por defecto <code>true</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    
+  </article>
+  <article class="tabla" id="t-alertas">
+    <header class="th">
+      <div><h3><code>alertas</code></h3><p>Alertas de vencimiento por contrato, generadas automáticamente al crear un contrato o cambiar su vencimiento.</p><div class="tags"><span class="tag">Seguridad por fila (RLS)</span></div></div>
+      <span class="st ok">Conectada</span>
+    </header>
+    <div class="uso"><b>Uso en la app:</b> Detalle del contrato (lista de alertas y "Marcar enviado"), Renovaciones (avisos enviados y próxima alerta) y Tablero (vencimientos sin aviso). Observación: el trigger solo crea alertas con fecha futura, así que un contrato cargado cerca de su vencimiento puede quedar sin alertas.</div>
+    <div class="tw"><table class="cols">
+      <thead><tr><th>Columna</th><th>Tipo</th><th class="c">Nulo</th><th>Descripción y reglas</th><th class="c" title="Usada por la app hoy">App</th></tr></thead>
+      <tbody><tr class="usada">
+      <td><code class="col">id</code><span class="k pk">PK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Identificador autonumérico.<div class="rg">Autonumérico</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">contrato_id</code><span class="k fk">FK</span></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Contrato (se borra con él).<div class="rg">→ <a href="#t-contratos"><code>contratos.id</code></a> (borrado en cascada)</div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">fecha_alerta</code></td>
+      <td><code>date</code></td>
+      <td class="c">No</td>
+      <td>Fecha en que corresponde avisar.</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">dias_anticipacion</code></td>
+      <td><code>int</code></td>
+      <td class="c">No</td>
+      <td>Plazo de la alerta (60, 30, 15, 7).</td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr><tr class="usada">
+      <td><code class="col">notificado</code></td>
+      <td><code>boolean</code></td>
+      <td class="c">No</td>
+      <td>Si el aviso ya se envió.<div class="rg">Por defecto <code>false</code></div></td>
+      <td class="c"><span class="dot ok" title="La app la usa hoy">●</span></td>
+    </tr></tbody>
+    </table></div>
+    <div class="extra">
+      <div><h4>Restricciones de tabla</h4><ul><li><code>UNIQUE (contrato_id, dias_anticipacion)</code></li></ul></div>
+      <div><h4>Índices</h4><ul><li><code>ix_alertas_fecha</code>: <code>fecha_alerta</code> <span class="muted">WHERE NOT notificado</span></li></ul></div>
+      
+    </div>
+  </article>
+    </section>
+
+    <section id="vistas">
+      <div class="sec-h"><h2>Vistas</h2><p>Todas usan <code>security_invoker</code>: respetan los permisos y la seguridad por fila de quien consulta.</p></div>
+      <div class="panel tw"><table>
+        <thead><tr><th>Vista</th><th>Qué entrega</th><th>Uso en la app</th><th>Estado</th></tr></thead>
+        <tbody><tr><td><code>v_datos_contrato</code></td><td>Una fila por contrato con todos los datos para combinar el contrato en Word: emisora, representante, sucursal, cliente, condiciones, medio de pago y propietario. Fechas en texto largo y RUT con puntos.</td><td>Página "Ver / imprimir contrato" (crm-contrato.html, GET /api/crm/contratos/:id/impresion): comparecencia, objeto, vigencia, medio de pago y autorización del propietario.</td><td><span class="st ok">Conectada</span></td></tr><tr><td><code>v_datos_contrato_servicios</code></td><td>Una fila por servicio de cada contrato: tabla de precios y Anexo 1.</td><td>Tabla de precios y Anexo 1 del contrato impreso.</td><td><span class="st ok">Conectada</span></td></tr><tr><td><code>v_saldo_contrato</code></td><td>Total neto de servicios, monto pagado (pagos en estado pagado) y saldo pendiente por contrato.</td><td>Saldo en Renovaciones, en el listado y detalle de contratos y en la ficha del cliente.</td><td><span class="st ok">Conectada</span></td></tr></tbody>
+      </table></div>
+    </section>
+
+    <section id="funciones">
+      <div class="sec-h"><h2>Funciones</h2></div>
+      <div class="panel tw"><table>
+        <thead><tr><th>Función</th><th>Devuelve</th><th>Qué hace</th><th>Uso en la app</th><th>Estado</th></tr></thead>
+        <tbody><tr><td><code>fn_rut_valido(rut)</code></td><td><code>boolean</code></td><td>Valida formato 12345678-K y dígito verificador (módulo 11). Se usa en los CHECK de todos los RUT.</td><td>Respaldo de la validación de la app: src/negocio/validacion.js replica el mismo algoritmo para dar mensajes claros antes de llegar a la BD.</td><td><span class="st ok">Conectada</span></td></tr><tr><td><code>fn_rut_formato(rut)</code></td><td><code>text</code></td><td>77496835-0 → 77.496.835-0.</td><td>Clientes y Renovaciones muestran el RUT formateado.</td><td><span class="st ok">Conectada</span></td></tr><tr><td><code>fn_fecha_larga(fecha)</code></td><td><code>text</code></td><td>2026-10-02 → "02 DE OCTUBRE DE 2026".</td><td>Fechas en texto largo del contrato impreso (vía v_datos_contrato).</td><td><span class="st ok">Conectada</span></td></tr><tr><td><code>app_usuario()</code></td><td><code>int</code></td><td>Lee app.usuario_actual (lo fija la app en cada transacción).</td><td>conUsuario() lo fija; documentos.repositorio.js lo usa como revisado_por; triggers lo usan como autor en auditoría.</td><td><span class="st ok">Conectada</span></td></tr><tr><td><code>app_es_admin()</code></td><td><code>boolean</code></td><td>Verdadero si app.rol_actual es "admin" o "dueno".</td><td>Las políticas RLS lo consultan. La regla equivalente en la app está en src/negocio/roles.js.</td><td><span class="st ok">Conectada</span></td></tr><tr><td><code>fn_dir_calle / fn_dir_comuna / fn_dir_region(id)</code></td><td><code>text</code></td><td>Formatean una dirección para el contrato.</td><td>Direcciones del contrato impreso (v_datos_contrato) y texto de las direcciones en Administración.</td><td><span class="st ok">Conectada</span></td></tr></tbody>
+      </table></div>
+    </section>
+
+    <section id="triggers">
+      <div class="sec-h"><h2>Automatizaciones (triggers)</h2><p>Reglas que la base de datos ejecuta sola. La app no las reprograma: solo inserta o actualiza y deja que PostgreSQL complete folio, vencimiento, precios, alertas y auditoría.</p></div>
+      <div class="panel tw"><table>
+        <thead><tr><th>Trigger</th><th>Tabla</th><th>Cuándo</th><th>Qué hace</th></tr></thead>
+        <tbody><tr><td><code>trg_defaults_contrato_servicio</code></td><td>contrato_servicios</td><td>BEFORE INSERT</td><td>Copia precio, ciclo y descripción desde servicios si no se indican.</td></tr><tr><td><code>trg_defaults_contrato</code></td><td>contratos</td><td>BEFORE INSERT</td><td>fecha_vencimiento = inicio + duración − 1 día si viene vacía.</td></tr><tr><td><code>trg_asignar_folio</code></td><td>contratos</td><td>BEFORE INSERT</td><td>Asigna folio PREFIJO-NNNN-AÑO usando folios_correlativos; si viene uno manual, valida el prefijo y avanza el contador.</td></tr><tr><td><code>trg_generar_alertas</code></td><td>contratos</td><td>AFTER INSERT / UPDATE OF fecha_vencimiento</td><td>Crea las alertas según config_alertas (solo fechas futuras) y borra las no notificadas al cambiar el vencimiento.</td></tr><tr><td><code>trg_defaults_documento</code></td><td>documentos</td><td>BEFORE INSERT</td><td>Copia requiere_revision desde la plantilla.</td></tr><tr><td><code>trg_auditoria_&lt;tabla&gt;</code></td><td>16 tablas</td><td>AFTER INSERT / UPDATE / DELETE</td><td>Registra la acción en registros_actividad con valores anteriores y nuevos, y app_usuario() como autor.</td></tr><tr><td><code>trg_auditoria_inmutable / _no_truncate</code></td><td>registros_actividad</td><td>BEFORE UPDATE / DELETE / TRUNCATE</td><td>Impide alterar o borrar la bitácora.</td></tr></tbody>
+      </table></div>
+    </section>
+
+    <footer>Easy Office · Proyecto Capstone · Diccionario generado automáticamente desde <code>easyoffice_er.sql</code>; las descripciones de uso reflejan el código de <code>EasyOfficeWIP/src</code>.</footer>
+  </main>
+</div>
+</body>
+</html>

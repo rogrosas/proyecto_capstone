@@ -35,8 +35,6 @@ const SITIO = {
   ]
 };
 
-// Cliente de demostración que se muestra en /mi-cuenta
-const CLIENTE_DEMO = { nombre: 'Camila Andrea Torres Reyes', iniciales: 'CT', rut: '18.204.331-5' };
 
 function logoHTML(sub) {
   return `
@@ -52,10 +50,11 @@ function logoHTML(sub) {
 function derechaHTML(tipo) {
   if (tipo === 'contratar') return '<div class="session" id="sess"></div>'; // lo rellena contratar.js
   if (tipo === 'cuenta') {
+    // Lo completa cuenta.js con el cliente de la sesión
     return `
       <div class="userbox" id="userbox" hidden>
-        <div class="avatar">${CLIENTE_DEMO.iniciales}</div>
-        <div><div class="un">${CLIENTE_DEMO.nombre}</div><div class="ur">RUT ${CLIENTE_DEMO.rut} · correo verificado</div></div>
+        <div class="avatar" id="cuAvatar"></div>
+        <div><div class="un" id="cuNombre"></div><div class="ur" id="cuDetalle"></div></div>
         <button class="logout" data-action="logout">Salir</button>
       </div>
       <div class="userbox" id="userboxOut"><span style="color:var(--muted);font-size:12.5px;">Zona privada de clientes</span></div>`;

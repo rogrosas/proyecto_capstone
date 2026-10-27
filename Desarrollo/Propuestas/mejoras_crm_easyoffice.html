@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mejoras al CRM · Easy Office</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&amp;family=Albert+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<style>
+  :root{
+    --green:#24D356; --green-dark:#18B644; --green-tint:#EAF9F0; --green-line:#BEEBCE;
+    --ink:#282828; --text:#333; --muted:#69727D; --line:#E4E7E9; --bg:#F5F7F7; --white:#fff;
+    --red:#D8402F; --red-tint:#FCEBE8; --amber:#B8790F; --amber-tint:#FBF0DC;
+    --blue:#2E6FCE; --blue-tint:#E7EFFB; --gray-tint:#EDEFF0;
+    --shadow:0 5px 15px rgba(0,0,0,.08);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Albert Sans',sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3{font-family:'Lora',serif;color:var(--ink);margin:0;}
+  a{color:var(--green-dark);}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px;}
+
+  /* Portada */
+  .top{background:var(--ink);color:#fff;padding:44px 0 40px;}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:26px;}
+  .brand .lw{font-weight:700;letter-spacing:.6px;font-size:14px;}
+  .brand .ls{font-size:9.5px;letter-spacing:2.2px;color:#8E969D;text-transform:uppercase;margin-top:3px;}
+  .top h1{color:#fff;font-size:36px;line-height:1.15;max-width:760px;}
+  .top p{color:#C2C9CF;max-width:720px;margin:14px 0 0;}
+  .meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px;}
+  .meta span{border:1px solid rgba(255,255,255,.25);border-radius:3px;padding:5px 12px;font-size:12.5px;color:#E3E6E8;}
+
+  section{padding:40px 0 8px;}
+  .sh{margin-bottom:18px;}
+  .sh h2{font-size:24px;}
+  .sh p{color:var(--muted);margin:6px 0 0;max-width:780px;}
+  .panel{background:#fff;box-shadow:var(--shadow);padding:22px;}
+
+  /* KPIs */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:-30px;position:relative;}
+  .kpi{background:#fff;box-shadow:var(--shadow);padding:16px 18px;border-top:3px solid var(--green);}
+  .kpi.red{border-top-color:var(--red);} .kpi.amb{border-top-color:var(--amber);} .kpi.blu{border-top-color:var(--blue);}
+  .kpi .l{font-size:12px;color:var(--muted);}
+  .kpi .v{font-family:'Lora',serif;font-size:30px;font-weight:700;color:var(--ink);line-height:1.1;margin-top:4px;}
+  .kpi .d{font-size:12px;color:var(--muted);margin-top:4px;}
+
+  /* Escalas */
+  .scales{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  .scale{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px dashed var(--line);font-size:13.5px;}
+  .scale:last-child{border-bottom:none;}
+  .scale b{color:var(--ink);}
+  .pill{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;letter-spacing:.2px;display:inline-block;}
+  .n1{background:var(--red-tint);color:var(--red);}
+  .n2{background:var(--amber-tint);color:var(--amber);}
+  .n3{background:var(--blue-tint);color:var(--blue);}
+  .n4{background:var(--gray-tint);color:#5B646C;}
+  .c1{background:var(--green-tint);color:var(--green-dark);}
+  .c2{background:var(--amber-tint);color:var(--amber);}
+  .c3{background:var(--red-tint);color:var(--red);}
+  .scale .pill{min-width:84px;text-align:center;}
+
+  /* Matriz */
+  .matrix{display:grid;grid-template-columns:110px repeat(3,1fr);gap:6px;}
+  .mx-h{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;text-align:center;padding:6px;}
+  .mx-l{font-size:12.5px;font-weight:700;display:flex;align-items:center;}
+  .cell{min-height:92px;padding:10px;border-radius:3px;display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start;position:relative;}
+  .cell .tag{position:absolute;right:8px;bottom:6px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;opacity:.75;}
+  .q-win{background:#DDF6E5;} .q-win .tag{color:var(--green-dark);}
+  .q-key{background:#FFF1D6;} .q-key .tag{color:var(--amber);}
+  .q-fill{background:#EEF1F3;} .q-fill .tag{color:#5B646C;}
+  .q-later{background:#F8ECEA;} .q-later .tag{color:var(--red);}
+  .chip{background:#fff;border:1px solid var(--line);border-radius:3px;padding:3px 8px;font-size:12px;font-weight:600;color:var(--ink);cursor:pointer;font-family:inherit;}
+  .chip:hover{border-color:var(--green);color:var(--green-dark);}
+  .mx-axis{grid-column:2/-1;text-align:center;font-size:12px;color:var(--muted);margin-top:4px;}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:12.5px;color:var(--muted);}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:6px;vertical-align:-1px;}
+
+  /* Fases */
+  .phases{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+  .phase{background:#fff;box-shadow:var(--shadow);display:flex;flex-direction:column;}
+  .phase-h{background:var(--ink);color:#fff;padding:14px 18px;}
+  .phase-h .k{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--green);}
+  .phase-h h3{color:#fff;font-size:17px;margin-top:4px;}
+  .phase-h .s{font-size:12.5px;color:#B9BFC5;margin-top:4px;}
+  .phase ul{list-style:none;margin:0;padding:12px 18px;flex:1;}
+  .phase li{font-size:13px;padding:7px 0 7px 18px;border-bottom:1px dashed var(--line);position:relative;}
+  .phase li:last-child{border-bottom:none;}
+  .phase li:before{content:"";position:absolute;left:0;top:14px;width:7px;height:7px;border-radius:50%;background:var(--green);}
+  .phase li span{color:var(--muted);font-size:11.5px;}
+  .phase-f{padding:12px 18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);background:#FAFBFB;}
+  .phase-f b{color:var(--ink);}
+
+  /* Brechas */
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{text-align:left;font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:9px 10px;border-bottom:2px solid var(--line);white-space:nowrap;}
+  td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  code,.mono{font-family:'IBM Plex Mono',monospace;font-size:12px;background:#F1F3F4;padding:1px 5px;border-radius:3px;}
+  .tbl-wrap{overflow-x:auto;}
+
+  /* Catálogo */
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+  .toolbar input,.toolbar select{border:1px solid var(--line);border-radius:3px;padding:9px 12px;font-family:inherit;font-size:13.5px;background:#fff;color:var(--text);}
+  .toolbar input{flex:1;min-width:220px;}
+  .toolbar input:focus,.toolbar select:focus{outline:none;border-color:var(--green);}
+  .count{font-size:12.5px;color:var(--muted);margin-left:auto;}
+  .item{background:#fff;box-shadow:var(--shadow);margin-bottom:10px;border-left:4px solid var(--line);}
+  .item.nv1{border-left-color:var(--red);} .item.nv2{border-left-color:var(--amber);}
+  .item.nv3{border-left-color:var(--blue);} .item.nv4{border-left-color:#B4BBC1;}
+  .item summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:44px 1fr auto;gap:14px;align-items:center;padding:14px 18px;}
+  .item summary::-webkit-details-marker{display:none;}
+  .item .num{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--muted);}
+  .item .tt{font-weight:600;color:var(--ink);font-size:14.5px;}
+  .item .ar{font-size:12px;color:var(--muted);margin-top:2px;}
+  .item .pills{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+  .item .hrs{font-size:12px;color:var(--muted);white-space:nowrap;}
+  .item[open] summary{border-bottom:1px solid var(--line);}
+  .item .body{padding:16px 18px 18px 76px;display:grid;grid-template-columns:1fr 1fr;gap:16px 28px;font-size:13.5px;}
+  .item .body h4{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;font-family:'Albert Sans',sans-serif;}
+  .item .body p{margin:0;}
+  .item .body .full{grid-column:1/-1;}
+  .flag{display:inline-block;font-size:10.5px;font-weight:700;background:var(--blue-tint);color:var(--blue);border-radius:20px;padding:2px 8px;margin-left:6px;vertical-align:1px;}
+  .flash{animation:flash 1.4s ease;}
+  @keyframes flash{0%,40%{box-shadow:0 0 0 3px var(--green);}100%{box-shadow:var(--shadow);}}
+
+  .note{font-size:13px;color:var(--muted);padding:14px 16px;background:#fff;border-left:3px solid var(--amber);box-shadow:var(--shadow);line-height:1.6;}
+  .note b{color:var(--ink);}
+  .assump{columns:2;column-gap:32px;font-size:13.5px;}
+  .assump li{margin-bottom:8px;break-inside:avoid;}
+  footer{padding:36px 0 50px;color:var(--muted);font-size:12.5px;}
+
+  @media(max-width:900px){
+    .kpis{grid-template-columns:1fr 1fr;}
+    .scales,.phases{grid-template-columns:1fr;}
+    .assump{columns:1;}
+    .item .body{grid-template-columns:1fr;padding-left:18px;}
+    .matrix{grid-template-columns:78px repeat(3,1fr);}
+    .top h1{font-size:28px;}
+  }
+  @media(max-width:600px){
+    .item summary{grid-template-columns:34px 1fr;}
+    .item .pills{grid-column:1/-1;justify-content:flex-start;}
+    .cell{min-height:70px;}
+  }
+  @media print{
+    body{background:#fff;font-size:12px;}
+    .top{padding:20px 0;}
+    .toolbar,.no-print{display:none !important;}
+    .item{box-shadow:none;border:1px solid var(--line);break-inside:avoid;}
+    .panel,.phase,.kpi{box-shadow:none;border:1px solid var(--line);}
+    section{break-inside:avoid-page;}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <svg width="34" height="20" viewBox="0 0 34 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7.5" stroke="#24D356" stroke-width="3"></circle><circle cx="23" cy="10" r="7.5" stroke="#24D356" stroke-width="3"></circle></svg>
+      <div><div class="lw">EASY OFFICE</div><div class="ls">CRM operativo · propuesta</div></div>
+    </div>
+    <h1>Mejoras posibles al CRM, ordenadas por necesidad y por costo</h1>
+    <p>Catálogo de mejoras para el CRM interno de Easy Office, contrastado con el mockup <code style="background:rgba(255,255,255,.12);color:#fff">crm_easyoffice.html</code> y con el modelo de datos <code style="background:rgba(255,255,255,.12);color:#fff">easyoffice_er.sql</code>. Cada mejora indica qué problema resuelve, cuánto esfuerzo de desarrollo requiere y si implica pagar algún servicio externo.</p>
+    <div class="meta">
+      <span>Proyecto Capstone · Easy Office</span>
+      <span>Octubre 2026</span>
+      <span>Estimaciones referenciales</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="kpis" id="kpis">
+    <div class="kpi"><div class="l">Mejoras identificadas</div><div class="v">41</div><div class="d">en 6 áreas</div></div>
+    <div class="kpi red"><div class="l">Críticas</div><div class="v">10</div><div class="d">161–246 h de desarrollo</div></div>
+    <div class="kpi"><div class="l">Ganancias rápidas</div><div class="v">11</div><div class="d">necesidad alta o crítica y costo bajo</div></div>
+    <div class="kpi blu"><div class="l">Brechas mockup ↔ BD</div><div class="v">8</div><div class="d">8 mejoras las resuelven</div></div></div>
+
+  <!-- ===== Cómo leer ===== -->
+  <section>
+    <div class="sh">
+      <h2>Cómo leer este documento</h2>
+      <p>Cada mejora tiene dos clasificaciones independientes. La <b>necesidad</b> responde a qué pasa si no se hace; el <b>costo</b> suma horas de desarrollo y gasto mensual en servicios de terceros.</p>
+    </div>
+    <div class="scales">
+      <div class="panel">
+        <h3 style="font-size:16px;margin-bottom:6px;">Necesidad</h3>
+        <div class="scale"><span class="pill n1">Crítica</span><div><b>Sin esto el CRM no puede operar</b> o expone a la empresa a un riesgo legal, de seguridad o de pérdida de datos.</div></div>
+        <div class="scale"><span class="pill n2">Alta</span><div><b>Ahorra trabajo diario o evita perder ingresos</b> (renovaciones, cobros). Se nota desde el primer mes.</div></div>
+        <div class="scale"><span class="pill n3">Media</span><div><b>Mejora la eficiencia o la información</b> para decidir, pero hoy existe una forma manual de hacerlo.</div></div>
+        <div class="scale"><span class="pill n4">Deseable</span><div><b>Valor agregado o comodidad.</b> Conviene cuando lo anterior ya está funcionando.</div></div>
+      </div>
+      <div class="panel">
+        <h3 style="font-size:16px;margin-bottom:6px;">Costo</h3>
+        <div class="scale"><span class="pill c1">Bajo</span><div><b>Hasta ~20 horas</b> de desarrollo y <b>sin costo mensual</b> (herramientas gratuitas o planes gratis).</div></div>
+        <div class="scale"><span class="pill c2">Medio</span><div><b>20 a 60 horas</b>, o un servicio externo de bajo costo mensual (del orden de USD 5–30).</div></div>
+        <div class="scale"><span class="pill c3">Alto</span><div><b>Más de 60 horas</b>, o un servicio pagado relevante, cobro por uso o compra de equipos.</div></div>
+        <div class="scale" style="color:var(--muted);font-size:12.5px;"><div>Las horas suponen un desarrollador con experiencia intermedia en Node.js y PostgreSQL. Los precios de terceros son referenciales: ver la sección <a href="#supuestos">Supuestos</a>.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Matriz ===== -->
+  <section>
+    <div class="sh">
+      <h2>Matriz necesidad × costo</h2>
+      <p>La esquina superior izquierda concentra lo que conviene hacer primero: mucha necesidad, poco costo. Haga clic en un número para ver el detalle de la mejora.</p>
+    </div>
+    <div class="panel">
+      <div class="matrix" id="matrix"><div></div><div class="mx-h">Costo bajo</div><div class="mx-h">Costo medio</div><div class="mx-h">Costo alto</div><div class="mx-l"><span class="pill n1">Crítica</span></div><div class="cell q-win"><button class="chip" title="Inicio de sesión real con sesiones seguras" data-go="1">1</button><button class="chip" title="Segundo factor (TOTP) obligatorio para el personal" data-go="2">2</button><button class="chip" title="Respaldos automáticos diarios con prueba de restauración" data-go="4">4</button><button class="chip" title="HTTPS, cabeceras de seguridad y límite de peticiones" data-go="5">5</button><span class="tag">Hacer ya</span></div><div class="cell q-key"><button class="chip" title="Cumplimiento Ley 21.719: consentimiento, finalidad y derechos del titular" data-go="6">6</button><button class="chip" title="Módulo de correspondencia en la base de datos" data-go="8">8</button><button class="chip" title="Migración de la planilla Excel actual" data-go="14">14</button><button class="chip" title="Envío automático de alertas de vencimiento con link de pago" data-go="19">19</button><button class="chip" title="Conciliación automática de pagos (Webpay y Mercado Pago)" data-go="20">20</button><button class="chip" title="Hosting de producción con base de datos administrada" data-go="39">39</button><span class="tag">Planificar</span></div><div class="cell q-key"><span class="tag">Planificar</span></div><div class="mx-l"><span class="pill n2">Alta</span></div><div class="cell q-win"><button class="chip" title="Registrar intentos fallidos, accesos denegados e IP en auditoría" data-go="3">3</button><button class="chip" title="Revisión de permisos por rol (matriz de permisos real)" data-go="7">7</button><button class="chip" title="Aviso automático al cliente cuando llega correspondencia" data-go="9">9</button><button class="chip" title="Búsqueda global por RUT, nombre o folio" data-go="13">13</button><button class="chip" title="Captura de prospectos desde el sitio web" data-go="16">16</button><button class="chip" title="Exportar a Excel/CSV" data-go="33">33</button><button class="chip" title="Monitoreo de errores y disponibilidad" data-go="37">37</button><span class="tag">Hacer ya</span></div><div class="cell q-key"><button class="chip" title="Bitácora de gestiones por cliente (llamadas, correos, notas)" data-go="10">10</button><button class="chip" title="Bandeja " requiere="" acción="" hoy"="" con="" tareas="" por="" ejecutivo"="" data-go="11">11</button><button class="chip" title="Ficha 360° del cliente" data-go="12">12</button><button class="chip" title="Conciliación de transferencias por cartola" data-go="21">21</button><button class="chip" title="Saldo de firmas por cliente (bolsas y planes)" data-go="26">26</button><button class="chip" title="Cola de revisión con vista previa y aprobación en un clic" data-go="27">27</button><button class="chip" title="Dashboard con datos reales" data-go="32">32</button><span class="tag">Planificar</span></div><div class="cell q-key"><button class="chip" title="Emisión de boleta o factura electrónica integrada" data-go="22">22</button><button class="chip" title="Integración con la plataforma de firma electrónica avanzada" data-go="29">29</button><span class="tag">Planificar</span></div><div class="mx-l"><span class="pill n3">Media</span></div><div class="cell q-fill"><button class="chip" title="Asignación automática de casos por carga" data-go="15">15</button><button class="chip" title="Recuperación de carros abandonados" data-go="24">24</button><button class="chip" title="Versionado de documentos" data-go="28">28</button><button class="chip" title="Página pública de verificación por código" data-go="30">30</button><button class="chip" title="Indicador de cumplimiento de plazos de correspondencia" data-go="34">34</button><button class="chip" title="Ambiente de pruebas separado" data-go="38">38</button><span class="tag">Relleno</span></div><div class="cell q-later"><button class="chip" title="Registro de correspondencia desde el celular (foto)" data-go="17">17</button><button class="chip" title="Avisos por WhatsApp" data-go="25">25</button><button class="chip" title="Embudo de ventas en línea real" data-go="35">35</button><span class="tag">Postergar</span></div><div class="cell q-later"><button class="chip" title="Cobro recurrente con tarjeta guardada (suscripciones)" data-go="23">23</button><span class="tag">Postergar</span></div><div class="mx-l"><span class="pill n4">Deseable</span></div><div class="cell q-fill"><button class="chip" title="Integración con la agenda (Calendly)" data-go="41">41</button><span class="tag">Relleno</span></div><div class="cell q-later"><button class="chip" title="Retención y bajas por cohorte" data-go="36">36</button><button class="chip" title="Notificaciones internas en tiempo real" data-go="40">40</button><span class="tag">Postergar</span></div><div class="cell q-later"><button class="chip" title="Lectura automática (OCR) del destinatario y remitente" data-go="18">18</button><button class="chip" title="Editor de plantillas y cláusulas para el personal" data-go="31">31</button><span class="tag">Postergar</span></div><div class="mx-axis">← más barato · más caro →</div></div>
+      <div class="legend">
+        <span><i style="background:#DDF6E5"></i>Hacer ya (ganancia rápida)</span>
+        <span><i style="background:#FFF1D6"></i>Proyecto clave: planificar</span>
+        <span><i style="background:#EEF1F3"></i>Relleno: cuando haya tiempo</span>
+        <span><i style="background:#F8ECEA"></i>Postergar o reevaluar</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Hoja de ruta ===== -->
+  <section>
+    <div class="sh">
+      <h2>Hoja de ruta recomendada</h2>
+      <p>Orden sugerido combinando necesidad, costo y dependencias entre mejoras (por ejemplo, las alertas de correspondencia necesitan primero la tabla de correspondencia).</p>
+    </div>
+    <div class="phases" id="phases">
+      <div class="phase">
+        <div class="phase-h"><div class="k">FASE 1</div><h3>Antes de abrir el CRM</h3><div class="s">Seguridad, datos y lo mínimo para operar y cobrar.</div></div>
+        <ul><li>1. Inicio de sesión real con sesiones seguras <span>· Crítica · 12–20 h</span></li><li>2. Segundo factor (TOTP) obligatorio para el personal <span>· Crítica · 8–12 h</span></li><li>4. Respaldos automáticos diarios con prueba de restauración <span>· Crítica · 4–8 h</span></li><li>5. HTTPS, cabeceras de seguridad y límite de peticiones <span>· Crítica · 3–6 h</span></li><li>6. Cumplimiento Ley 21.719: consentimiento, finalidad y derechos del titular <span>· Crítica · 24–40 h</span></li><li>8. Módulo de correspondencia en la base de datos <span>· Crítica · 30–40 h</span></li><li>14. Migración de la planilla Excel actual <span>· Crítica · 24–40 h</span></li><li>19. Envío automático de alertas de vencimiento con link de pago <span>· Crítica · 20–30 h</span></li><li>20. Conciliación automática de pagos (Webpay y Mercado Pago) <span>· Crítica · 30–40 h</span></li><li>39. Hosting de producción con base de datos administrada <span>· Crítica · 6–10 h</span></li><li>3. Registrar intentos fallidos, accesos denegados e IP en auditoría <span>· Alta · 6–10 h</span></li><li>7. Revisión de permisos por rol (matriz de permisos real) <span>· Alta · 8–12 h</span></li><li>13. Búsqueda global por RUT, nombre o folio <span>· Alta · 6–10 h</span></li><li>33. Exportar a Excel/CSV <span>· Alta · 6–10 h</span></li><li>37. Monitoreo de errores y disponibilidad <span>· Alta · 2–4 h</span></li><li>26. Saldo de firmas por cliente (bolsas y planes) <span>· Alta · 16–24 h</span></li><li>38. Ambiente de pruebas separado <span>· Media · 4–8 h</span></li></ul>
+        <div class="phase-f"><b>17 mejoras · 209–324 h</b><br>6 con algún costo de terceros (mensual o por uso).</div>
+      </div>
+      <div class="phase">
+        <div class="phase-h"><div class="k">FASE 2</div><h3>Primeros 3 meses</h3><div class="s">Ahorro de trabajo diario y más ingresos por renovación.</div></div>
+        <ul><li>9. Aviso automático al cliente cuando llega correspondencia <span>· Alta · 8–12 h</span></li><li>16. Captura de prospectos desde el sitio web <span>· Alta · 10–14 h</span></li><li>10. Bitácora de gestiones por cliente (llamadas, correos, notas) <span>· Alta · 20–28 h</span></li><li>11. Bandeja "Requiere acción hoy" con tareas por ejecutivo <span>· Alta · 16–24 h</span></li><li>12. Ficha 360° del cliente <span>· Alta · 24–32 h</span></li><li>21. Conciliación de transferencias por cartola <span>· Alta · 20–28 h</span></li><li>27. Cola de revisión con vista previa y aprobación en un clic <span>· Alta · 16–24 h</span></li><li>32. Dashboard con datos reales <span>· Alta · 20–30 h</span></li><li>22. Emisión de boleta o factura electrónica integrada <span>· Alta · 30–50 h</span></li><li>29. Integración con la plataforma de firma electrónica avanzada <span>· Alta · 40–60 h</span></li><li>15. Asignación automática de casos por carga <span>· Media · 10–16 h</span></li><li>24. Recuperación de carros abandonados <span>· Media · 10–14 h</span></li><li>28. Versionado de documentos <span>· Media · 10–16 h</span></li><li>30. Página pública de verificación por código <span>· Media · 8–12 h</span></li><li>34. Indicador de cumplimiento de plazos de correspondencia <span>· Media · 6–10 h</span></li></ul>
+        <div class="phase-f"><b>15 mejoras · 248–370 h</b><br>4 con algún costo de terceros (mensual o por uso).</div>
+      </div>
+      <div class="phase">
+        <div class="phase-h"><div class="k">FASE 3</div><h3>Después</h3><div class="s">Automatización avanzada y comodidad.</div></div>
+        <ul><li>17. Registro de correspondencia desde el celular (foto) <span>· Media · 16–24 h</span></li><li>25. Avisos por WhatsApp <span>· Media · 16–24 h</span></li><li>35. Embudo de ventas en línea real <span>· Media · 16–24 h</span></li><li>23. Cobro recurrente con tarjeta guardada (suscripciones) <span>· Media · 40–60 h</span></li><li>41. Integración con la agenda (Calendly) <span>· Deseable · 8–12 h</span></li><li>36. Retención y bajas por cohorte <span>· Deseable · 16–24 h</span></li><li>40. Notificaciones internas en tiempo real <span>· Deseable · 16–24 h</span></li><li>18. Lectura automática (OCR) del destinatario y remitente <span>· Deseable · 40–60 h</span></li><li>31. Editor de plantillas y cláusulas para el personal <span>· Deseable · 40–70 h</span></li></ul>
+        <div class="phase-f"><b>9 mejoras · 208–322 h</b><br>3 con algún costo de terceros (mensual o por uso).</div>
+      </div></div>
+  </section>
+
+  <!-- ===== Brechas ===== -->
+  <section>
+    <div class="sh">
+      <h2>Brechas entre el mockup y la base de datos</h2>
+      <p>Pantallas o datos que el mockup del CRM muestra, pero que el modelo <code>easyoffice_er.sql</code> todavía no puede guardar. Conviene resolverlas antes de programar las pantallas, porque cambian tablas.</p>
+    </div>
+    <div class="panel tbl-wrap">
+      <table>
+        <thead><tr><th>Lo que muestra el mockup</th><th>Qué falta en la BD</th><th>Cambio propuesto</th><th>Mejora</th></tr></thead>
+        <tbody id="gaps"><tr><td>Sección "Correspondencia y oficina de partes"</td><td>No existe tabla de correspondencia</td><td>Tabla <code>correspondencia</code> con plazos y estados</td><td><button class="chip" data-go="8">8</button> Módulo de correspondencia en la base de datos</td></tr><tr><td>"Queda 1 firma" y recompra de bolsas</td><td>No hay saldo ni consumo de firmas</td><td>Tabla <code>movimientos_firmas</code> + vista de saldo</td><td><button class="chip" data-go="26">26</button> Saldo de firmas por cliente (bolsas y planes)</td></tr><tr><td>Columna "Gestión": "2 correos, sin respuesta"</td><td>No se registran gestiones de cobranza</td><td>Tabla <code>gestiones</code> con próxima acción</td><td><button class="chip" data-go="10">10</button> Bitácora de gestiones por cliente (llamadas, correos, notas)</td></tr><tr><td>Auditoría con IP e "intento denegado"</td><td><code>registros_actividad</code> sin IP; acción no admite denegados</td><td>Columnas <code>ip</code>, <code>user_agent</code>; ampliar CHECK</td><td><button class="chip" data-go="3">3</button> Registrar intentos fallidos, accesos denegados e IP en auditoría</td></tr><tr><td>Código de verificación de 6 dígitos (2FA)</td><td><code>usuarios</code> sin secreto TOTP</td><td>Columnas <code>totp_secreto</code>, <code>totp_activo</code></td><td><button class="chip" data-go="2">2</button> Segundo factor (TOTP) obligatorio para el personal</td></tr><tr><td>Aprobación "con versión del documento"</td><td>Una sola <code>url_archivo</code> por documento</td><td>Tabla <code>documento_versiones</code></td><td><button class="chip" data-go="28">28</button> Versionado de documentos</td></tr><tr><td>Conciliación automática con Webpay / Mercado Pago</td><td><code>pagos</code> sin id de transacción ni respuesta</td><td>Columnas <code>id_transaccion</code>, <code>respuesta_pasarela</code></td><td><button class="chip" data-go="20">20</button> Conciliación automática de pagos (Webpay y Mercado Pago)</td></tr><tr><td>Embudo y carros abandonados</td><td>No se guardan carros ni prospectos</td><td>Tablas <code>carros</code> y <code>prospectos</code></td><td><button class="chip" data-go="24">24</button> Recuperación de carros abandonados</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== Catálogo ===== -->
+  <section>
+    <div class="sh">
+      <h2>Catálogo completo de mejoras</h2>
+      <p>Filtre por área, necesidad o costo. Cada fila se despliega con el problema, la propuesta, el impacto en la base de datos y el costo externo.</p>
+    </div>
+    <div class="toolbar no-print">
+      <input id="q" placeholder="Buscar mejora…" aria-label="Buscar mejora">
+      <select id="fArea" aria-label="Filtrar por área"><option value="">Todas las áreas</option><option value="seg">Seguridad y cumplimiento</option><option value="ope">Operación diaria</option><option value="cob">Cobranza y renovaciones</option><option value="doc">Documentos y firmas</option><option value="rep">Reportes y gestión</option><option value="pla">Plataforma y experiencia</option></select>
+      <select id="fNec" aria-label="Filtrar por necesidad"><option value="">Toda necesidad</option><option value="1">Crítica</option><option value="2">Alta</option><option value="3">Media</option><option value="4">Deseable</option></select>
+      <select id="fCost" aria-label="Filtrar por costo"><option value="">Todo costo</option><option value="1">Bajo</option><option value="2">Medio</option><option value="3">Alto</option></select>
+      <select id="fOrd" aria-label="Ordenar"><option value="prio">Orden: prioridad</option><option value="cost">Orden: costo</option><option value="area">Orden: área</option><option value="num">Orden: número</option></select>
+      <span class="count" id="count">41 de 41 mejoras</span>
+    </div>
+    <div id="list">
+    <details class="item nv1" id="m5">
+      <summary>
+        <span class="num">#5</span>
+        <div><div class="tt">HTTPS, cabeceras de seguridad y límite de peticiones</div><div class="ar">Seguridad y cumplimiento · Fase 1</div></div>
+        <div class="pills">
+          <span class="pill n1">Crítica</span>
+          <span class="pill c1">Costo bajo</span>
+          <span class="hrs">3–6 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>Sin HTTPS las contraseñas y datos viajan en texto plano; sin límite de peticiones el login queda expuesto a ataques de fuerza bruta.</p></div>
+        <div><h4>Propuesta</h4><p>Forzar HTTPS, cabeceras seguras (CSP, HSTS), límite de intentos por IP en login y API, y protección CSRF en formularios.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>No requiere cambios en la base de datos.</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo (Let's Encrypt / certificado del hosting, helmet, express-rate-limit)</p></div>
+      </div>
+    </details>
+    <details class="item nv1" id="m4">
+      <summary>
+        <span class="num">#4</span>
+        <div><div class="tt">Respaldos automáticos diarios con prueba de restauración</div><div class="ar">Seguridad y cumplimiento · Fase 1</div></div>
+        <div class="pills">
+          <span class="pill n1">Crítica</span>
+          <span class="pill c1">Costo bajo</span>
+          <span class="hrs">4–8 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>Toda la operación (folios, contratos, auditoría) pasa a depender de una sola base de datos. Perderla equivale a perder la cartera de clientes.</p></div>
+        <div><h4>Propuesta</h4><p>Respaldo diario automático (pg_dump o el del proveedor), retención de 30 días, copia fuera del servidor y una restauración de prueba al mes documentada.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>No requiere cambios en la base de datos.</p></div>
+        <div><h4>Costo de terceros</h4><p>USD 0–5/mes (incluido en BD administrada o almacenamiento externo)</p></div>
+      </div>
+    </details>
+    <details class="item nv1" id="m2">
+      <summary>
+        <span class="num">#2</span>
+        <div><div class="tt">Segundo factor (TOTP) obligatorio para el personal<span class="flag">brecha del mockup</span></div><div class="ar">Seguridad y cumplimiento · Fase 1</div></div>
+        <div class="pills">
+          <span class="pill n1">Crítica</span>
+          <span class="pill c1">Costo bajo</span>
+          <span class="hrs">8–12 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>El mockup exige un código de 6 dígitos, pero la tabla usuarios no tiene dónde guardar el secreto del segundo factor.</p></div>
+        <div><h4>Propuesta</h4><p>Activación con código QR al primer ingreso, validación TOTP en cada login y códigos de respaldo de un solo uso.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>usuarios: totp_secreto (cifrado), totp_activo boolean, codigos_respaldo jsonb (hasheados).</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo (Google Authenticator, Authy, librería otplib)</p></div>
+      </div>
+    </details>
+    <details class="item nv1" id="m1">
+      <summary>
+        <span class="num">#1</span>
+        <div><div class="tt">Inicio de sesión real con sesiones seguras</div><div class="ar">Seguridad y cumplimiento · Fase 1</div></div>
+        <div class="pills">
+          <span class="pill n1">Crítica</span>
+          <span class="pill c1">Costo bajo</span>
+          <span class="hrs">12–20 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>Las pantallas de acceso del mockup no validan nada. Sin autenticación real, cualquiera que conozca la URL ve datos tributarios de terceros.</p></div>
+        <div><h4>Propuesta</h4><p>Login con contraseña hasheada (la columna password_hash ya existe), sesión en cookie httpOnly/secure con expiración, cierre de sesión y recuperación de contraseña por correo.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Agregar a usuarios: ultimo_acceso, intentos_fallidos, bloqueado_hasta. Tabla sesiones o almacén de sesiones en PostgreSQL.</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo (bcrypt/argon2, cookies httpOnly)</p></div>
+      </div>
+    </details>
+    <details class="item nv1" id="m39">
+      <summary>
+        <span class="num">#39</span>
+        <div><div class="tt">Hosting de producción con base de datos administrada</div><div class="ar">Plataforma y experiencia · Fase 1</div></div>
+        <div class="pills">
+          <span class="pill n1">Crítica</span>
+          <span class="pill c2">Costo medio</span>
+          <span class="hrs">6–10 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>El CRM necesita estar disponible siempre y con la base de datos respaldada; un computador de oficina no basta.</p></div>
+        <div><h4>Propuesta</h4><p>Servidor administrado para Node.js y PostgreSQL con respaldos, HTTPS y dominio propio (crm.easyoffice.cl).</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>No requiere cambios en la base de datos.</p></div>
+        <div><h4>Costo de terceros</h4><p>USD 10–30/mes (servidor Node + PostgreSQL administrado)</p></div>
+      </div>
+    </details>
+    <details class="item nv1" id="m19">
+      <summary>
+        <span class="num">#19</span>
+        <div><div class="tt">Envío automático de alertas de vencimiento con link de pago</div><div class="ar">Cobranza y renovaciones · Fase 1</div></div>
+        <div class="pills">
+          <span class="pill n1">Crítica</span>
+          <span class="pill c2">Costo medio</span>
+          <span class="hrs">20–30 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>La BD ya genera alertas a 60/30/15/7 días, pero nada las envía. Cada vencimiento sin gestionar es una baja silenciosa de ingreso recurrente.</p></div>
+        <div><h4>Propuesta</h4><p>Tarea programada diaria que envía el correo de cada alerta con un link de pago prellenado del plan a renovar y marca la alerta como notificada.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>alertas: canal, enviado_en, abierto_en, error. La columna notificado ya existe.</p></div>
+        <div><h4>Costo de terceros</h4><p>USD 0 (plan gratis de correo transaccional)</p></div>
+      </div>
+    </details>
+    <details class="item nv1" id="m6">
+      <summary>
+        <span class="num">#6</span>
+        <div><div class="tt">Cumplimiento Ley 21.719: consentimiento, finalidad y derechos del titular</div><div class="ar">Seguridad y cumplimiento · Fase 1</div></div>
+        <div class="pills">
+          <span class="pill n1">Crítica</span>
+          <span class="pill c2">Costo medio</span>
+          <span class="hrs">24–40 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>El CRM guarda RUT, celulares, correos y correspondencia tributaria. La nueva ley exige base legal, registro de consentimiento y responder solicitudes de acceso, rectificación y supresión.</p></div>
+        <div><h4>Propuesta</h4><p>Registrar consentimiento y su fecha, política de privacidad visible, flujo para atender solicitudes del titular y anonimización (no borrado) cuando choque con la auditoría inmutable.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>clientes: consentimiento_comunicaciones boolean, consentimiento_en timestamptz. Tabla solicitudes_titular (tipo, estado, fechas, respuesta).</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo de software; considerar revisión legal</p></div>
+      </div>
+    </details>
+    <details class="item nv1" id="m8">
+      <summary>
+        <span class="num">#8</span>
+        <div><div class="tt">Módulo de correspondencia en la base de datos<span class="flag">brecha del mockup</span></div><div class="ar">Operación diaria · Fase 1</div></div>
+        <div class="pills">
+          <span class="pill n1">Crítica</span>
+          <span class="pill c2">Costo medio</span>
+          <span class="hrs">30–40 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>Recibir y despachar correspondencia es el trabajo diario que sostiene el domicilio tributario, y el mockup le dedica una sección completa, pero no existe ninguna tabla para registrarla.</p></div>
+        <div><h4>Propuesta</h4><p>Registrar cada pieza al recibirla: destinatario, remitente, tipo (fiscal, judicial, laboral, comercial), sucursal, plazo de despacho, archivo escaneado y estado (recibida, digitalizada, enviada, leída).</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Nueva tabla correspondencia (cliente_id, sucursal_id, remitente, tipo, urgente, recibida_en, plazo_en, digitalizada_en, enviada_en, leida_en, url_archivo, registrado_por) con RLS y auditoría.</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo</p></div>
+      </div>
+    </details>
+    <details class="item nv1" id="m14">
+      <summary>
+        <span class="num">#14</span>
+        <div><div class="tt">Migración de la planilla Excel actual</div><div class="ar">Operación diaria · Fase 1</div></div>
+        <div class="pills">
+          <span class="pill n1">Crítica</span>
+          <span class="pill c2">Costo medio</span>
+          <span class="hrs">24–40 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>Los folios, clientes y contratos viven hoy en Excel con macros (GenerarFolio, BuscarCliente). Sin migrarlos, el CRM empieza vacío y conviven dos fuentes de verdad.</p></div>
+        <div><h4>Propuesta</h4><p>Script de importación con validación de RUT, detección de duplicados, informe de filas rechazadas y continuidad del correlativo de folios por año.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Cargar folios_correlativos con el último número de cada año antes de abrir el sistema.</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo</p></div>
+      </div>
+    </details>
+    <details class="item nv1" id="m20">
+      <summary>
+        <span class="num">#20</span>
+        <div><div class="tt">Conciliación automática de pagos (Webpay y Mercado Pago)<span class="flag">brecha del mockup</span></div><div class="ar">Cobranza y renovaciones · Fase 1</div></div>
+        <div class="pills">
+          <span class="pill n1">Crítica</span>
+          <span class="pill c2">Costo medio</span>
+          <span class="hrs">30–40 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>La tabla pagos no guarda el identificador de la transacción ni la respuesta de la pasarela: no se puede conciliar ni resolver un reclamo.</p></div>
+        <div><h4>Propuesta</h4><p>Recibir la confirmación de cada pasarela (retorno de Webpay y webhook de Mercado Pago), validar el monto, marcar el pago y activar el contrato o documento.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>pagos: id_transaccion (único por pasarela), codigo_autorizacion, ultimos_4, respuesta_pasarela jsonb, conciliado_en.</p></div>
+        <div><h4>Costo de terceros</h4><p>Comisión por transacción según contrato con cada pasarela</p></div>
+      </div>
+    </details>
+    <details class="item nv2" id="m37">
+      <summary>
+        <span class="num">#37</span>
+        <div><div class="tt">Monitoreo de errores y disponibilidad</div><div class="ar">Plataforma y experiencia · Fase 1</div></div>
+        <div class="pills">
+          <span class="pill n2">Alta</span>
+          <span class="pill c1">Costo bajo</span>
+          <span class="hrs">2–4 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>Si el CRM o el pago fallan de noche, nadie se entera hasta que reclama un cliente.</p></div>
+        <div><h4>Propuesta</h4><p>Captura de errores con aviso por correo y verificación de que el sitio responde cada 5 minutos.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>No requiere cambios en la base de datos.</p></div>
+        <div><h4>Costo de terceros</h4><p>USD 0 (planes gratis de Sentry y UptimeRobot o similares)</p></div>
+      </div>
+    </details>
+    <details class="item nv2" id="m3">
+      <summary>
+        <span class="num">#3</span>
+        <div><div class="tt">Registrar intentos fallidos, accesos denegados e IP en auditoría<span class="flag">brecha del mockup</span></div><div class="ar">Seguridad y cumplimiento · Fase 1</div></div>
+        <div class="pills">
+          <span class="pill n2">Alta</span>
+          <span class="pill c1">Costo bajo</span>
+          <span class="hrs">6–10 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>El mockup muestra la IP de origen y "Intento de eliminación denegado", pero registros_actividad solo admite INSERT/UPDATE/DELETE/LOGIN/LOGOUT y no guarda IP.</p></div>
+        <div><h4>Propuesta</h4><p>Registrar LOGIN_FALLIDO y DENEGADO desde la aplicación (los triggers no ven las operaciones rechazadas por RLS) junto con la IP y el navegador.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>registros_actividad: columnas ip inet, user_agent text; ampliar el CHECK de accion con LOGIN_FALLIDO y DENEGADO.</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo</p></div>
+      </div>
+    </details>
+    <details class="item nv2" id="m13">
+      <summary>
+        <span class="num">#13</span>
+        <div><div class="tt">Búsqueda global por RUT, nombre o folio</div><div class="ar">Operación diaria · Fase 1</div></div>
+        <div class="pills">
+          <span class="pill n2">Alta</span>
+          <span class="pill c1">Costo bajo</span>
+          <span class="hrs">6–10 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>Los clientes dictan el RUT con o sin puntos, o recuerdan solo el folio (LF-0152-2026). Una búsqueda rígida obliga a probar varias veces.</p></div>
+        <div><h4>Propuesta</h4><p>Un solo buscador que normalice el RUT (ya existe fn para formatearlo), busque por razón social sin tildes y por folio.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Índice con unaccent/pg_trgm sobre razón social; índice sobre RUT normalizado.</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo</p></div>
+      </div>
+    </details>
+    <details class="item nv2" id="m33">
+      <summary>
+        <span class="num">#33</span>
+        <div><div class="tt">Exportar a Excel/CSV</div><div class="ar">Reportes y gestión · Fase 1</div></div>
+        <div class="pills">
+          <span class="pill n2">Alta</span>
+          <span class="pill c1">Costo bajo</span>
+          <span class="hrs">6–10 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>El equipo trabaja hoy en Excel; si no puede sacar la información, volverá a la planilla paralela.</p></div>
+        <div><h4>Propuesta</h4><p>Botón Exportar en clientes, renovaciones, pagos y auditoría, respetando los filtros y los permisos del usuario.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>No requiere cambios en la base de datos.</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo</p></div>
+      </div>
+    </details>
+    <details class="item nv2" id="m7">
+      <summary>
+        <span class="num">#7</span>
+        <div><div class="tt">Revisión de permisos por rol (matriz de permisos real)</div><div class="ar">Seguridad y cumplimiento · Fase 1</div></div>
+        <div class="pills">
+          <span class="pill n2">Alta</span>
+          <span class="pill c1">Costo bajo</span>
+          <span class="hrs">8–12 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>Existen las tablas roles/permisos, pero el mockup solo distingue Administrador y Operativo de forma fija. Falta definir qué puede hacer cada rol (ver, editar, eliminar, aprobar documentos, ver pagos).</p></div>
+        <div><h4>Propuesta</h4><p>Definir la matriz de permisos, cargarla en roles_permisos y validar en cada ruta de la API; agregar un rol de solo lectura para gerencia.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Datos semilla en permisos y roles_permisos. Sin cambios de estructura.</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo</p></div>
+      </div>
+    </details>
+    <details class="item nv2" id="m9">
+      <summary>
+        <span class="num">#9</span>
+        <div><div class="tt">Aviso automático al cliente cuando llega correspondencia</div><div class="ar">Operación diaria · Fase 2</div></div>
+        <div class="pills">
+          <span class="pill n2">Alta</span>
+          <span class="pill c1">Costo bajo</span>
+          <span class="hrs">8–12 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>Hoy se avisa a mano; si la notificación del SII llega y nadie avisa, el cliente pierde plazos legales y responsabiliza a Easy Office.</p></div>
+        <div><h4>Propuesta</h4><p>Al marcar una pieza como digitalizada se envía un correo con el escaneo; las urgentes (SII, TGR, juzgados) se destacan y quedan con acuse de lectura.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Usa la tabla correspondencia; agregar notificado_en y canal.</p></div>
+        <div><h4>Costo de terceros</h4><p>USD 0 (plan gratis de correo transaccional: Brevo, Resend, etc.)</p></div>
+      </div>
+    </details>
+    <details class="item nv2" id="m16">
+      <summary>
+        <span class="num">#16</span>
+        <div><div class="tt">Captura de prospectos desde el sitio web</div><div class="ar">Operación diaria · Fase 2</div></div>
+        <div class="pills">
+          <span class="pill n2">Alta</span>
+          <span class="pill c1">Costo bajo</span>
+          <span class="hrs">10–14 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>El formulario de contacto del sitio no llega a ningún lado: cada consulta perdida es una venta perdida.</p></div>
+        <div><h4>Propuesta</h4><p>Guardar cada contacto como prospecto, asignarlo a un ejecutivo, avisarle por correo y medir cuántos terminan contratando.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Nueva tabla prospectos (nombre, email, celular, servicio_interes, origen, estado, asignado_a, cliente_id al convertir).</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo</p></div>
+      </div>
+    </details>
+    <details class="item nv2" id="m11">
+      <summary>
+        <span class="num">#11</span>
+        <div><div class="tt">Bandeja "Requiere acción hoy" con tareas por ejecutivo</div><div class="ar">Operación diaria · Fase 2</div></div>
+        <div class="pills">
+          <span class="pill n2">Alta</span>
+          <span class="pill c2">Costo medio</span>
+          <span class="hrs">16–24 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>El panel "Requiere acción hoy" del mockup necesita una fuente de datos: vencimientos, documentos por revisar, correspondencia urgente y gestiones pendientes.</p></div>
+        <div><h4>Propuesta</h4><p>Vista SQL que une alertas, documentos en revisión, correspondencia sin digitalizar y próximas acciones de la bitácora, ordenada por impacto en ingresos.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Vista v_bandeja_ejecutivo sobre tablas existentes y nuevas.</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo</p></div>
+      </div>
+    </details>
+    <details class="item nv2" id="m26">
+      <summary>
+        <span class="num">#26</span>
+        <div><div class="tt">Saldo de firmas por cliente (bolsas y planes)<span class="flag">brecha del mockup</span></div><div class="ar">Documentos y firmas · Fase 1</div></div>
+        <div class="pills">
+          <span class="pill n2">Alta</span>
+          <span class="pill c2">Costo medio</span>
+          <span class="hrs">16–24 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>El negocio vende bolsas y planes de firmas y el mockup muestra "queda 1 firma", pero la BD no registra saldo ni consumo.</p></div>
+        <div><h4>Propuesta</h4><p>Registrar cada compra como saldo con vencimiento y cada documento firmado como consumo; alertar cuando quede poco saldo o esté por vencer (oportunidad de recompra).</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Nueva tabla movimientos_firmas (cliente_id, pago_id o documento_id, cantidad +/-, vence_en) y vista v_saldo_firmas.</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo</p></div>
+      </div>
+    </details>
+    <details class="item nv2" id="m27">
+      <summary>
+        <span class="num">#27</span>
+        <div><div class="tt">Cola de revisión con vista previa y aprobación en un clic</div><div class="ar">Documentos y firmas · Fase 2</div></div>
+        <div class="pills">
+          <span class="pill n2">Alta</span>
+          <span class="pill c2">Costo medio</span>
+          <span class="hrs">16–24 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>La regla "sin aprobación humana no se envía a firma" ya está en la BD, pero revisar exige abrir cada documento por separado.</p></div>
+        <div><h4>Propuesta</h4><p>Pantalla con la lista de documentos en revisión, vista previa del PDF generado y botones Aprobar / Devolver con comentario.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>documentos: comentario_revision. Usa revisado_por y revisado_en existentes.</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo</p></div>
+      </div>
+    </details>
+    <details class="item nv2" id="m10">
+      <summary>
+        <span class="num">#10</span>
+        <div><div class="tt">Bitácora de gestiones por cliente (llamadas, correos, notas)<span class="flag">brecha del mockup</span></div><div class="ar">Operación diaria · Fase 2</div></div>
+        <div class="pills">
+          <span class="pill n2">Alta</span>
+          <span class="pill c2">Costo medio</span>
+          <span class="hrs">20–28 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>El mockup muestra "2 correos, sin respuesta" o "Link de pago enviado", pero no hay dónde guardar qué se hizo con cada cliente. Si el ejecutivo falta, se pierde el historial.</p></div>
+        <div><h4>Propuesta</h4><p>Registrar cada gestión con tipo, resultado, nota y próxima acción con fecha; mostrar la línea de tiempo en la ficha del cliente.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Nueva tabla gestiones (cliente_id, contrato_id, usuario_id, tipo, resultado, nota, proxima_accion_en).</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo</p></div>
+      </div>
+    </details>
+    <details class="item nv2" id="m21">
+      <summary>
+        <span class="num">#21</span>
+        <div><div class="tt">Conciliación de transferencias por cartola</div><div class="ar">Cobranza y renovaciones · Fase 2</div></div>
+        <div class="pills">
+          <span class="pill n2">Alta</span>
+          <span class="pill c2">Costo medio</span>
+          <span class="hrs">20–28 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>La transferencia sigue siendo un medio de pago y hoy se revisa la cartola a mano.</p></div>
+        <div><h4>Propuesta</h4><p>Subir la cartola en CSV/Excel, cruzar automáticamente por monto, RUT y fecha, y dejar solo las dudosas para revisión manual.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Tabla movimientos_bancarios (fecha, monto, rut_origen, glosa, pago_id).</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo</p></div>
+      </div>
+    </details>
+    <details class="item nv2" id="m32">
+      <summary>
+        <span class="num">#32</span>
+        <div><div class="tt">Dashboard con datos reales</div><div class="ar">Reportes y gestión · Fase 2</div></div>
+        <div class="pills">
+          <span class="pill n2">Alta</span>
+          <span class="pill c2">Costo medio</span>
+          <span class="hrs">20–30 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>Los indicadores del mockup (servicios activos, vencidos, dinero en riesgo, ingreso recurrente) son fijos.</p></div>
+        <div><h4>Propuesta</h4><p>Vistas SQL que calculen los KPI desde contratos, pagos y alertas, respetando la visibilidad por ejecutivo.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Vistas v_kpi_dashboard y v_renovaciones_por_mes (materializadas si crece el volumen).</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo</p></div>
+      </div>
+    </details>
+    <details class="item nv2" id="m12">
+      <summary>
+        <span class="num">#12</span>
+        <div><div class="tt">Ficha 360° del cliente</div><div class="ar">Operación diaria · Fase 2</div></div>
+        <div class="pills">
+          <span class="pill n2">Alta</span>
+          <span class="pill c2">Costo medio</span>
+          <span class="hrs">24–32 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>Para atender una llamada hoy hay que revisar varias planillas. El CRM debe mostrar todo el cliente en una pantalla.</p></div>
+        <div><h4>Propuesta</h4><p>Una vista por cliente con contratos y vencimientos, documentos y su estado, pagos, saldo de firmas, correspondencia y bitácora.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Consultas sobre tablas existentes; sin cambios de estructura.</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo</p></div>
+      </div>
+    </details>
+    <details class="item nv2" id="m22">
+      <summary>
+        <span class="num">#22</span>
+        <div><div class="tt">Emisión de boleta o factura electrónica integrada</div><div class="ar">Cobranza y renovaciones · Fase 2</div></div>
+        <div class="pills">
+          <span class="pill n2">Alta</span>
+          <span class="pill c3">Costo alto</span>
+          <span class="hrs">30–50 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>El e-commerce promete "boleta electrónica emitida al RUT", pero el CRM no la genera. Emitirla a mano en el SII por cada venta en línea no escala.</p></div>
+        <div><h4>Propuesta</h4><p>Al confirmar un pago, emitir el documento tributario mediante un proveedor autorizado y guardar folio y PDF en el pago.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>pagos: tipo_dte, folio_dte, url_dte, emitido_en.</p></div>
+        <div><h4>Costo de terceros</h4><p>Proveedor de DTE con API: costo mensual o por documento (cotizar)</p></div>
+      </div>
+    </details>
+    <details class="item nv2" id="m29">
+      <summary>
+        <span class="num">#29</span>
+        <div><div class="tt">Integración con la plataforma de firma electrónica avanzada</div><div class="ar">Documentos y firmas · Fase 2</div></div>
+        <div class="pills">
+          <span class="pill n2">Alta</span>
+          <span class="pill c3">Costo alto</span>
+          <span class="hrs">40–60 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>Hoy el envío a firma y el seguimiento se hacen fuera del sistema; firma_id_externo existe pero nadie lo llena.</p></div>
+        <div><h4>Propuesta</h4><p>Enviar a firma desde el CRM, recibir el estado por webhook, descargar el documento firmado y descontar el saldo de firmas.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Usa firma_id_externo, firmado_en, codigo_verificacion existentes.</p></div>
+        <div><h4>Costo de terceros</h4><p>Costo por firma del proveedor acreditado + posible costo de acceso a su API</p></div>
+      </div>
+    </details>
+    <details class="item nv3" id="m38">
+      <summary>
+        <span class="num">#38</span>
+        <div><div class="tt">Ambiente de pruebas separado</div><div class="ar">Plataforma y experiencia · Fase 1</div></div>
+        <div class="pills">
+          <span class="pill n3">Media</span>
+          <span class="pill c1">Costo bajo</span>
+          <span class="hrs">4–8 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>Probar cambios sobre la base real arriesga datos de clientes y llena la auditoría de registros falsos.</p></div>
+        <div><h4>Propuesta</h4><p>Una copia del sistema con datos ficticios para probar antes de publicar, con las pasarelas en modo de integración.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Script de datos semilla anonimizados.</p></div>
+        <div><h4>Costo de terceros</h4><p>USD 0–7/mes</p></div>
+      </div>
+    </details>
+    <details class="item nv3" id="m34">
+      <summary>
+        <span class="num">#34</span>
+        <div><div class="tt">Indicador de cumplimiento de plazos de correspondencia</div><div class="ar">Reportes y gestión · Fase 2</div></div>
+        <div class="pills">
+          <span class="pill n3">Media</span>
+          <span class="pill c1">Costo bajo</span>
+          <span class="hrs">6–10 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>El mockup muestra "98,4% dentro de plazo", dato clave para defender la calidad del servicio ante un reclamo.</p></div>
+        <div><h4>Propuesta</h4><p>Calcular el porcentaje despachado dentro de 24 horas por sucursal y por mes, con la lista de casos fuera de plazo.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Vista sobre la tabla correspondencia (requiere esa mejora).</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo</p></div>
+      </div>
+    </details>
+    <details class="item nv3" id="m30">
+      <summary>
+        <span class="num">#30</span>
+        <div><div class="tt">Página pública de verificación por código</div><div class="ar">Documentos y firmas · Fase 2</div></div>
+        <div class="pills">
+          <span class="pill n3">Media</span>
+          <span class="pill c1">Costo bajo</span>
+          <span class="hrs">8–12 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>El panel del cliente promete que un tercero puede validar el documento con su código, pero no existe la página.</p></div>
+        <div><h4>Propuesta</h4><p>Página pública donde se ingresa el código y se muestra si el documento existe, quién lo firmó y cuándo, sin exponer el contenido.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Índice único sobre documentos.codigo_verificacion.</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo</p></div>
+      </div>
+    </details>
+    <details class="item nv3" id="m24">
+      <summary>
+        <span class="num">#24</span>
+        <div><div class="tt">Recuperación de carros abandonados<span class="flag">brecha del mockup</span></div><div class="ar">Cobranza y renovaciones · Fase 2</div></div>
+        <div class="pills">
+          <span class="pill n3">Media</span>
+          <span class="pill c1">Costo bajo</span>
+          <span class="hrs">10–14 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>El embudo del mockup muestra que la mayoría de quienes eligen plan no llega a pagar.</p></div>
+        <div><h4>Propuesta</h4><p>Guardar el carro cuando el cliente deja su correo y enviar un recordatorio a las 24 horas con el link para retomar la compra.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Tabla carros (email, plan, creado_en, recordado_en, convertido_pago_id).</p></div>
+        <div><h4>Costo de terceros</h4><p>USD 0 (correo transaccional)</p></div>
+      </div>
+    </details>
+    <details class="item nv3" id="m15">
+      <summary>
+        <span class="num">#15</span>
+        <div><div class="tt">Asignación automática de casos por carga</div><div class="ar">Operación diaria · Fase 2</div></div>
+        <div class="pills">
+          <span class="pill n3">Media</span>
+          <span class="pill c1">Costo bajo</span>
+          <span class="hrs">10–16 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>El mockup advierte que una ejecutiva concentra el 49% de los casos. Repartir a mano genera cuellos de botella.</p></div>
+        <div><h4>Propuesta</h4><p>Al crear un contrato o documento sin ejecutivo, asignarlo al que tenga menos casos abiertos en esa sucursal (regla configurable).</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Función/trigger sobre contratos.ejecutivo_id y documentos.ejecutivo_id.</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo</p></div>
+      </div>
+    </details>
+    <details class="item nv3" id="m28">
+      <summary>
+        <span class="num">#28</span>
+        <div><div class="tt">Versionado de documentos<span class="flag">brecha del mockup</span></div><div class="ar">Documentos y firmas · Fase 2</div></div>
+        <div class="pills">
+          <span class="pill n3">Media</span>
+          <span class="pill c1">Costo bajo</span>
+          <span class="hrs">10–16 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>El mockup dice que la aprobación queda con la "versión del documento", pero un documento solo tiene una url_archivo: si se corrige, se pierde lo que se aprobó.</p></div>
+        <div><h4>Propuesta</h4><p>Guardar cada versión generada con su número y hash; la aprobación apunta a una versión concreta.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Nueva tabla documento_versiones (documento_id, version, url_archivo, hash_sha256, generado_en); documentos.version_aprobada.</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo</p></div>
+      </div>
+    </details>
+    <details class="item nv3" id="m17">
+      <summary>
+        <span class="num">#17</span>
+        <div><div class="tt">Registro de correspondencia desde el celular (foto)</div><div class="ar">Operación diaria · Fase 3</div></div>
+        <div class="pills">
+          <span class="pill n3">Media</span>
+          <span class="pill c2">Costo medio</span>
+          <span class="hrs">16–24 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>Quien recibe la correspondencia en la sucursal no siempre está frente al computador.</p></div>
+        <div><h4>Propuesta</h4><p>Pantalla adaptada a celular para buscar al cliente, sacar foto del sobre o documento y registrarlo en un paso.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Usa la tabla correspondencia y almacenamiento de archivos.</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo</p></div>
+      </div>
+    </details>
+    <details class="item nv3" id="m25">
+      <summary>
+        <span class="num">#25</span>
+        <div><div class="tt">Avisos por WhatsApp</div><div class="ar">Cobranza y renovaciones · Fase 3</div></div>
+        <div class="pills">
+          <span class="pill n3">Media</span>
+          <span class="pill c2">Costo medio</span>
+          <span class="hrs">16–24 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>Muchos clientes no leen el correo a tiempo; el mockup promete avisos por WhatsApp.</p></div>
+        <div><h4>Propuesta</h4><p>Enviar por WhatsApp las alertas de vencimiento y de correspondencia urgente usando plantillas aprobadas, solo a clientes que lo autoricen.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Usa alertas.canal y el consentimiento de comunicaciones de clientes.</p></div>
+        <div><h4>Costo de terceros</h4><p>Cobro por mensaje de plantilla de Meta (WhatsApp Business Platform), centavos de dólar por envío</p></div>
+      </div>
+    </details>
+    <details class="item nv3" id="m35">
+      <summary>
+        <span class="num">#35</span>
+        <div><div class="tt">Embudo de ventas en línea real</div><div class="ar">Reportes y gestión · Fase 3</div></div>
+        <div class="pills">
+          <span class="pill n3">Media</span>
+          <span class="pill c2">Costo medio</span>
+          <span class="hrs">16–24 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>Sin medir dónde abandonan los clientes no se sabe qué mejorar del proceso de compra.</p></div>
+        <div><h4>Propuesta</h4><p>Registrar eventos clave (vio catálogo, eligió plan, creó cuenta, llegó al pago, pagó) y mostrar el embudo por semana.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Tabla eventos_embudo o herramienta de analítica externa.</p></div>
+        <div><h4>Costo de terceros</h4><p>Gratis con analítica básica; herramientas de pago opcionales</p></div>
+      </div>
+    </details>
+    <details class="item nv3" id="m23">
+      <summary>
+        <span class="num">#23</span>
+        <div><div class="tt">Cobro recurrente con tarjeta guardada (suscripciones)</div><div class="ar">Cobranza y renovaciones · Fase 3</div></div>
+        <div class="pills">
+          <span class="pill n3">Media</span>
+          <span class="pill c3">Costo alto</span>
+          <span class="hrs">40–60 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>Los planes de contabilidad son mensuales y el panel del cliente ofrece "suscripción automática", que hoy no existe.</p></div>
+        <div><h4>Propuesta</h4><p>Inscribir la tarjeta del cliente (por ejemplo Webpay Oneclick o suscripciones de Mercado Pago) y cobrar el día 5 de cada mes, con reintento y aviso si falla.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Tabla medios_pago_cliente (token de la pasarela, últimos 4, vencimiento) y cobros_programados.</p></div>
+        <div><h4>Costo de terceros</h4><p>Comisión por transacción; requiere habilitar el producto con la pasarela</p></div>
+      </div>
+    </details>
+    <details class="item nv4" id="m41">
+      <summary>
+        <span class="num">#41</span>
+        <div><div class="tt">Integración con la agenda (Calendly)</div><div class="ar">Plataforma y experiencia · Fase 3</div></div>
+        <div class="pills">
+          <span class="pill n4">Deseable</span>
+          <span class="pill c1">Costo bajo</span>
+          <span class="hrs">8–12 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>Las reuniones de 30 minutos se agendan en Calendly y no quedan asociadas al cliente ni al prospecto.</p></div>
+        <div><h4>Propuesta</h4><p>Al agendarse una reunión, crear o actualizar el prospecto y una tarea para el ejecutivo.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Usa prospectos y gestiones.</p></div>
+        <div><h4>Costo de terceros</h4><p>Los webhooks de Calendly requieren un plan de pago (verificar)</p></div>
+      </div>
+    </details>
+    <details class="item nv4" id="m36">
+      <summary>
+        <span class="num">#36</span>
+        <div><div class="tt">Retención y bajas por cohorte</div><div class="ar">Reportes y gestión · Fase 3</div></div>
+        <div class="pills">
+          <span class="pill n4">Deseable</span>
+          <span class="pill c2">Costo medio</span>
+          <span class="hrs">16–24 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>No se sabe qué porcentaje de clientes renueva cada año ni qué servicio retiene mejor.</p></div>
+        <div><h4>Propuesta</h4><p>Reporte de renovación por mes de alta, servicio y sucursal, y motivo de baja.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>contratos: motivo_cancelacion. Consultas sobre contratos.</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo</p></div>
+      </div>
+    </details>
+    <details class="item nv4" id="m40">
+      <summary>
+        <span class="num">#40</span>
+        <div><div class="tt">Notificaciones internas en tiempo real</div><div class="ar">Plataforma y experiencia · Fase 3</div></div>
+        <div class="pills">
+          <span class="pill n4">Deseable</span>
+          <span class="pill c2">Costo medio</span>
+          <span class="hrs">16–24 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>Un pago nuevo o un documento listo para revisar se descubre solo al recargar la página.</p></div>
+        <div><h4>Propuesta</h4><p>Aviso dentro del CRM (y opcional en el navegador) cuando llega un pago, una correspondencia urgente o un documento para revisar.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Tabla notificaciones (usuario_id, tipo, referencia, leida_en).</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo</p></div>
+      </div>
+    </details>
+    <details class="item nv4" id="m18">
+      <summary>
+        <span class="num">#18</span>
+        <div><div class="tt">Lectura automática (OCR) del destinatario y remitente</div><div class="ar">Operación diaria · Fase 3</div></div>
+        <div class="pills">
+          <span class="pill n4">Deseable</span>
+          <span class="pill c3">Costo alto</span>
+          <span class="hrs">40–60 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>Digitar el destinatario de decenas de piezas diarias toma tiempo.</p></div>
+        <div><h4>Propuesta</h4><p>Leer el RUT o nombre del destinatario desde el escaneo y sugerir el cliente; el operador solo confirma. Opcionalmente clasificar el tipo con IA.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>correspondencia: texto_extraido, sugerencia_cliente_id, confianza.</p></div>
+        <div><h4>Costo de terceros</h4><p>Gratis con Tesseract o pago por página con servicios en la nube</p></div>
+      </div>
+    </details>
+    <details class="item nv4" id="m31">
+      <summary>
+        <span class="num">#31</span>
+        <div><div class="tt">Editor de plantillas y cláusulas para el personal</div><div class="ar">Documentos y firmas · Fase 3</div></div>
+        <div class="pills">
+          <span class="pill n4">Deseable</span>
+          <span class="pill c3">Costo alto</span>
+          <span class="hrs">40–70 h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>Cambiar una cláusula hoy requiere un desarrollador.</p></div>
+        <div><h4>Propuesta</h4><p>Pantalla para editar plantillas y cláusulas con variables, vista previa y control de quién cambió qué.</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>Usa plantillas_documento y clausulas_documento; agregar versión y vigente_desde.</p></div>
+        <div><h4>Costo de terceros</h4><p>Sin costo</p></div>
+      </div>
+    </details></div>
+  </section>
+
+  <!-- ===== Supuestos ===== -->
+  <section id="supuestos">
+    <div class="sh">
+      <h2>Supuestos y advertencias sobre los costos</h2>
+    </div>
+    <div class="panel">
+      <ul class="assump">
+        <li><b>Horas de desarrollo:</b> rangos para un desarrollador intermedio; incluyen pruebas básicas, no diseño gráfico nuevo. En un equipo de estudiantes conviene sumar un 30–50% por aprendizaje.</li>
+        <li><b>Precios de terceros:</b> son referenciales y cambian con frecuencia. Antes de comprometer presupuesto, cotizar directamente con cada proveedor (Transbank, Mercado Pago, Meta/WhatsApp, proveedor de boleta electrónica, hosting).</li>
+        <li><b>Comisiones de pasarela:</b> Webpay y Mercado Pago cobran un porcentaje por transacción que depende del contrato y del medio de pago; no se suman como costo fijo mensual.</li>
+        <li><b>Planes gratuitos:</b> correo transaccional, monitoreo de errores y respaldos básicos tienen planes gratuitos suficientes para el volumen actual (cientos de clientes). Si el volumen crece, pasan a costo mensual.</li>
+        <li><b>Firma electrónica avanzada:</b> el costo por firma del proveedor acreditado ya existe en el negocio actual; integrar su API puede tener un costo adicional de acceso que debe cotizarse.</li>
+        <li><b>Ley 21.719 de protección de datos personales:</b> reemplaza a la Ley 19.628 y su entrada en vigencia está prevista para diciembre de 2026. Las mejoras de cumplimiento se marcaron como críticas por ese plazo; conviene validarlas con asesoría legal.</li>
+        <li><b>Base de datos:</b> las propuestas de cambio de tablas se escribieron sobre el modelo actual en PostgreSQL y respetan sus reglas (RLS por ejecutivo, auditoría inmutable, folios).</li>
+        <li><b>Mockup:</b> las cifras del mockup (1.284 servicios, $8,4M de ingreso recurrente) son de ejemplo y no se usaron para estimar.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">Easy Office · Proyecto Capstone · Documento de trabajo sobre el CRM operativo. Estimaciones referenciales, sujetas a cotización.</div>
+</footer>
+
+<script>
+/* =========================================================
+   Datos de las mejoras.
+   nec: 1 crítica · 2 alta · 3 media · 4 deseable
+   cost: 1 bajo · 2 medio · 3 alto
+   h: [mín, máx] horas de desarrollo
+   ext: costo de terceros (texto) · mockup: aparece en el mockup sin soporte en BD
+   fase: 1 antes de lanzar · 2 primeros 3 meses · 3 después
+   ========================================================= */
+const AREAS = {
+  seg: 'Seguridad y cumplimiento',
+  ope: 'Operación diaria',
+  cob: 'Cobranza y renovaciones',
+  doc: 'Documentos y firmas',
+  rep: 'Reportes y gestión',
+  pla: 'Plataforma y experiencia'
+};
+
+const M = [
+  // ---------- Seguridad y cumplimiento ----------
+  {area:'seg', t:'Inicio de sesión real con sesiones seguras', nec:1, cost:1, h:[12,20], ext:'Sin costo (bcrypt/argon2, cookies httpOnly)', fase:1,
+   prob:'Las pantallas de acceso del mockup no validan nada. Sin autenticación real, cualquiera que conozca la URL ve datos tributarios de terceros.',
+   prop:'Login con contraseña hasheada (la columna password_hash ya existe), sesión en cookie httpOnly/secure con expiración, cierre de sesión y recuperación de contraseña por correo.',
+   bd:'Agregar a usuarios: ultimo_acceso, intentos_fallidos, bloqueado_hasta. Tabla sesiones o almacén de sesiones en PostgreSQL.'},
+  {area:'seg', t:'Segundo factor (TOTP) obligatorio para el personal', nec:1, cost:1, h:[8,12], ext:'Sin costo (Google Authenticator, Authy, librería otplib)', fase:1, mockup:true,
+   prob:'El mockup exige un código de 6 dígitos, pero la tabla usuarios no tiene dónde guardar el secreto del segundo factor.',
+   prop:'Activación con código QR al primer ingreso, validación TOTP en cada login y códigos de respaldo de un solo uso.',
+   bd:'usuarios: totp_secreto (cifrado), totp_activo boolean, codigos_respaldo jsonb (hasheados).'},
+  {area:'seg', t:'Registrar intentos fallidos, accesos denegados e IP en auditoría', nec:2, cost:1, h:[6,10], ext:'Sin costo', fase:1, mockup:true,
+   prob:'El mockup muestra la IP de origen y "Intento de eliminación denegado", pero registros_actividad solo admite INSERT/UPDATE/DELETE/LOGIN/LOGOUT y no guarda IP.',
+   prop:'Registrar LOGIN_FALLIDO y DENEGADO desde la aplicación (los triggers no ven las operaciones rechazadas por RLS) junto con la IP y el navegador.',
+   bd:'registros_actividad: columnas ip inet, user_agent text; ampliar el CHECK de accion con LOGIN_FALLIDO y DENEGADO.'},
+  {area:'seg', t:'Respaldos automáticos diarios con prueba de restauración', nec:1, cost:1, h:[4,8], ext:'USD 0–5/mes (incluido en BD administrada o almacenamiento externo)', fase:1,
+   prob:'Toda la operación (folios, contratos, auditoría) pasa a depender de una sola base de datos. Perderla equivale a perder la cartera de clientes.',
+   prop:'Respaldo diario automático (pg_dump o el del proveedor), retención de 30 días, copia fuera del servidor y una restauración de prueba al mes documentada.',
+   bd:null},
+  {area:'seg', t:'HTTPS, cabeceras de seguridad y límite de peticiones', nec:1, cost:1, h:[3,6], ext:'Sin costo (Let\'s Encrypt / certificado del hosting, helmet, express-rate-limit)', fase:1,
+   prob:'Sin HTTPS las contraseñas y datos viajan en texto plano; sin límite de peticiones el login queda expuesto a ataques de fuerza bruta.',
+   prop:'Forzar HTTPS, cabeceras seguras (CSP, HSTS), límite de intentos por IP en login y API, y protección CSRF en formularios.',
+   bd:null},
+  {area:'seg', t:'Cumplimiento Ley 21.719: consentimiento, finalidad y derechos del titular', nec:1, cost:2, h:[24,40], ext:'Sin costo de software; considerar revisión legal', fase:1,
+   prob:'El CRM guarda RUT, celulares, correos y correspondencia tributaria. La nueva ley exige base legal, registro de consentimiento y responder solicitudes de acceso, rectificación y supresión.',
+   prop:'Registrar consentimiento y su fecha, política de privacidad visible, flujo para atender solicitudes del titular y anonimización (no borrado) cuando choque con la auditoría inmutable.',
+   bd:'clientes: consentimiento_comunicaciones boolean, consentimiento_en timestamptz. Tabla solicitudes_titular (tipo, estado, fechas, respuesta).'},
+  {area:'seg', t:'Revisión de permisos por rol (matriz de permisos real)', nec:2, cost:1, h:[8,12], ext:'Sin costo', fase:1,
+   prob:'Existen las tablas roles/permisos, pero el mockup solo distingue Administrador y Operativo de forma fija. Falta definir qué puede hacer cada rol (ver, editar, eliminar, aprobar documentos, ver pagos).',
+   prop:'Definir la matriz de permisos, cargarla en roles_permisos y validar en cada ruta de la API; agregar un rol de solo lectura para gerencia.',
+   bd:'Datos semilla en permisos y roles_permisos. Sin cambios de estructura.'},
+
+  // ---------- Operación diaria ----------
+  {area:'ope', t:'Módulo de correspondencia en la base de datos', nec:1, cost:2, h:[30,40], ext:'Sin costo', fase:1, mockup:true,
+   prob:'Recibir y despachar correspondencia es el trabajo diario que sostiene el domicilio tributario, y el mockup le dedica una sección completa, pero no existe ninguna tabla para registrarla.',
+   prop:'Registrar cada pieza al recibirla: destinatario, remitente, tipo (fiscal, judicial, laboral, comercial), sucursal, plazo de despacho, archivo escaneado y estado (recibida, digitalizada, enviada, leída).',
+   bd:'Nueva tabla correspondencia (cliente_id, sucursal_id, remitente, tipo, urgente, recibida_en, plazo_en, digitalizada_en, enviada_en, leida_en, url_archivo, registrado_por) con RLS y auditoría.'},
+  {area:'ope', t:'Aviso automático al cliente cuando llega correspondencia', nec:2, cost:1, h:[8,12], ext:'USD 0 (plan gratis de correo transaccional: Brevo, Resend, etc.)', fase:2,
+   prob:'Hoy se avisa a mano; si la notificación del SII llega y nadie avisa, el cliente pierde plazos legales y responsabiliza a Easy Office.',
+   prop:'Al marcar una pieza como digitalizada se envía un correo con el escaneo; las urgentes (SII, TGR, juzgados) se destacan y quedan con acuse de lectura.',
+   bd:'Usa la tabla correspondencia; agregar notificado_en y canal.'},
+  {area:'ope', t:'Bitácora de gestiones por cliente (llamadas, correos, notas)', nec:2, cost:2, h:[20,28], ext:'Sin costo', fase:2, mockup:true,
+   prob:'El mockup muestra "2 correos, sin respuesta" o "Link de pago enviado", pero no hay dónde guardar qué se hizo con cada cliente. Si el ejecutivo falta, se pierde el historial.',
+   prop:'Registrar cada gestión con tipo, resultado, nota y próxima acción con fecha; mostrar la línea de tiempo en la ficha del cliente.',
+   bd:'Nueva tabla gestiones (cliente_id, contrato_id, usuario_id, tipo, resultado, nota, proxima_accion_en).'},
+  {area:'ope', t:'Bandeja "Requiere acción hoy" con tareas por ejecutivo', nec:2, cost:2, h:[16,24], ext:'Sin costo', fase:2,
+   prob:'El panel "Requiere acción hoy" del mockup necesita una fuente de datos: vencimientos, documentos por revisar, correspondencia urgente y gestiones pendientes.',
+   prop:'Vista SQL que une alertas, documentos en revisión, correspondencia sin digitalizar y próximas acciones de la bitácora, ordenada por impacto en ingresos.',
+   bd:'Vista v_bandeja_ejecutivo sobre tablas existentes y nuevas.'},
+  {area:'ope', t:'Ficha 360° del cliente', nec:2, cost:2, h:[24,32], ext:'Sin costo', fase:2,
+   prob:'Para atender una llamada hoy hay que revisar varias planillas. El CRM debe mostrar todo el cliente en una pantalla.',
+   prop:'Una vista por cliente con contratos y vencimientos, documentos y su estado, pagos, saldo de firmas, correspondencia y bitácora.',
+   bd:'Consultas sobre tablas existentes; sin cambios de estructura.'},
+  {area:'ope', t:'Búsqueda global por RUT, nombre o folio', nec:2, cost:1, h:[6,10], ext:'Sin costo', fase:1,
+   prob:'Los clientes dictan el RUT con o sin puntos, o recuerdan solo el folio (LF-0152-2026). Una búsqueda rígida obliga a probar varias veces.',
+   prop:'Un solo buscador que normalice el RUT (ya existe fn para formatearlo), busque por razón social sin tildes y por folio.',
+   bd:'Índice con unaccent/pg_trgm sobre razón social; índice sobre RUT normalizado.'},
+  {area:'ope', t:'Migración de la planilla Excel actual', nec:1, cost:2, h:[24,40], ext:'Sin costo', fase:1,
+   prob:'Los folios, clientes y contratos viven hoy en Excel con macros (GenerarFolio, BuscarCliente). Sin migrarlos, el CRM empieza vacío y conviven dos fuentes de verdad.',
+   prop:'Script de importación con validación de RUT, detección de duplicados, informe de filas rechazadas y continuidad del correlativo de folios por año.',
+   bd:'Cargar folios_correlativos con el último número de cada año antes de abrir el sistema.'},
+  {area:'ope', t:'Asignación automática de casos por carga', nec:3, cost:1, h:[10,16], ext:'Sin costo', fase:2,
+   prob:'El mockup advierte que una ejecutiva concentra el 49% de los casos. Repartir a mano genera cuellos de botella.',
+   prop:'Al crear un contrato o documento sin ejecutivo, asignarlo al que tenga menos casos abiertos en esa sucursal (regla configurable).',
+   bd:'Función/trigger sobre contratos.ejecutivo_id y documentos.ejecutivo_id.'},
+  {area:'ope', t:'Captura de prospectos desde el sitio web', nec:2, cost:1, h:[10,14], ext:'Sin costo', fase:2,
+   prob:'El formulario de contacto del sitio no llega a ningún lado: cada consulta perdida es una venta perdida.',
+   prop:'Guardar cada contacto como prospecto, asignarlo a un ejecutivo, avisarle por correo y medir cuántos terminan contratando.',
+   bd:'Nueva tabla prospectos (nombre, email, celular, servicio_interes, origen, estado, asignado_a, cliente_id al convertir).'},
+  {area:'ope', t:'Registro de correspondencia desde el celular (foto)', nec:3, cost:2, h:[16,24], ext:'Sin costo', fase:3,
+   prob:'Quien recibe la correspondencia en la sucursal no siempre está frente al computador.',
+   prop:'Pantalla adaptada a celular para buscar al cliente, sacar foto del sobre o documento y registrarlo en un paso.',
+   bd:'Usa la tabla correspondencia y almacenamiento de archivos.'},
+  {area:'ope', t:'Lectura automática (OCR) del destinatario y remitente', nec:4, cost:3, h:[40,60], ext:'Gratis con Tesseract o pago por página con servicios en la nube', fase:3,
+   prob:'Digitar el destinatario de decenas de piezas diarias toma tiempo.',
+   prop:'Leer el RUT o nombre del destinatario desde el escaneo y sugerir el cliente; el operador solo confirma. Opcionalmente clasificar el tipo con IA.',
+   bd:'correspondencia: texto_extraido, sugerencia_cliente_id, confianza.'},
+
+  // ---------- Cobranza y renovaciones ----------
+  {area:'cob', t:'Envío automático de alertas de vencimiento con link de pago', nec:1, cost:2, h:[20,30], ext:'USD 0 (plan gratis de correo transaccional)', fase:1,
+   prob:'La BD ya genera alertas a 60/30/15/7 días, pero nada las envía. Cada vencimiento sin gestionar es una baja silenciosa de ingreso recurrente.',
+   prop:'Tarea programada diaria que envía el correo de cada alerta con un link de pago prellenado del plan a renovar y marca la alerta como notificada.',
+   bd:'alertas: canal, enviado_en, abierto_en, error. La columna notificado ya existe.'},
+  {area:'cob', t:'Conciliación automática de pagos (Webpay y Mercado Pago)', nec:1, cost:2, h:[30,40], ext:'Comisión por transacción según contrato con cada pasarela', fase:1, mockup:true,
+   prob:'La tabla pagos no guarda el identificador de la transacción ni la respuesta de la pasarela: no se puede conciliar ni resolver un reclamo.',
+   prop:'Recibir la confirmación de cada pasarela (retorno de Webpay y webhook de Mercado Pago), validar el monto, marcar el pago y activar el contrato o documento.',
+   bd:'pagos: id_transaccion (único por pasarela), codigo_autorizacion, ultimos_4, respuesta_pasarela jsonb, conciliado_en.'},
+  {area:'cob', t:'Conciliación de transferencias por cartola', nec:2, cost:2, h:[20,28], ext:'Sin costo', fase:2,
+   prob:'La transferencia sigue siendo un medio de pago y hoy se revisa la cartola a mano.',
+   prop:'Subir la cartola en CSV/Excel, cruzar automáticamente por monto, RUT y fecha, y dejar solo las dudosas para revisión manual.',
+   bd:'Tabla movimientos_bancarios (fecha, monto, rut_origen, glosa, pago_id).'},
+  {area:'cob', t:'Emisión de boleta o factura electrónica integrada', nec:2, cost:3, h:[30,50], ext:'Proveedor de DTE con API: costo mensual o por documento (cotizar)', fase:2,
+   prob:'El e-commerce promete "boleta electrónica emitida al RUT", pero el CRM no la genera. Emitirla a mano en el SII por cada venta en línea no escala.',
+   prop:'Al confirmar un pago, emitir el documento tributario mediante un proveedor autorizado y guardar folio y PDF en el pago.',
+   bd:'pagos: tipo_dte, folio_dte, url_dte, emitido_en.'},
+  {area:'cob', t:'Cobro recurrente con tarjeta guardada (suscripciones)', nec:3, cost:3, h:[40,60], ext:'Comisión por transacción; requiere habilitar el producto con la pasarela', fase:3,
+   prob:'Los planes de contabilidad son mensuales y el panel del cliente ofrece "suscripción automática", que hoy no existe.',
+   prop:'Inscribir la tarjeta del cliente (por ejemplo Webpay Oneclick o suscripciones de Mercado Pago) y cobrar el día 5 de cada mes, con reintento y aviso si falla.',
+   bd:'Tabla medios_pago_cliente (token de la pasarela, últimos 4, vencimiento) y cobros_programados.'},
+  {area:'cob', t:'Recuperación de carros abandonados', nec:3, cost:1, h:[10,14], ext:'USD 0 (correo transaccional)', fase:2, mockup:true,
+   prob:'El embudo del mockup muestra que la mayoría de quienes eligen plan no llega a pagar.',
+   prop:'Guardar el carro cuando el cliente deja su correo y enviar un recordatorio a las 24 horas con el link para retomar la compra.',
+   bd:'Tabla carros (email, plan, creado_en, recordado_en, convertido_pago_id).'},
+  {area:'cob', t:'Avisos por WhatsApp', nec:3, cost:2, h:[16,24], ext:'Cobro por mensaje de plantilla de Meta (WhatsApp Business Platform), centavos de dólar por envío', fase:3,
+   prob:'Muchos clientes no leen el correo a tiempo; el mockup promete avisos por WhatsApp.',
+   prop:'Enviar por WhatsApp las alertas de vencimiento y de correspondencia urgente usando plantillas aprobadas, solo a clientes que lo autoricen.',
+   bd:'Usa alertas.canal y el consentimiento de comunicaciones de clientes.'},
+
+  // ---------- Documentos y firmas ----------
+  {area:'doc', t:'Saldo de firmas por cliente (bolsas y planes)', nec:2, cost:2, h:[16,24], ext:'Sin costo', fase:1, mockup:true,
+   prob:'El negocio vende bolsas y planes de firmas y el mockup muestra "queda 1 firma", pero la BD no registra saldo ni consumo.',
+   prop:'Registrar cada compra como saldo con vencimiento y cada documento firmado como consumo; alertar cuando quede poco saldo o esté por vencer (oportunidad de recompra).',
+   bd:'Nueva tabla movimientos_firmas (cliente_id, pago_id o documento_id, cantidad +/-, vence_en) y vista v_saldo_firmas.'},
+  {area:'doc', t:'Cola de revisión con vista previa y aprobación en un clic', nec:2, cost:2, h:[16,24], ext:'Sin costo', fase:2,
+   prob:'La regla "sin aprobación humana no se envía a firma" ya está en la BD, pero revisar exige abrir cada documento por separado.',
+   prop:'Pantalla con la lista de documentos en revisión, vista previa del PDF generado y botones Aprobar / Devolver con comentario.',
+   bd:'documentos: comentario_revision. Usa revisado_por y revisado_en existentes.'},
+  {area:'doc', t:'Versionado de documentos', nec:3, cost:1, h:[10,16], ext:'Sin costo', fase:2, mockup:true,
+   prob:'El mockup dice que la aprobación queda con la "versión del documento", pero un documento solo tiene una url_archivo: si se corrige, se pierde lo que se aprobó.',
+   prop:'Guardar cada versión generada con su número y hash; la aprobación apunta a una versión concreta.',
+   bd:'Nueva tabla documento_versiones (documento_id, version, url_archivo, hash_sha256, generado_en); documentos.version_aprobada.'},
+  {area:'doc', t:'Integración con la plataforma de firma electrónica avanzada', nec:2, cost:3, h:[40,60], ext:'Costo por firma del proveedor acreditado + posible costo de acceso a su API', fase:2,
+   prob:'Hoy el envío a firma y el seguimiento se hacen fuera del sistema; firma_id_externo existe pero nadie lo llena.',
+   prop:'Enviar a firma desde el CRM, recibir el estado por webhook, descargar el documento firmado y descontar el saldo de firmas.',
+   bd:'Usa firma_id_externo, firmado_en, codigo_verificacion existentes.'},
+  {area:'doc', t:'Página pública de verificación por código', nec:3, cost:1, h:[8,12], ext:'Sin costo', fase:2,
+   prob:'El panel del cliente promete que un tercero puede validar el documento con su código, pero no existe la página.',
+   prop:'Página pública donde se ingresa el código y se muestra si el documento existe, quién lo firmó y cuándo, sin exponer el contenido.',
+   bd:'Índice único sobre documentos.codigo_verificacion.'},
+  {area:'doc', t:'Editor de plantillas y cláusulas para el personal', nec:4, cost:3, h:[40,70], ext:'Sin costo', fase:3,
+   prob:'Cambiar una cláusula hoy requiere un desarrollador.',
+   prop:'Pantalla para editar plantillas y cláusulas con variables, vista previa y control de quién cambió qué.',
+   bd:'Usa plantillas_documento y clausulas_documento; agregar versión y vigente_desde.'},
+
+  // ---------- Reportes y gestión ----------
+  {area:'rep', t:'Dashboard con datos reales', nec:2, cost:2, h:[20,30], ext:'Sin costo', fase:2,
+   prob:'Los indicadores del mockup (servicios activos, vencidos, dinero en riesgo, ingreso recurrente) son fijos.',
+   prop:'Vistas SQL que calculen los KPI desde contratos, pagos y alertas, respetando la visibilidad por ejecutivo.',
+   bd:'Vistas v_kpi_dashboard y v_renovaciones_por_mes (materializadas si crece el volumen).'},
+  {area:'rep', t:'Exportar a Excel/CSV', nec:2, cost:1, h:[6,10], ext:'Sin costo', fase:1,
+   prob:'El equipo trabaja hoy en Excel; si no puede sacar la información, volverá a la planilla paralela.',
+   prop:'Botón Exportar en clientes, renovaciones, pagos y auditoría, respetando los filtros y los permisos del usuario.',
+   bd:null},
+  {area:'rep', t:'Indicador de cumplimiento de plazos de correspondencia', nec:3, cost:1, h:[6,10], ext:'Sin costo', fase:2,
+   prob:'El mockup muestra "98,4% dentro de plazo", dato clave para defender la calidad del servicio ante un reclamo.',
+   prop:'Calcular el porcentaje despachado dentro de 24 horas por sucursal y por mes, con la lista de casos fuera de plazo.',
+   bd:'Vista sobre la tabla correspondencia (requiere esa mejora).'},
+  {area:'rep', t:'Embudo de ventas en línea real', nec:3, cost:2, h:[16,24], ext:'Gratis con analítica básica; herramientas de pago opcionales', fase:3,
+   prob:'Sin medir dónde abandonan los clientes no se sabe qué mejorar del proceso de compra.',
+   prop:'Registrar eventos clave (vio catálogo, eligió plan, creó cuenta, llegó al pago, pagó) y mostrar el embudo por semana.',
+   bd:'Tabla eventos_embudo o herramienta de analítica externa.'},
+  {area:'rep', t:'Retención y bajas por cohorte', nec:4, cost:2, h:[16,24], ext:'Sin costo', fase:3,
+   prob:'No se sabe qué porcentaje de clientes renueva cada año ni qué servicio retiene mejor.',
+   prop:'Reporte de renovación por mes de alta, servicio y sucursal, y motivo de baja.',
+   bd:'contratos: motivo_cancelacion. Consultas sobre contratos.'},
+
+  // ---------- Plataforma y experiencia ----------
+  {area:'pla', t:'Monitoreo de errores y disponibilidad', nec:2, cost:1, h:[2,4], ext:'USD 0 (planes gratis de Sentry y UptimeRobot o similares)', fase:1,
+   prob:'Si el CRM o el pago fallan de noche, nadie se entera hasta que reclama un cliente.',
+   prop:'Captura de errores con aviso por correo y verificación de que el sitio responde cada 5 minutos.',
+   bd:null},
+  {area:'pla', t:'Ambiente de pruebas separado', nec:3, cost:1, h:[4,8], ext:'USD 0–7/mes', fase:1,
+   prob:'Probar cambios sobre la base real arriesga datos de clientes y llena la auditoría de registros falsos.',
+   prop:'Una copia del sistema con datos ficticios para probar antes de publicar, con las pasarelas en modo de integración.',
+   bd:'Script de datos semilla anonimizados.'},
+  {area:'pla', t:'Hosting de producción con base de datos administrada', nec:1, cost:2, h:[6,10], ext:'USD 10–30/mes (servidor Node + PostgreSQL administrado)', fase:1,
+   prob:'El CRM necesita estar disponible siempre y con la base de datos respaldada; un computador de oficina no basta.',
+   prop:'Servidor administrado para Node.js y PostgreSQL con respaldos, HTTPS y dominio propio (crm.easyoffice.cl).',
+   bd:null},
+  {area:'pla', t:'Notificaciones internas en tiempo real', nec:4, cost:2, h:[16,24], ext:'Sin costo', fase:3,
+   prob:'Un pago nuevo o un documento listo para revisar se descubre solo al recargar la página.',
+   prop:'Aviso dentro del CRM (y opcional en el navegador) cuando llega un pago, una correspondencia urgente o un documento para revisar.',
+   bd:'Tabla notificaciones (usuario_id, tipo, referencia, leida_en).'},
+  {area:'pla', t:'Integración con la agenda (Calendly)', nec:4, cost:1, h:[8,12], ext:'Los webhooks de Calendly requieren un plan de pago (verificar)', fase:3,
+   prob:'Las reuniones de 30 minutos se agendan en Calendly y no quedan asociadas al cliente ni al prospecto.',
+   prop:'Al agendarse una reunión, crear o actualizar el prospecto y una tarea para el ejecutivo.',
+   bd:'Usa prospectos y gestiones.'}
+];
+
+/* Brechas mockup ↔ base de datos (índices 1-based de M) */
+const GAPS = [
+  ['Sección "Correspondencia y oficina de partes"', 'No existe tabla de correspondencia', 'Tabla <code>correspondencia</code> con plazos y estados', 'Módulo de correspondencia en la base de datos'],
+  ['"Queda 1 firma" y recompra de bolsas', 'No hay saldo ni consumo de firmas', 'Tabla <code>movimientos_firmas</code> + vista de saldo', 'Saldo de firmas por cliente (bolsas y planes)'],
+  ['Columna "Gestión": "2 correos, sin respuesta"', 'No se registran gestiones de cobranza', 'Tabla <code>gestiones</code> con próxima acción', 'Bitácora de gestiones por cliente (llamadas, correos, notas)'],
+  ['Auditoría con IP e "intento denegado"', '<code>registros_actividad</code> sin IP; acción no admite denegados', 'Columnas <code>ip</code>, <code>user_agent</code>; ampliar CHECK', 'Registrar intentos fallidos, accesos denegados e IP en auditoría'],
+  ['Código de verificación de 6 dígitos (2FA)', '<code>usuarios</code> sin secreto TOTP', 'Columnas <code>totp_secreto</code>, <code>totp_activo</code>', 'Segundo factor (TOTP) obligatorio para el personal'],
+  ['Aprobación "con versión del documento"', 'Una sola <code>url_archivo</code> por documento', 'Tabla <code>documento_versiones</code>', 'Versionado de documentos'],
+  ['Conciliación automática con Webpay / Mercado Pago', '<code>pagos</code> sin id de transacción ni respuesta', 'Columnas <code>id_transaccion</code>, <code>respuesta_pasarela</code>', 'Conciliación automática de pagos (Webpay y Mercado Pago)'],
+  ['Embudo y carros abandonados', 'No se guardan carros ni prospectos', 'Tablas <code>carros</code> y <code>prospectos</code>', 'Recuperación de carros abandonados']
+];
+
+/* ---------- utilidades ---------- */
+M.forEach((m, i) => { m.n = i + 1; });
+const NEC = {1:'Crítica', 2:'Alta', 3:'Media', 4:'Deseable'};
+const COST = {1:'Bajo', 2:'Medio', 3:'Alto'};
+const $ = (id) => document.getElementById(id);
+const sum = (arr, k) => arr.reduce((a, m) => a + m.h[k], 0);
+const byTitle = (t) => M.find((m) => m.t === t);
+
+/* ---------- KPIs ---------- */
+(function () {
+  const crit = M.filter((m) => m.nec === 1);
+  const wins = M.filter((m) => m.nec <= 2 && m.cost === 1);
+  const mock = M.filter((m) => m.mockup);
+  $('kpis').innerHTML = `
+    <div class="kpi"><div class="l">Mejoras identificadas</div><div class="v">${M.length}</div><div class="d">en ${Object.keys(AREAS).length} áreas</div></div>
+    <div class="kpi red"><div class="l">Críticas</div><div class="v">${crit.length}</div><div class="d">${sum(crit,0)}–${sum(crit,1)} h de desarrollo</div></div>
+    <div class="kpi"><div class="l">Ganancias rápidas</div><div class="v">${wins.length}</div><div class="d">necesidad alta o crítica y costo bajo</div></div>
+    <div class="kpi blu"><div class="l">Brechas mockup ↔ BD</div><div class="v">${GAPS.length}</div><div class="d">${mock.length} mejoras las resuelven</div></div>`;
+})();
+
+/* ---------- Matriz ---------- */
+(function () {
+  const quad = (nec, cost) => {
+    if (nec <= 2 && cost === 1) return ['q-win', 'Hacer ya'];
+    if (nec <= 2) return ['q-key', 'Planificar'];
+    if (cost === 1) return ['q-fill', 'Relleno'];
+    return ['q-later', 'Postergar'];
+  };
+  let html = '<div></div>' + [1, 2, 3].map((c) => `<div class="mx-h">Costo ${COST[c].toLowerCase()}</div>`).join('');
+  [1, 2, 3, 4].forEach((n) => {
+    html += `<div class="mx-l"><span class="pill n${n}">${NEC[n]}</span></div>`;
+    [1, 2, 3].forEach((c) => {
+      const [cls, tag] = quad(n, c);
+      const items = M.filter((m) => m.nec === n && m.cost === c);
+      html += `<div class="cell ${cls}">${items.map((m) => `<button class="chip" title="${m.t}" data-go="${m.n}">${m.n}</button>`).join('')}<span class="tag">${tag}</span></div>`;
+    });
+  });
+  html += '<div class="mx-axis">← más barato · más caro →</div>';
+  $('matrix').innerHTML = html;
+})();
+
+/* ---------- Fases ---------- */
+(function () {
+  const FASES = [
+    {k:'FASE 1', t:'Antes de abrir el CRM', s:'Seguridad, datos y lo mínimo para operar y cobrar.'},
+    {k:'FASE 2', t:'Primeros 3 meses', s:'Ahorro de trabajo diario y más ingresos por renovación.'},
+    {k:'FASE 3', t:'Después', s:'Automatización avanzada y comodidad.'}
+  ];
+  $('phases').innerHTML = FASES.map((f, i) => {
+    const items = M.filter((m) => m.fase === i + 1).sort((a, b) => a.nec - b.nec || a.cost - b.cost);
+    const ext = items.filter((m) => /USD|Comisión|Cobro|Proveedor|Costo por firma|plan de pago/i.test(m.ext)).length;
+    return `
+      <div class="phase">
+        <div class="phase-h"><div class="k">${f.k}</div><h3>${f.t}</h3><div class="s">${f.s}</div></div>
+        <ul>${items.map((m) => `<li>${m.n}. ${m.t} <span>· ${NEC[m.nec]} · ${m.h[0]}–${m.h[1]} h</span></li>`).join('')}</ul>
+        <div class="phase-f"><b>${items.length} mejoras · ${sum(items,0)}–${sum(items,1)} h</b><br>${ext} con algún costo de terceros (mensual o por uso).</div>
+      </div>`;
+  }).join('');
+})();
+
+/* ---------- Brechas ---------- */
+$('gaps').innerHTML = GAPS.map((g) => {
+  const m = byTitle(g[3]);
+  return `<tr><td>${g[0]}</td><td>${g[1]}</td><td>${g[2]}</td><td><button class="chip" data-go="${m.n}">${m.n}</button> ${m.t}</td></tr>`;
+}).join('');
+
+/* ---------- Catálogo ---------- */
+$('fArea').innerHTML = '<option value="">Todas las áreas</option>' + Object.entries(AREAS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
+
+function renderList() {
+  const q = $('q').value.trim().toLowerCase();
+  const a = $('fArea').value, n = $('fNec').value, c = $('fCost').value, o = $('fOrd').value;
+  let items = M.filter((m) =>
+    (!a || m.area === a) && (!n || m.nec == n) && (!c || m.cost == c) &&
+    (!q || (m.t + ' ' + m.prob + ' ' + m.prop).toLowerCase().includes(q)));
+  const sorters = {
+    prio: (x, y) => x.nec - y.nec || x.cost - y.cost || x.h[1] - y.h[1],
+    cost: (x, y) => x.cost - y.cost || x.h[1] - y.h[1] || x.nec - y.nec,
+    area: (x, y) => x.area.localeCompare(y.area) || x.nec - y.nec,
+    num: (x, y) => x.n - y.n
+  };
+  items.sort(sorters[o]);
+  $('count').textContent = `${items.length} de ${M.length} mejoras`;
+  $('list').innerHTML = items.map((m) => `
+    <details class="item nv${m.nec}" id="m${m.n}">
+      <summary>
+        <span class="num">#${m.n}</span>
+        <div><div class="tt">${m.t}${m.mockup ? '<span class="flag">brecha del mockup</span>' : ''}</div><div class="ar">${AREAS[m.area]} · Fase ${m.fase}</div></div>
+        <div class="pills">
+          <span class="pill n${m.nec}">${NEC[m.nec]}</span>
+          <span class="pill c${m.cost}">Costo ${COST[m.cost].toLowerCase()}</span>
+          <span class="hrs">${m.h[0]}–${m.h[1]} h</span>
+        </div>
+      </summary>
+      <div class="body">
+        <div><h4>Problema que resuelve</h4><p>${m.prob}</p></div>
+        <div><h4>Propuesta</h4><p>${m.prop}</p></div>
+        <div><h4>Cambio en la base de datos</h4><p>${m.bd || 'No requiere cambios en la base de datos.'}</p></div>
+        <div><h4>Costo de terceros</h4><p>${m.ext}</p></div>
+      </div>
+    </details>`).join('') || '<div class="panel" style="color:var(--muted)">Ninguna mejora coincide con los filtros.</div>';
+}
+['q', 'fArea', 'fNec', 'fCost', 'fOrd'].forEach((id) => $(id).addEventListener('input', renderList));
+renderList();
+
+/* Ir al detalle desde la matriz o las brechas */
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-go]');
+  if (!b) return;
+  ['q', 'fArea', 'fNec', 'fCost'].forEach((id) => { $(id).value = ''; });
+  renderList();
+  const el = $('m' + b.dataset.go);
+  el.open = true;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+});
+
+/* Al imprimir, desplegar todo */
+window.addEventListener('beforeprint', () => document.querySelectorAll('details').forEach((d) => { d.open = true; }));
+</script>
+
+
+</body></html>

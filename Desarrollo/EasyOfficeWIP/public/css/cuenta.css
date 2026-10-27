@@ -67,3 +67,11 @@
   .alert{flex-wrap:wrap;}
   .alert .aa{margin-left:48px;}
 }
+
+/* ===== Portal: acceso por enlace y mensajes ===== */
+.aviso-ok{background:var(--green-tint);border-left:3px solid var(--green);color:var(--ink);font-size:13px;padding:11px 13px;margin-bottom:14px;line-height:1.5;}
+.aviso-error{background:var(--red-tint);color:var(--red);font-size:13px;padding:11px 13px;margin-bottom:14px;line-height:1.5;}
+.gate .hint{font-size:11.5px;color:var(--muted);line-height:1.45;}
+.alert.bad{border-left-color:var(--red);}
+.alert.bad .ai{background:var(--red-tint);color:var(--red);}
+.sub-t{font-size:17px;margin:26px 0 12px;}

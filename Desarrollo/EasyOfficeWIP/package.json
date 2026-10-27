@@ -1,17 +1,24 @@
 {
   "name": "easyoffice-web",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
-  "description": "Front end de Easy Office en HTML, CSS y JavaScript, servido con Node.js (Express).",
+  "description": "Front end de Easy Office en HTML, CSS y JavaScript, servido con Node.js (Express) y conectado a PostgreSQL.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
+    "start": "node --env-file-if-exists=.env server.js",
+    "dev": "node --env-file-if-exists=.env --watch server.js",
+    "db:revisar": "node --env-file-if-exists=.env scripts/revisar-bd.js",
+    "crear-usuario": "node --env-file-if-exists=.env scripts/crear-usuario.js",
+    "db:diccionario": "node scripts/diccionario/generar.js \"../base de datos/easyoffice_er.sql\" \"../base de datos/diccionario_datos_easyoffice.html\""
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "dependencies": {
-    "express": "^4.21.2"
+    "bcryptjs": "^3.0.3",
+    "express": "^4.21.2",
+    "nodemailer": "^10.2.1",
+    "pg": "^8.23.1",
+    "pizzip": "^3.1.7"
   }
 }
