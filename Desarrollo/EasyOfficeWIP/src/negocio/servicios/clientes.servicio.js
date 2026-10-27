@@ -38,6 +38,7 @@ const direccionesRepo = require('../../datos/repositorios/direcciones.repositori
 const contratosRepo = require('../../datos/repositorios/contratos.repositorio');
 const documentosRepo = require('../../datos/repositorios/documentos.repositorio');
 const pagosRepo = require('../../datos/repositorios/pagos.repositorio');
+const cuentasPortalRepo = require('../../datos/repositorios/cuentasPortal.repositorio');
 const v = require('../validacion');
 
 async function ficha(usuario, id) {
@@ -50,10 +51,53 @@ async function ficha(usuario, id) {
     return {
       cliente,
       representante,
+      accesos: accesosPortal(cliente, representante, await cuentasPortalRepo.porCliente(db, id)),
       contratos: await contratosRepo.porCliente(db, id),
       documentos: await documentosRepo.porCliente(db, id),
       pagos: await pagosRepo.porCliente(db, id)
     };
+  });
+}
+
+/*
+ * Personas que pueden ingresar a /mi-cuenta por este cliente:
+ *   persona natural → el propio cliente (su correo)
+ *   empresa         → el representante legal y las personas autorizadas en el CRM
+ * Cada una con su estado en cuentas_portal (bloqueada, contraseña creada, último ingreso).
+ */
+function accesosPortal(cliente, representante, cuentas) {
+  const igual = (a, b) => String(a).toLowerCase() === String(b).toLowerCase();
+  const titular = cliente.tipo_persona === 'natural'
+    ? cliente.email && { email: cliente.email, nombre: cliente.razon_social, vinculo: 'titular' }
+    : representante?.email && { email: representante.email, nombre: representante.nombre_completo, vinculo: 'representante' };
+  const lista = titular ? [titular] : [];
+  for (const a of cuentas) {
+    if (a.autorizado && !(titular && igual(a.email, titular.email))) lista.push({ email: a.email, nombre: a.nombre, vinculo: 'autorizado' });
+  }
+  return lista.map((x) => {
+    const a = cuentas.find((c) => igual(c.email, x.email));
+    return { ...x, activo: a ? a.activo : true, con_clave: !!a?.con_clave, ultimo_ingreso: a?.ultimo_ingreso || null };
+  });
+}
+
+/*
+ * Autoriza a una persona (solo empresas), le quita la autorización o bloquea / permite su acceso.
+ * datos = { email, nombre?, autorizado?, activo? }
+ */
+async function guardarAcceso(usuario, id, datos = {}) {
+  id = v.id(id, 'Cliente');
+  const email = v.email(datos.email, 'Correo', { opcional: false });
+  const autorizado = datos.autorizado === undefined ? undefined : v.booleano(datos.autorizado);
+  const activo = datos.activo === undefined ? undefined : v.booleano(datos.activo);
+  const nombre = v.texto(datos.nombre, 'Nombre', { opcional: autorizado !== true, max: 150 });
+  return conUsuario(usuario, async (db) => {
+    const cliente = await clientesRepo.obtener(db, id);
+    if (!cliente) throw errores.noEncontrado('Cliente no encontrado o fuera de su cartera.');
+    if (autorizado && cliente.tipo_persona !== 'juridica') {
+      throw errores.solicitudInvalida('Solo se autorizan personas en empresas. Una persona natural ingresa con su propio correo.');
+    }
+    await cuentasPortalRepo.guardar(db, id, email, { nombre, autorizado, activo });
+    return { ok: true };
   });
 }
 
@@ -75,6 +119,7 @@ function validarCliente(d) {
     nacionalidad: v.texto(r.nacionalidad, 'Nacionalidad', { opcional: true }),
     estado_civil: v.texto(r.estado_civil, 'Estado civil', { opcional: true }),
     profesion: v.texto(r.profesion, 'Profesión', { opcional: true }),
+    email: v.email(r.email, 'Correo del representante'),
     direccion: r.direccion && r.direccion.calle ? {
       calle: v.texto(r.direccion.calle, 'Calle'),
       numero: v.texto(r.direccion.numero, 'Número', { max: 20 }),
@@ -115,4 +160,4 @@ async function actualizar(usuario, id, datos) {
   });
 }
 
-module.exports = { listar, eliminar, ficha, crear, actualizar };
+module.exports = { listar, eliminar, ficha, crear, actualizar, guardarAcceso };

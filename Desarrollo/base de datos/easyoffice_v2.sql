@@ -17,7 +17,11 @@
 --                 prospectos, carros abandonados y solicitudes de titulares.
 --   SEGURIDAD     2FA y bloqueo por intentos en usuarios; IP, cliente y acciones
 --                 denegadas en la auditoría; rol de recepción; portal de clientes
---                 protegido por la base de datos (rol_portal + app_cliente()).
+--                 protegido por la base de datos (rol_portal + app_cliente()) y con
+--                 contraseña por persona vinculada (cuentas_portal).
+--   TIENDA        documentos Word vinculados a planes de la tienda (plantilla_planes),
+--                 con entrega automática o tras revisión; el cliente acepta un borrador
+--                 con marca de agua o envía un ticket (tickets).
 --   DATOS BASE    roles, permisos, plazos de alerta, regiones de Chile y comunas
 --                 de las regiones Metropolitana y de Valparaíso.
 --
@@ -336,6 +340,27 @@ CREATE INDEX ix_clientes_email          ON clientes (email);
 CREATE INDEX ix_clientes_razon_social   ON clientes (lower(razon_social));
 CREATE INDEX ix_clientes_tipo           ON clientes (tipo_persona);
 
+-- Acceso a /mi-cuenta con correo y contraseña.
+--   Persona natural: correo del cliente (clientes.email).
+--   Empresa: RUT + correo del representante legal o de una persona autorizada en el CRM.
+-- La persona define su contraseña con un enlace enviado a su correo (NULL hasta entonces).
+-- Una fila por (cliente, correo): quien representa a varias empresas tiene una contraseña por empresa.
+CREATE TABLE cuentas_portal (
+    id                 int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    cliente_id         int    NOT NULL REFERENCES clientes (id) ON DELETE CASCADE,
+    email              citext NOT NULL CHECK (email ~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$'),
+    nombre             text,                                  -- nombre de la persona autorizada
+    autorizado         boolean NOT NULL DEFAULT false,        -- true: agregada desde el CRM
+    password_hash      text CHECK (password_hash ~ '^\$2[aby]\$'),  -- bcrypt; NULL hasta que la crea
+    activo             boolean NOT NULL DEFAULT true,         -- false: el CRM le quitó el acceso
+    clave_definida_en  timestamptz,
+    ultimo_ingreso     timestamptz,
+    registrado_por     int DEFAULT app_usuario() REFERENCES usuarios (id),
+    creado_en          timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (cliente_id, email)
+);
+CREATE INDEX ix_cuentas_portal_email ON cuentas_portal (email);
+
 
 -- =====================================================================
 -- 6. CATÁLOGO DE SERVICIOS
@@ -439,8 +464,20 @@ CREATE TABLE plantillas_documento (
     campos               jsonb,                -- [{clave, etiqueta, tipo}]
     requiere_revision    boolean NOT NULL DEFAULT false,   -- verificación humana antes de firmar
     activo               boolean NOT NULL DEFAULT true,
+    -- Tienda: entrega automática al cliente o tras revisión del personal
+    entrega              text NOT NULL DEFAULT 'revision' CHECK (entrega IN ('automatica', 'revision')),
+    -- {"<marca del Word>": {"dato": "RUT" | "_tienda" | "_ejecutivo" | "_ignorar", "etiqueta": "..."}}
+    mapa_campos          jsonb,
     UNIQUE (tipo_documento, version)
 );
+
+-- Planes de la tienda (id del plan en public/js/catalogo.js, ej. dom-anual) que usan cada plantilla
+CREATE TABLE plantilla_planes (
+    plantilla_id  int  NOT NULL REFERENCES plantillas_documento (id) ON DELETE CASCADE,
+    plan_codigo   text NOT NULL CHECK (plan_codigo ~ '^[a-z0-9-]+$'),
+    PRIMARY KEY (plantilla_id, plan_codigo)
+);
+CREATE INDEX ix_plantilla_planes_plan ON plantilla_planes (plan_codigo);
 
 -- Cláusulas reutilizables (el acuerdo de accionistas se arma eligiendo artículos)
 CREATE TABLE clausulas_documento (
@@ -484,7 +521,16 @@ CREATE TABLE documentos (
            OR estado NOT IN ('aprobado','enviado_firma','firmado')
            OR revisado_por IS NOT NULL),
     CHECK (estado <> 'firmado' OR firmado_en IS NOT NULL),
-    CHECK (codigo_verificacion IS NULL OR codigo_verificacion ~ '^EO-[0-9A-F]{4}-[0-9A-F]{4}$')
+    CHECK (codigo_verificacion IS NULL OR codigo_verificacion ~ '^EO-[0-9A-F]{4}-[0-9A-F]{4}$'),
+    -- Revisión del cliente: ve un borrador con marca de agua y lo acepta antes de recibir el final
+    estado_cliente      text CHECK (estado_cliente IN ('por_revisar', 'aceptado', 'objetado')),
+    publicado_en        timestamptz,                       -- desde cuándo el cliente ve el borrador
+    aceptado_en         timestamptz,
+    aceptado_por        citext,                            -- correo de quien aceptó
+    aceptado_ip         inet,
+    version_aceptada    int,
+    CONSTRAINT ck_documentos_aceptado
+        CHECK (estado_cliente IS DISTINCT FROM 'aceptado' OR (aceptado_en IS NOT NULL AND aceptado_por IS NOT NULL))
 );
 CREATE INDEX ix_documentos_cliente  ON documentos (cliente_id);
 CREATE INDEX ix_documentos_contrato ON documentos (contrato_id);
@@ -711,6 +757,24 @@ CREATE TABLE solicitudes_titular (
     CHECK (estado NOT IN ('respondida','rechazada') OR (respondida_en IS NOT NULL AND respuesta IS NOT NULL))
 );
 CREATE INDEX ix_solicitudes_titular_estado ON solicitudes_titular (estado, plazo_en);
+
+-- 10.7 Tickets del cliente a la administración (ej. no está de acuerdo con un documento).
+CREATE TABLE tickets (
+    id              int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    cliente_id      int    NOT NULL REFERENCES clientes (id) ON DELETE CASCADE,
+    documento_id    int    REFERENCES documentos (id) ON DELETE SET NULL,
+    email           citext,                               -- quién lo envió desde el portal
+    motivo          text   NOT NULL CHECK (motivo IN ('datos_incorrectos', 'condiciones', 'falta_informacion', 'otro')),
+    detalle         text   NOT NULL CHECK (length(detalle) BETWEEN 1 AND 4000),
+    estado          text   NOT NULL DEFAULT 'abierto' CHECK (estado IN ('abierto', 'en_proceso', 'resuelto', 'cerrado')),
+    respuesta       text,
+    atendido_por    int    REFERENCES usuarios (id),
+    creado_en       timestamptz NOT NULL DEFAULT now(),
+    actualizado_en  timestamptz
+);
+CREATE INDEX ix_tickets_cliente   ON tickets (cliente_id);
+CREATE INDEX ix_tickets_documento ON tickets (documento_id);
+CREATE INDEX ix_tickets_estado    ON tickets (estado, creado_en DESC);
 
 
 -- =====================================================================
@@ -1081,6 +1145,7 @@ END;
 $$;
 
 -- usuarios no se audita por trigger: guardaría password_hash y el secreto TOTP en la bitácora.
+-- Tampoco cuentas_portal (password_hash): la aplicación registra los ingresos al portal.
 DO $$
 DECLARE t text;
 BEGIN
@@ -1091,7 +1156,8 @@ BEGIN
         'plantillas_documento', 'clausulas_documento',
         'documentos', 'documento_versiones', 'documento_partes', 'documento_clausulas', 'pagos',
         'roles', 'permisos', 'roles_permisos', 'config_alertas',
-        'movimientos_firmas', 'correspondencia', 'gestiones', 'prospectos', 'carros', 'solicitudes_titular'
+        'movimientos_firmas', 'correspondencia', 'gestiones', 'prospectos', 'carros', 'solicitudes_titular',
+        'plantilla_planes', 'tickets'
     ] LOOP
         EXECUTE format(
             'CREATE TRIGGER trg_auditoria_%1$s
@@ -1137,6 +1203,8 @@ ALTER TABLE correspondencia        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE gestiones              ENABLE ROW LEVEL SECURITY;
 ALTER TABLE prospectos             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE solicitudes_titular    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cuentas_portal         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tickets                ENABLE ROW LEVEL SECURITY;
 
 -- ---- Personal (mismas reglas de easyoffice_er.sql) ----
 CREATE POLICY p_contratos ON contratos
@@ -1193,6 +1261,10 @@ CREATE POLICY p_prospectos ON prospectos
     USING (app_es_admin() OR asignado_a = app_usuario() OR asignado_a IS NULL);
 CREATE POLICY p_solicitudes_titular ON solicitudes_titular
     USING (app_es_admin() OR EXISTS (SELECT 1 FROM clientes c WHERE c.id = solicitudes_titular.cliente_id));
+CREATE POLICY p_cuentas_portal ON cuentas_portal
+    USING (app_es_admin() OR EXISTS (SELECT 1 FROM clientes c WHERE c.id = cuentas_portal.cliente_id));
+CREATE POLICY p_tickets ON tickets
+    USING (app_es_admin() OR EXISTS (SELECT 1 FROM clientes c WHERE c.id = tickets.cliente_id));
 
 -- Recepción (oficina de partes): ve a todos los clientes (solo lectura) y toda la correspondencia
 CREATE POLICY p_clientes_recepcion ON clientes FOR SELECT
@@ -1230,6 +1302,7 @@ CREATE POLICY p_portal_solicitudes_ver ON solicitudes_titular FOR SELECT TO rol_
     USING (cliente_id = app_cliente());
 CREATE POLICY p_portal_solicitudes_crear ON solicitudes_titular FOR INSERT TO rol_portal
     WITH CHECK (cliente_id = app_cliente() AND estado = 'recibida');
+CREATE POLICY p_portal_tickets ON tickets FOR SELECT TO rol_portal USING (cliente_id = app_cliente());
 -- contrato_servicios, alertas, pagos, documento_partes/clausulas/versiones y representantes
 -- ya heredan la visibilidad desde contratos, documentos y clientes.
 
@@ -1248,6 +1321,15 @@ GRANT SELECT ON
     v_datos_contrato, v_datos_contrato_servicios, v_saldo_contrato, v_estado_renovacion, v_saldo_firmas
     TO rol_ejecutivo;
 GRANT SELECT (id, nombre, email, rol_id, activo) ON usuarios TO rol_ejecutivo;
+-- Accesos al portal de su cartera, sin ver nunca el hash
+GRANT SELECT (id, cliente_id, email, nombre, autorizado, activo, clave_definida_en, ultimo_ingreso, registrado_por, creado_en)
+    ON cuentas_portal TO rol_ejecutivo;
+GRANT INSERT (cliente_id, email, nombre, autorizado, activo) ON cuentas_portal TO rol_ejecutivo;
+GRANT UPDATE (nombre, autorizado, activo) ON cuentas_portal TO rol_ejecutivo;
+-- Tienda: planes de cada plantilla (lectura) y tickets de su cartera
+GRANT SELECT ON plantilla_planes TO rol_ejecutivo;
+GRANT SELECT ON tickets TO rol_ejecutivo;
+GRANT UPDATE (estado, respuesta, atendido_por, actualizado_en) ON tickets TO rol_ejecutivo;
 
 -- ---- Administrador ----
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO rol_admin;
@@ -1259,7 +1341,7 @@ GRANT SELECT ON
     contratos, contrato_servicios, alertas, pagos,
     documentos, documento_versiones, documento_partes, documento_clausulas,
     plantillas_documento, clausulas_documento,
-    movimientos_firmas, correspondencia, solicitudes_titular,
+    movimientos_firmas, correspondencia, solicitudes_titular, tickets,
     v_datos_contrato, v_datos_contrato_servicios, v_saldo_contrato, v_estado_renovacion, v_saldo_firmas
     TO rol_portal;
 GRANT UPDATE (leida_en) ON correspondencia TO rol_portal;

@@ -109,3 +109,9 @@
   .acts .btn{width:100%;}
   .pms,.okgrid{grid-template-columns:1fr;}
 }
+
+/* ===== Compra real: mensajes de error ===== */
+.aviso-error{background:var(--red-tint);color:var(--red);font-size:13px;padding:11px 13px;line-height:1.5;}
+.dom{display:grid;grid-template-columns:2fr 1fr 1.4fr 1.6fr;gap:8px;}
+.dom input,.dom select{min-width:0;}
+@media(max-width:760px){.dom{grid-template-columns:1fr 1fr;}}

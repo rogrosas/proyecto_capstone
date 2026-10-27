@@ -14,7 +14,7 @@ async function contarPorEstado(db) {
  */
 async function listar(db, { revision }, limite) {
   const r = await db.query(`
-    SELECT d.id, d.tipo, d.estado, d.requiere_revision, d.codigo_verificacion,
+    SELECT d.id, d.tipo, d.estado, d.requiere_revision, d.codigo_verificacion, d.estado_cliente,
            d.generado_en::date::text AS generado, d.firmado_en::date::text AS firmado,
            cl.razon_social AS cliente, k.folio, p.tipo_documento AS plantilla,
            ue.nombre AS ejecutivo, ur.nombre AS revisor
@@ -48,7 +48,10 @@ async function obtener(db, id) {
            d.revisado_por, ur.nombre AS revisor, to_char(d.revisado_en, 'YYYY-MM-DD HH24:MI') AS revisado_en,
            d.ejecutivo_id, ue.nombre AS ejecutivo, d.url_archivo, d.firma_id_externo,
            to_char(d.firmado_en, 'YYYY-MM-DD HH24:MI') AS firmado_en, d.codigo_verificacion,
-           d.generado_en::date::text AS generado
+           d.generado_en::date::text AS generado,
+           d.estado_cliente, to_char(d.publicado_en, 'YYYY-MM-DD HH24:MI') AS publicado_en,
+           to_char(d.aceptado_en, 'YYYY-MM-DD HH24:MI') AS aceptado_en, d.aceptado_por, d.version_aceptada,
+           p.entrega
       FROM documentos d
       JOIN clientes cl ON cl.id = d.cliente_id
       LEFT JOIN contratos k ON k.id = d.contrato_id
@@ -80,7 +83,8 @@ async function clausulas(db, documentoId) {
 async function porCliente(db, clienteId) {
   const r = await db.query(`
     SELECT d.id, d.tipo, d.estado, d.requiere_revision, k.folio, d.generado_en::date::text AS generado,
-           d.firmado_en::date::text AS firmado, d.codigo_verificacion, d.url_archivo
+           d.firmado_en::date::text AS firmado, d.codigo_verificacion, d.url_archivo,
+           d.estado_cliente, d.publicado_en::date::text AS publicado, d.aceptado_en::date::text AS aceptado
       FROM documentos d LEFT JOIN contratos k ON k.id = d.contrato_id
      WHERE d.cliente_id = $1 ORDER BY d.generado_en DESC`, [clienteId]);
   return r.rows;
@@ -133,7 +137,8 @@ async function cambiarEstado(db, id, estadoAnterior, cambios) {
 module.exports = {
   contarPorEstado, listar, aprobar,
   obtener, partes, clausulas, porCliente, tipoDePlantilla, crear, agregarParte, agregarClausula, estadoActual, cambiarEstado,
-  generadoVigente, guardarArchivo, archivoDe, registrarVersion, ultimaVersion
+  generadoVigente, guardarArchivo, archivoDe, registrarVersion, ultimaVersion,
+  entregaDe, fijarEntrega, aceptar, objetar
 };
 
 /* ---------- Archivos Word generados ---------- */
@@ -141,7 +146,7 @@ module.exports = {
 // Último documento no anulado de ese contrato y esa plantilla (se le agrega una versión nueva)
 async function generadoVigente(db, contratoId, plantillaId) {
   const r = await db.query(`
-    SELECT id, estado, url_archivo FROM documentos
+    SELECT id, estado, estado_cliente, url_archivo FROM documentos
      WHERE contrato_id = $1 AND plantilla_id = $2 AND estado <> 'anulado'
      ORDER BY generado_en DESC, id DESC LIMIT 1 FOR UPDATE`, [contratoId, plantillaId]);
   return r.rows[0] || null;
@@ -183,4 +188,43 @@ async function registrarVersion(db, id, version, urlArchivo, hash) {
   await db.query('INSERT INTO documento_versiones (documento_id, version, url_archivo, hash_sha256) VALUES ($1, $2, $3, $4)',
     [id, version, urlArchivo, hash]);
   return true;
+}
+
+/* ---------- Entrega al cliente (borrador con marca de agua → aceptación) ---------- */
+
+// Datos para decidir qué ve el cliente; con clienteId, solo si el documento es suyo
+async function entregaDe(db, id, clienteId = null) {
+  const r = await db.query(`
+    SELECT d.id, d.cliente_id, d.contrato_id, d.tipo, d.estado, d.estado_cliente, d.url_archivo,
+           d.publicado_en, d.aceptado_en, d.aceptado_por, k.folio, cl.razon_social AS cliente, cl.email AS cliente_email
+      FROM documentos d
+      JOIN clientes cl ON cl.id = d.cliente_id
+      LEFT JOIN contratos k ON k.id = d.contrato_id
+     WHERE d.id = $1 AND ($2::int IS NULL OR d.cliente_id = $2)`, [id, clienteId]);
+  return r.rows[0] || null;
+}
+
+// 'por_revisar' publica el borrador al cliente; null lo retira (por ejemplo, al regenerarlo para revisión interna)
+async function fijarEntrega(db, id, estadoCliente) {
+  await db.query(`
+    UPDATE documentos
+       SET estado_cliente = $2,
+           publicado_en = CASE WHEN $2::text = 'por_revisar' THEN now() ELSE NULL END
+     WHERE id = $1`, [id, estadoCliente]);
+}
+
+// Solo un borrador publicado y del cliente de la sesión
+async function aceptar(db, id, clienteId, { email, ip, version }) {
+  const r = await db.query(`
+    UPDATE documentos
+       SET estado_cliente = 'aceptado', aceptado_en = now(), aceptado_por = $3, aceptado_ip = $4, version_aceptada = $5
+     WHERE id = $1 AND cliente_id = $2 AND estado_cliente = 'por_revisar' RETURNING id`, [id, clienteId, email, ip, version]);
+  return r.rowCount > 0;
+}
+
+async function objetar(db, id, clienteId) {
+  const r = await db.query(`
+    UPDATE documentos SET estado_cliente = 'objetado'
+     WHERE id = $1 AND cliente_id = $2 AND estado_cliente = 'por_revisar' RETURNING id`, [id, clienteId]);
+  return r.rowCount > 0;
 }

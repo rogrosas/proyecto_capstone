@@ -10,6 +10,7 @@ const { requiereSesion } = require('../middleware/sesion');
 const auth = require('../controladores/auth.controlador');
 const crm = require('../controladores/crm.controlador');
 const adm = require('../controladores/administracion.controlador');
+const entrega = require('../controladores/entrega.controlador');
 
 // Públicas
 router.post('/login', a(auth.login));
@@ -27,6 +28,7 @@ router.post('/clientes', a(crm.crearCliente));
 router.get('/clientes/:id', a(crm.fichaCliente));
 router.put('/clientes/:id', a(crm.actualizarCliente));
 router.delete('/clientes/:id', a(crm.eliminarCliente));
+router.put('/clientes/:id/accesos', a(crm.guardarAccesoPortal));   // personas que ingresan a /mi-cuenta (cuentas_portal)
 
 // Contratos (contratos, contrato_servicios, alertas, vistas de impresión)
 router.get('/contratos', a(crm.listarContratos));
@@ -53,6 +55,18 @@ router.get('/plantillas-word', a(arch.plantillas));
 router.get('/plantillas/:id/archivo', a(arch.archivoPlantilla));
 router.post('/contratos/:id/generar', a(arch.generarContrato));
 router.get('/documentos/:id/archivo', a(arch.archivoDocumento));
+router.get('/plantillas/:id/preguntas', a(entrega.preguntasGeneracion));   // datos que completa el personal al generar
+
+// Entrega al cliente: borrador con marca de agua, publicación y tickets
+router.get('/documentos/:id/borrador', a(entrega.borradorPersonal));
+router.post('/documentos/:id/publicar', a(entrega.publicar));
+router.get('/tickets', a(entrega.listarTickets));
+router.patch('/tickets/:id', a(entrega.atenderTicket));
+
+// Documentos de la tienda (solo administradores): planes, entrega y datos de cada marca del Word
+router.get('/admin/documentos-tienda', a(entrega.documentosTienda));
+router.get('/admin/plantillas/:id/campos', a(entrega.camposPlantilla));
+router.put('/admin/plantillas/:id/tienda', a(entrega.configurarTienda));
 router.get('/admin/archivos', a(arch.listarArchivos));
 router.post('/admin/archivos', express.raw({ type: () => true, limit: archivosCfg.maxBytes }), a(arch.subirArchivo));
 

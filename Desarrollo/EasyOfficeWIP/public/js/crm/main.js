@@ -13,6 +13,7 @@ import clientes from './modulos/clientes.js';
 import contratos from './modulos/contratos.js';
 import renovaciones from './modulos/renovaciones.js';
 import documentos from './modulos/documentos.js';
+import tickets from './modulos/tickets.js';
 import ventas from './modulos/ventas.js';
 import auditoria from './modulos/auditoria.js';
 import administracion from './modulos/administracion.js';
@@ -26,7 +27,7 @@ const correspondencia = {
   }
 };
 
-const MODULOS = [dashboard, clientes, contratos, renovaciones, documentos, ventas, correspondencia, auditoria, administracion];
+const MODULOS = [dashboard, clientes, contratos, renovaciones, documentos, tickets, ventas, correspondencia, auditoria, administracion];
 let actual = 'dashboard';
 
 function visibles() {

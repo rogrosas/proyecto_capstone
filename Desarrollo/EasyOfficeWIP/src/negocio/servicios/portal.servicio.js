@@ -1,16 +1,23 @@
 /* =========================================================
-   CAPA DE NEGOCIO · Portal de clientes con enlace mágico.
+   CAPA DE NEGOCIO · Portal de clientes con correo y contraseña.
 
-   1. El cliente escribe su correo. Si existe en clientes.email, se le envía
-      un enlace por cada cliente asociado (una persona puede tener varias empresas).
-   2. El enlace lleva un token firmado (HMAC-SHA256) con el id del cliente, el correo,
-      el vencimiento (15 min) y un identificador único: no se guarda nada en la BD
-      y solo se puede usar una vez.
-   3. Al abrirlo se crea una sesión de cliente, separada de la del personal.
-   La respuesta al pedir el enlace es siempre la misma, exista o no el correo,
-   para no revelar quién es cliente.
+   Ingreso:
+     PERSONA  correo del cliente (clientes.email) + contraseña.
+     EMPRESA  RUT de la empresa + correo de una persona vinculada
+              (representante legal o autorizada en el CRM) + contraseña.
+   La contraseña es por persona y por cliente (cuentas_portal, bcrypt).
+
+   Crear o recuperar la contraseña:
+     1. La persona indica empresa/persona, (RUT) y correo. Si está vinculada,
+        se le envía un enlace por cada cliente (una persona puede tener varias empresas).
+     2. El enlace lleva un token firmado (HMAC-SHA256) con el cliente, el correo,
+        el vencimiento (15 min) y un identificador único: no se guarda en la BD
+        y solo se puede usar una vez.
+     3. Al abrirlo define su contraseña y queda con la sesión iniciada.
+   Las respuestas no revelan si un correo o RUT es cliente.
    ========================================================= */
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const config = require('../../config');
 const { errores } = require('../../comun/errores');
 const { conCliente } = require('../../datos/conexion');
@@ -30,26 +37,59 @@ if (!config.cliente.secreto) {
   console.warn('[portal] Falta CLIENTE_SECRETO en .env: se generó uno temporal (los enlaces enviados dejan de servir al reiniciar).');
 }
 
-const MENSAJE_ENVIADO = 'Si el correo está registrado, le enviamos un enlace de acceso. Revise su bandeja de entrada (y la carpeta de spam). El enlace vence en 15 minutos.';
+const MENSAJE_ENVIADO = 'Si los datos corresponden a una cuenta de Easy Office, le enviamos un enlace para crear su contraseña. Revise su bandeja de entrada (y la carpeta de spam). El enlace vence en 15 minutos.';
+const DATOS_INCORRECTOS = 'Los datos de acceso no son correctos. Si aún no tiene contraseña, use "Crear o recuperar contraseña".';
 
-/* ---------- límite de solicitudes por IP y por correo ---------- */
+// Hash de relleno: un correo sin cuenta tarda lo mismo que uno con cuenta
+const HASH_FALSO = bcrypt.hashSync(crypto.randomBytes(16).toString('hex'), 12);
+const TIPOS = { empresa: 'juridica', persona: 'natural' };
+
+/* ---------- límite de intentos por IP y por correo ---------- */
 const solicitudes = new Map(); // clave -> { n, desde }
-function excedido(clave) {
+function excedido(clave, max) {
   const ahora = Date.now();
   const r = solicitudes.get(clave);
   if (!r || ahora - r.desde > config.cliente.ventanaMs) { solicitudes.set(clave, { n: 1, desde: ahora }); return false; }
   r.n++;
-  return r.n > config.cliente.maxSolicitudes;
+  return r.n > max;
+}
+
+// Ingreso: solo cuentan los intentos fallidos (como el login del CRM), así varios
+// clientes detrás de la misma IP no se bloquean entre sí por ingresar bien.
+function bloqueado(clave) {
+  const r = solicitudes.get(clave);
+  return !!r && Date.now() - r.desde <= config.cliente.ventanaMs && r.n >= config.login.maxIntentos;
+}
+function sumarFallo(...claves) {
+  for (const clave of claves) excedido(clave, Infinity);
+}
+
+/* ---------- datos de acceso ---------- */
+// { tipo: 'empresa' | 'persona', rut (empresa), email } → { tipo de cliente, rut normalizado, email }
+function leerAcceso(datos) {
+  const tipo = TIPOS[datos?.tipo];
+  if (!tipo) throw errores.solicitudInvalida('Indique si ingresa como empresa o como persona.');
+  const rut = tipo === 'juridica' ? v.rut(datos.rut, 'RUT de la empresa') : null;
+  const email = v.email(datos.email, 'Correo', { opcional: false });
+  return { tipo, rut, email };
+}
+
+function validarClave(password) {
+  const p = String(password ?? '');
+  if (p.length < 8) throw errores.solicitudInvalida('La contraseña debe tener al menos 8 caracteres.');
+  if (Buffer.byteLength(p) > 72) throw errores.solicitudInvalida('La contraseña es demasiado larga (máximo 72 caracteres).');
+  return p;
 }
 
 /* ---------- token firmado ---------- */
 const b64 = (s) => Buffer.from(s).toString('base64url');
 const firmar = (datos) => crypto.createHmac('sha256', SECRETO).update(datos).digest('base64url');
 
-function crearToken(cliente) {
+function crearToken(clienteId, tipo, email) {
   const carga = b64(JSON.stringify({
-    c: cliente.id,
-    e: String(cliente.email).toLowerCase(),
+    c: clienteId,
+    t: tipo,
+    e: email,
     x: Date.now() + config.cliente.enlaceMs,
     n: crypto.randomBytes(12).toString('hex')
   }));
@@ -67,61 +107,95 @@ function leerToken(token) {
 /* ---------- correo ---------- */
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-function correoAcceso(email, enlaces) {
+function correoClave(email, enlaces) {
   const filas = enlaces.map(({ cliente, url }) => `
     <tr><td style="padding:10px 0;border-bottom:1px solid #E4E7E9;">
       <div style="font-weight:600;color:#282828;">${esc(cliente.razon_social)}</div>
       <div style="font-size:12px;color:#69727D;">RUT ${esc(cliente.rut_fmt)}</div>
     </td><td style="padding:10px 0;border-bottom:1px solid #E4E7E9;text-align:right;">
-      <a href="${esc(url)}" style="background:#24D356;color:#fff;text-decoration:none;padding:10px 18px;border-radius:3px;font-weight:600;display:inline-block;">Ingresar</a>
+      <a href="${esc(url)}" style="background:#24D356;color:#fff;text-decoration:none;padding:10px 18px;border-radius:3px;font-weight:600;display:inline-block;">Crear contraseña</a>
     </td></tr>`).join('');
   const html = `<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;color:#333;">
-    <h2 style="font-family:Georgia,serif;color:#282828;">Acceso a su cuenta Easy Office</h2>
-    <p>Recibimos una solicitud para ingresar a su cuenta con el correo <b>${esc(email)}</b>.
-    ${enlaces.length > 1 ? 'Este correo está asociado a varias cuentas; elija a cuál ingresar:' : 'Use el botón para ingresar:'}</p>
+    <h2 style="font-family:Georgia,serif;color:#282828;">Su contraseña de Easy Office</h2>
+    <p>Recibimos una solicitud para crear o cambiar la contraseña del correo <b>${esc(email)}</b>.
+    ${enlaces.length > 1 ? 'Este correo está vinculado a varias cuentas; cada una tiene su propia contraseña:' : 'Use el botón para definirla:'}</p>
     <table style="width:100%;border-collapse:collapse;">${filas}</table>
     <p style="font-size:12px;color:#69727D;margin-top:20px;">El enlace vence en 15 minutos y sirve una sola vez.
-    Si usted no lo solicitó, ignore este mensaje: nadie puede ingresar sin acceso a su correo.</p></div>`;
-  const texto = `Acceso a su cuenta Easy Office\n\n${enlaces.map(({ cliente, url }) => `${cliente.razon_social}: ${url}`).join('\n')}\n\nEl enlace vence en 15 minutos y sirve una sola vez.`;
-  return { para: email, asunto: 'Su enlace de acceso a Easy Office', html, texto };
+    Si usted no lo solicitó, ignore este mensaje: su contraseña actual sigue igual.</p></div>`;
+  const texto = `Su contraseña de Easy Office\n\n${enlaces.map(({ cliente, url }) => `${cliente.razon_social}: ${url}`).join('\n')}\n\nEl enlace vence en 15 minutos y sirve una sola vez.`;
+  return { para: email, asunto: 'Cree su contraseña de Easy Office', html, texto };
+}
+
+/* ---------- sesión ---------- */
+async function abrirSesion(cliente, email) {
+  const sesion = { id: cliente.id, razon_social: cliente.razon_social, rut: cliente.rut_fmt, email, tipo: cliente.tipo_persona };
+  const token = crypto.randomBytes(32).toString('hex');
+  sesionesRepo.guardarCliente(token, sesion, Date.now() + config.cliente.duracionMs);
+  try {
+    await portalRepo.marcarIngreso(cliente.id, email);
+    await portalRepo.registrarAcceso(cliente.id, 'LOGIN');
+  } catch (err) { console.warn('[portal] auditoría:', err.message); }
+  return { token, cliente: sesion };
 }
 
 /* ---------- casos de uso ---------- */
 
-async function solicitarAcceso(emailIngresado, ip) {
-  const email = v.email(emailIngresado, 'Correo', { opcional: false });
-  if (excedido('ip:' + ip) || excedido('correo:' + email)) {
+// Devuelve { token de sesión, cliente } o lanza error con un mensaje que no revela qué dato falló
+async function iniciarSesion(datos, ip) {
+  const { tipo, rut, email } = leerAcceso(datos);
+  const password = String(datos?.password ?? '');
+  if (!password) throw errores.solicitudInvalida('Ingrese su contraseña.');
+  const claves = ['ingreso-ip:' + ip, 'ingreso:' + email];
+  if (claves.some(bloqueado)) throw errores.demasiadosIntentos('Demasiados intentos. Espere 15 minutos e intente de nuevo.');
+  const cuentas = (await portalRepo.vinculos(email, tipo, rut)).filter((c) => c.activo && c.password_hash);
+  if (!cuentas.length) {
+    await bcrypt.compare(password, HASH_FALSO);
+    sumarFallo(...claves);
+    throw errores.noAutenticado(DATOS_INCORRECTOS);
+  }
+  // Una persona natural no indica RUT: puede haber más de un cliente con su correo
+  for (const c of cuentas) {
+    if (await bcrypt.compare(password, c.password_hash)) {
+      solicitudes.delete('ingreso:' + email);
+      return abrirSesion(c, email);
+    }
+  }
+  sumarFallo(...claves);
+  throw errores.noAutenticado(DATOS_INCORRECTOS);
+}
+
+async function solicitarClave(datos, ip) {
+  const { tipo, rut, email } = leerAcceso(datos);
+  if (excedido('clave-ip:' + ip, config.cliente.maxSolicitudes) || excedido('clave:' + email, config.cliente.maxSolicitudes)) {
     throw errores.demasiadosIntentos('Demasiadas solicitudes. Espere unos minutos e intente de nuevo.');
   }
-  const clientes = await portalRepo.clientesPorEmail(email);
+  const clientes = (await portalRepo.vinculos(email, tipo, rut)).filter((c) => c.activo);
   if (clientes.length) {
-    const enlaces = clientes.map((cliente) => ({ cliente, url: `${config.appUrl}/mi-cuenta?acceso=${crearToken(cliente)}` }));
+    const enlaces = clientes.map((cliente) => ({ cliente, url: `${config.appUrl}/mi-cuenta?clave=${crearToken(cliente.id, tipo, email)}` }));
     try {
-      await correo.enviar(correoAcceso(email, enlaces));
-      if (correo.modoDesarrollo()) enlaces.forEach(({ cliente, url }) => console.log(`[portal · desarrollo] Enlace para ${cliente.razon_social}: ${url}`));
+      await correo.enviar(correoClave(email, enlaces));
+      if (correo.modoDesarrollo()) enlaces.forEach(({ cliente, url }) => console.log(`[portal · desarrollo] Enlace de contraseña para ${email} en ${cliente.razon_social}: ${url}`));
     } catch (err) {
-      console.error('[portal] no se pudo enviar el correo de acceso:', err.message);
+      console.error('[portal] no se pudo enviar el correo de contraseña:', err.message);
       throw errores.sinBaseDatos('No pudimos enviar el correo en este momento. Intente más tarde.');
     }
   }
   return { mensaje: MENSAJE_ENVIADO };
 }
 
-// Devuelve { token de sesión, cliente } o lanza error si el enlace no sirve
-async function verificarEnlace(token) {
+// Define la contraseña con el enlace del correo y deja la sesión iniciada
+async function definirClave(token, password) {
   const datos = leerToken(token);
   const invalido = errores.noAutenticado('El enlace no es válido o ya venció. Pida uno nuevo.');
   if (!datos || typeof datos.x !== 'number' || datos.x < Date.now()) throw invalido;
-  const cliente = await portalRepo.clientePorId(datos.c);
-  // El correo del cliente pudo cambiar después de enviar el enlace
-  if (!cliente || String(cliente.email || '').toLowerCase() !== datos.e) throw invalido;
+  const clave = validarClave(password);
+  // El vínculo pudo cambiar después de enviar el enlace (otro correo, acceso quitado)
+  const cliente = (await portalRepo.vinculos(datos.e, datos.t)).find((c) => c.id === datos.c && c.activo);
+  if (!cliente) throw invalido;
   if (!sesionesRepo.consumirEnlace(datos.n, datos.x)) throw errores.noAutenticado('Este enlace ya se usó. Pida uno nuevo.');
 
-  const sesion = { id: cliente.id, razon_social: cliente.razon_social, rut: cliente.rut_fmt, email: cliente.email };
-  const tokenSesion = crypto.randomBytes(32).toString('hex');
-  sesionesRepo.guardarCliente(tokenSesion, sesion, Date.now() + config.cliente.duracionMs);
-  try { await portalRepo.registrarAcceso(cliente.id, 'LOGIN'); } catch (err) { console.warn('[portal] auditoría:', err.message); }
-  return { token: tokenSesion, cliente: sesion };
+  await portalRepo.guardarClave(cliente.id, datos.e, await bcrypt.hash(clave, 12));
+  return abrirSesion(cliente, datos.e);
 }
 
 function validarSesion(token) {
@@ -168,11 +242,12 @@ async function panel(sesion) {
         servicios: k.detalle_servicios.map((s) => ({ nombre: s.nombre, precio: s.precio, ciclo: s.ciclo_pago }))
       })),
       documentos: documentos.map((d) => ({
-        tipo: d.tipo, folio: d.folio, estado: d.estado, generado: d.generado, firmado: d.firmado, codigo: d.codigo_verificacion
+        id: d.id, tipo: d.tipo, folio: d.folio, estado: d.estado, generado: d.generado, firmado: d.firmado, codigo: d.codigo_verificacion,
+        estado_cliente: d.estado_cliente, publicado: d.publicado, aceptado: d.aceptado
       })),
       pagos: pagos.map((p) => ({ fecha: p.fecha, referencia: p.referencia, monto: p.monto, pasarela: p.pasarela, estado: p.estado, cuota: p.cuota, total_cuotas: p.total_cuotas }))
     };
   });
 }
 
-module.exports = { solicitarAcceso, verificarEnlace, validarSesion, cerrarSesion, panel };
+module.exports = { iniciarSesion, solicitarClave, definirClave, validarSesion, cerrarSesion, panel };

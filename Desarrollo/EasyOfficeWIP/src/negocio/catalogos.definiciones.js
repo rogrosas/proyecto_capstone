@@ -14,9 +14,10 @@ const FAMILIAS = ['CONTRATO_SERVICIO', 'PODER', 'ACUERDO_ACCIONISTAS', 'ARRIENDO
 const D = {
   servicios: {
     titulo: 'Servicios', grupo: 'Catálogo comercial', tabla: 'servicios', clave: 'id', orden: ['tipo', 'nombre'],
-    lista: ['nombre', 'tipo', 'precio_lista', 'ciclo_pago_defecto', 'activo'],
+    lista: ['nombre', 'codigo', 'tipo', 'precio_lista', 'ciclo_pago_defecto', 'activo'],
     campos: [
       { columna: 'nombre', etiqueta: 'Nombre', tipo: 'texto', requerido: true },
+      { columna: 'codigo', etiqueta: 'Plan de la tienda (código, ej. dom-anual; vacío = no se vende en línea)', tipo: 'texto', patron: '^[a-z0-9-]+$' },
       { columna: 'tipo', etiqueta: 'Tipo', tipo: 'opcion', opciones: ['PRINCIPAL', 'COMPLEMENTARIO'], requerido: true },
       { columna: 'precio_lista', etiqueta: 'Precio de lista neto (vacío = por cotizar)', tipo: 'numero' },
       { columna: 'precio_desde', etiqueta: 'Mostrar como "desde"', tipo: 'bool' },

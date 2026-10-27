@@ -33,6 +33,60 @@ async function cargar() {
   }
 }
 
+/* ---------- Acceso al portal (/mi-cuenta) ---------- */
+const VINCULO = { titular: 'Titular', representante: 'Representante legal', autorizado: 'Autorizada' };
+
+function accesosHTML(c, accesos) {
+  const empresa = c.tipo_persona === 'juridica';
+  const sinTitular = empresa
+    ? 'El representante legal no tiene correo: agréguelo en "Editar datos" para que pueda ingresar.'
+    : 'El cliente no tiene correo: agréguelo en "Editar datos" para que pueda ingresar.';
+  const filas = accesos.map((a) => `
+    <tr>
+      <td><div class="nm">${esc(a.nombre || '—')}</div><div class="sb">${esc(a.email)}</div></td>
+      <td>${VINCULO[a.vinculo]}</td>
+      <td>${!a.activo ? '<span class="bg red">Bloqueado</span>'
+        : a.con_clave ? `<span class="bg grn">Con contraseña</span>${a.ultimo_ingreso ? `<div class="sb">Último ingreso ${fechaHora(a.ultimo_ingreso)}</div>` : ''}`
+        : '<span class="bg gry">Sin contraseña</span>'}</td>
+      <td class="right">
+        <button class="btn btn-o btn-row" data-acceso="${esc(a.email)}" data-activo="${a.activo ? 'false' : 'true'}">${a.activo ? 'Bloquear' : 'Permitir'}</button>
+        ${a.vinculo === 'autorizado' ? `<button class="btn btn-o btn-row" data-acceso="${esc(a.email)}" data-quitar>Quitar</button>` : ''}
+      </td>
+    </tr>`).join('');
+  return `
+    <h4 class="sub-h">Acceso al portal de clientes
+      <span class="hint">(${empresa ? 'RUT de la empresa + correo + contraseña' : 'correo + contraseña'})</span></h4>
+    ${empresa ? '<div class="ficha-acciones"><button class="btn btn-o btn-s" data-acc="autorizar">Autorizar persona</button></div>' : ''}
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Persona</th><th>Vínculo</th><th>Estado</th><th></th></tr></thead>
+      <tbody>${filas || ''}${accesos.some((a) => a.vinculo !== 'autorizado') ? '' : `<tr><td colspan="4" class="empty">${sinTitular}</td></tr>`}</tbody>
+    </table></div>`;
+}
+
+function autorizarPersona(c) {
+  abrirModal({
+    titulo: `Autorizar persona · ${c.razon_social}`,
+    contenido: `
+      <p class="hint" style="margin-top:0;">Podrá ingresar a /mi-cuenta con el RUT de la empresa (${esc(c.rut_fmt)}), su correo y una contraseña que ella misma crea con "Crear o recuperar contraseña".</p>
+      ${formularioHTML([
+        { nombre: 'nombre', etiqueta: 'Nombre completo', requerido: true },
+        { nombre: 'email', etiqueta: 'Correo', tipo: 'email', requerido: true }
+      ])}`,
+    acciones: [
+      { texto: 'Cancelar', alHacer: async () => abrirFicha(c.id) },
+      {
+        texto: 'Autorizar', clase: 'btn-g',
+        alHacer: async (cuerpoEl) => {
+          validar(cuerpoEl);
+          await put(`/clientes/${c.id}/accesos`, { ...leerFormulario(cuerpoEl), autorizado: true, activo: true });
+          toast('Persona autorizada para el portal.');
+          abrirFicha(c.id);
+        }
+      }
+    ]
+  });
+}
+
 /* ---------- Ficha ---------- */
 export async function abrirFicha(id) {
   const f = await get('/clientes/' + id);
@@ -49,6 +103,7 @@ export async function abrirFicha(id) {
       <div class="g2e">
         <div class="panel plano">
           <h3>Datos del cliente</h3>
+          <div class="kv"><span class="k">Tipo</span><span class="v">${c.tipo_persona === 'juridica' ? 'Empresa' : 'Persona natural'}</span></div>
           <div class="kv"><span class="k">RUT</span><span class="v mono">${esc(c.rut_fmt)}</span></div>
           <div class="kv"><span class="k">Nombre de fantasía</span><span class="v">${esc(c.nombre_fantasia || '—')}</span></div>
           <div class="kv"><span class="k">Giro</span><span class="v">${esc(c.giro_principal || '—')}</span></div>
@@ -62,12 +117,14 @@ export async function abrirFicha(id) {
           ${r ? `
             <div class="kv"><span class="k">Nombre</span><span class="v">${esc(r.nombre_completo)}</span></div>
             <div class="kv"><span class="k">RUT</span><span class="v mono">${esc(r.rut_fmt)}</span></div>
+            <div class="kv"><span class="k">Correo</span><span class="v">${esc(r.email || '—')}</span></div>
             <div class="kv"><span class="k">Nacionalidad · estado civil</span><span class="v">${esc([r.nacionalidad, r.estado_civil].filter(Boolean).join(' · ') || '—')}</span></div>
             <div class="kv"><span class="k">Profesión</span><span class="v">${esc(r.profesion || '—')}</span></div>
             <div class="kv"><span class="k">Domicilio</span><span class="v">${esc(r.direccion ? `${r.direccion.texto}, ${r.direccion.region}` : '—')}</span></div>`
             : '<div class="empty">Sin representante registrado.</div>'}
         </div>
       </div>
+      ${accesosHTML(c, f.accesos || [])}
       <h4 class="sub-h">Contratos</h4>
       <div class="tbl-wrap"><table>
         <thead><tr><th>Folio</th><th>Servicios</th><th>Vigencia</th><th>Total neto</th><th>Saldo</th><th>Estado</th></tr></thead>
@@ -96,8 +153,21 @@ export async function abrirFicha(id) {
   });
 
   cuerpo.addEventListener('click', async (e) => {
-    const t = e.target.closest('[data-acc],[data-contrato],[data-documento]');
+    const t = e.target.closest('[data-acc],[data-contrato],[data-documento],[data-acceso]');
     if (!t) return;
+    if (t.dataset.acceso) {
+      const quitar = t.dataset.quitar !== undefined;
+      const datos = quitar ? { email: t.dataset.acceso, autorizado: false } : { email: t.dataset.acceso, activo: t.dataset.activo === 'true' };
+      if (quitar && !(await confirmar(`¿Quitar la autorización de ${t.dataset.acceso}? Ya no podrá ingresar al portal por esta empresa.`, { textoSi: 'Quitar', peligro: true }))) return abrirFicha(id);
+      try {
+        await put(`/clientes/${id}/accesos`, datos);
+        toast(quitar ? 'Autorización quitada.' : datos.activo ? 'Acceso al portal permitido.' : 'Acceso al portal bloqueado.');
+      } catch (err) {
+        toast(err.message, true);
+      }
+      return abrirFicha(id);
+    }
+    if (t.dataset.acc === 'autorizar') return autorizarPersona(c);
     if (t.dataset.contrato) return abrirContrato(t.dataset.contrato);
     if (t.dataset.documento) return abrirDocumento(t.dataset.documento);
     if (t.dataset.acc === 'editar') return formularioCliente(f);
@@ -132,7 +202,7 @@ export async function formularioCliente(ficha = null) {
         { nombre: 'razon_social', etiqueta: 'Razón social', valor: c.razon_social, requerido: true },
         { nombre: 'nombre_fantasia', etiqueta: 'Nombre de fantasía', valor: c.nombre_fantasia },
         { nombre: 'giro_principal', etiqueta: 'Giro principal', valor: c.giro_principal },
-        { nombre: 'email', etiqueta: 'Correo', tipo: 'email', valor: c.email },
+        { nombre: 'email', etiqueta: 'Correo', tipo: 'email', valor: c.email, ayuda: 'Si es persona natural, con este correo ingresa al portal' },
         { nombre: 'celular', etiqueta: 'Celular', valor: c.celular, placeholder: '9 1234 5678', ayuda: '9 dígitos, empieza con 9' },
         { nombre: 'fecha_escritura', etiqueta: 'Fecha de escritura', tipo: 'fecha', valor: c.fecha_escritura },
         { nombre: 'sitio_notaria', etiqueta: 'Sitio web o notaría', valor: c.sitio_notaria }
@@ -141,6 +211,7 @@ export async function formularioCliente(ficha = null) {
       ${formularioHTML([
         { nombre: 'representante.rut', etiqueta: 'RUT', valor: r.rut_fmt },
         { nombre: 'representante.nombre_completo', etiqueta: 'Nombre completo', valor: r.nombre_completo },
+        { nombre: 'representante.email', etiqueta: 'Correo', tipo: 'email', valor: r.email, ayuda: 'Con este correo ingresa al portal por la empresa' },
         { nombre: 'representante.nacionalidad', etiqueta: 'Nacionalidad', valor: r.nacionalidad },
         { nombre: 'representante.estado_civil', etiqueta: 'Estado civil', valor: r.estado_civil },
         { nombre: 'representante.profesion', etiqueta: 'Profesión', valor: r.profesion }

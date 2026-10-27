@@ -31,7 +31,9 @@ function traducir(err) {
   switch (err.code) {
     case '42501': return errores.sinPermiso();
     case '23503':
-      return /^update or delete/i.test(err.message)
+      // Borrar algo referido ("update or delete on…") o referir algo que no existe ("insert or update on…").
+      // El texto sale en el idioma del servidor: PostgreSQL en español dice "update o delete en…".
+      return /^update (or|o) delete/i.test(err.message)
         ? errores.conflicto('No se puede eliminar: el registro tiene datos asociados (contratos, documentos, pagos u otros).')
         : errores.solicitudInvalida('Se hace referencia a un registro que no existe (revise la comuna, cliente, servicio u otra selección).');
     case '23505': return errores.conflicto('Ya existe un registro con esos datos.');
@@ -107,6 +109,33 @@ async function conCliente(fn) {
   }
 }
 
+/**
+ * Transacción del sistema, sin usuario del personal: la compra en la tienda y las acciones
+ * del cliente en el portal que escriben (aceptar un documento, enviar un ticket).
+ * Corre con el usuario de conexión; las capas de arriba filtran siempre por el cliente.
+ * app_usuario() queda vacío: registrado_por y ejecutivo_id quedan NULL (origen web).
+ */
+async function conSistema(fn) {
+  let client;
+  try {
+    client = await pool.connect();
+  } catch (err) {
+    throw traducir(err);
+  }
+  try {
+    await client.query('BEGIN');
+    await client.query("SELECT set_config('app.usuario_actual', '', true), set_config('app.rol_actual', '', true)");
+    const resultado = await fn(client);
+    await client.query('COMMIT');
+    return resultado;
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw traducir(err);
+  } finally {
+    client.release();
+  }
+}
+
 async function consultaSistema(sql, params) {
   try {
     return await pool.query(sql, params);
@@ -115,4 +144,4 @@ async function consultaSistema(sql, params) {
   }
 }
 
-module.exports = { pool, conUsuario, conCliente, consultaSistema };
+module.exports = { pool, conUsuario, conCliente, conSistema, consultaSistema };

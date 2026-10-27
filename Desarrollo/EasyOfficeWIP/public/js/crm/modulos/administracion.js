@@ -4,6 +4,7 @@ import { esc, clp, fecha, filaVacia, toast } from '../util.js';
 import { estado, opciones } from '../estado.js';
 import { abrirModal, formularioHTML, leerFormulario, validar, confirmar } from '../modal.js';
 import { direccionHTML, activarDirecciones, direccionLimpia } from '../direccion.js';
+import { verDocumentosTienda } from './documentosTienda.js';
 
 let contenedor = null;
 let defs = null;
@@ -234,6 +235,7 @@ async function mostrar(nombre) {
   try {
     if (nombre === 'usuarios') await verUsuarios(nuevo);
     else if (nombre === 'roles') await verRoles(nuevo);
+    else if (nombre === 'tienda') await verDocumentosTienda(nuevo);
     else await verCatalogo(nuevo, nombre);
   } catch (err) {
     if (err.message !== 'sesion') nuevo.innerHTML = `<div class="empty err">${esc(err.message)}</div>`;
@@ -243,7 +245,7 @@ async function mostrar(nombre) {
 export default {
   id: 'administracion',
   titulo: 'Administración',
-  sub: () => 'Usuarios, roles, permisos y catálogos',
+  sub: () => 'Usuarios, roles, permisos, documentos de la tienda y catálogos',
   soloAdmin: true,
   async render(el) {
     contenedor = el;
@@ -256,6 +258,8 @@ export default {
           <div class="adm-g">Acceso</div>
           <button data-sec="usuarios">Usuarios</button>
           <button data-sec="roles">Roles y permisos</button>
+          <div class="adm-g">Tienda</div>
+          <button data-sec="tienda">Documentos de la tienda</button>
           ${Object.entries(grupos).map(([g, items]) => `<div class="adm-g">${esc(g)}</div>${items.map(([k, t]) => `<button data-sec="${k}">${esc(t)}</button>`).join('')}`).join('')}
         </aside>
         <div class="panel" id="admPanel"></div>

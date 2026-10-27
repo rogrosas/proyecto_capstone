@@ -25,6 +25,7 @@ module.exports = {
   crearCliente: creado((req) => clientesServicio.crear(req.usuario, req.body)),
   actualizarCliente: responder((req) => clientesServicio.actualizar(req.usuario, req.params.id, req.body)),
   eliminarCliente: responder((req) => clientesServicio.eliminar(req.usuario, req.params.id)),
+  guardarAccesoPortal: responder((req) => clientesServicio.guardarAcceso(req.usuario, req.params.id, req.body)),
 
   // Contratos
   listarContratos: responder((req) => contratosServicio.listar(req.usuario, { q: req.query.q, estado: req.query.estado })),

@@ -26,6 +26,7 @@ app.get('/asesoriaempresas', (req, res) => res.redirect(301, '/asesoria-empresas
 app.use('/api/catalogo', require('./presentacion/rutas/catalogo.rutas'));
 app.use('/api/crm', require('./presentacion/rutas/crm.rutas'));
 app.use('/api/cliente', require('./presentacion/rutas/cliente.rutas'));
+app.use('/api/tienda', require('./presentacion/rutas/tienda.rutas'));
 app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
 
 // Errores de la API y 404 del sitio

@@ -15,7 +15,9 @@ Abrir <http://localhost:3000>. Otro puerto: `PORT=8080 npm start`.
 ## Base de datos (CRM)
 
 El CRM (`/crm`) lee y escribe en la base **EO_ER** de PostgreSQL (la de pgAdmin 4), creada con
-`Desarrollo/base de datos/easyoffice_er.sql`.
+`Desarrollo/base de datos/easyoffice_v2.sql`. Datos de ejemplo: `easyoffice_v2_datos_muestra.sql` (clientes y contratos
+reales de la muestra, más correos ficticios `.test` para probar el portal). `easyoffice_datos_muestra.sql` es solo para el
+esquema anterior (`easyoffice_er.sql`).
 
 1. Completar `PGPASSWORD` en el archivo `.env` (copia de `.env.example`; no se sube a git).
 2. `npm run db:revisar` → comprueba la conexión, los roles y los usuarios del personal.
@@ -52,32 +54,78 @@ El código está en `src/datos/archivos.js` (carpeta, sin permitir rutas fuera d
 (combinación) y `src/negocio/servicios/archivos.servicio.js` (equivalencia campo del Word → dato de la base).
 `generados/` está en `.gitignore`: contiene datos personales de clientes.
 
+## Documentos de la tienda (Word → borrador con marca de agua → aceptación)
+
+Base de datos: `easyoffice_v2.sql` ya lo trae; una base anterior necesita
+`Desarrollo/base de datos/easyoffice_v2_documentos_tienda.sql` (tablas `plantilla_planes` y `tickets`,
+columnas `entrega`/`mapa_campos` en plantillas y `estado_cliente`/`aceptado_*` en documentos).
+
+1. **CRM → Administración → Documentos de la tienda** (solo admin): se sube el `.docx` (queda en
+   `base de datos/Contratos/plantillas/`), se vincula a uno o más **planes de la tienda** y se elige la **entrega**:
+   - *Automática*: al comprar, el cliente recibe el borrador para revisarlo.
+   - *Con revisión*: al comprar queda esperando que el personal lo revise y lo publique.
+2. **Dónde van los datos**: se detectan los campos de combinación de Word y los textos entre corchetes
+   (`[RAZÓN SOCIAL DE LA EMPRESA]`, `[RUT EMPRESA]`, `[FECHA]`…) y se sugiere el dato del cliente que corresponde
+   (diccionario y sinónimos en `src/negocio/camposDocumento.js`). Lo que no es dato del cliente se marca como
+   *lo responde el cliente en la tienda*, *lo completa el personal al generar* o *dejar tal cual*.
+3. **Tienda** (`/contratar`): la compra se guarda de verdad (cliente `origen = 'web'` con su domicilio, contrato
+   `pendiente`, pago `pendiente` —el cobro sigue siendo de demostración— y los documentos del plan). Si el plan aún no
+   tiene servicio en la base (`servicios.codigo` = id del plan en `catalogo.js`), se crea. Si el comprador no tiene
+   contraseña de Mi cuenta, recibe el enlace para crearla. Un RUT que ya es cliente solo compra con un correo vinculado.
+4. **Mi cuenta → Mis documentos**: el cliente siempre ve primero un **borrador con marca de agua** (HTML generado desde
+   el Word con `mammoth`; el `.docx` no se entrega aún), marca *"he leído el borrador y estoy de acuerdo"* y lo acepta
+   → descarga el Word final. Si no está de acuerdo envía un **ticket** (el documento queda "objetado").
+5. **CRM → Tickets de clientes** y el detalle del documento: el personal responde (le llega por correo), corrige,
+   genera una nueva versión desde el contrato y vuelve a publicar. No se regenera un documento ya aceptado.
+
+Una persona natural comparece por sí: en las plantillas pensadas para empresas, los datos del "representante" son
+los suyos.
+
+API: `GET /api/tienda/planes/:codigo/preguntas`, `GET /api/tienda/comunas`, `POST /api/tienda/compras` ·
+portal: `GET /api/cliente/documentos/:id/borrador`, `POST …/aceptar`, `POST …/ticket`, `GET …/archivo`,
+`GET|POST /api/cliente/tickets` · CRM: `GET /documentos/:id/borrador`, `POST /documentos/:id/publicar`,
+`GET /tickets`, `PATCH /tickets/:id`, `GET /plantillas/:id/preguntas`, `GET /admin/documentos-tienda`,
+`GET /admin/plantillas/:id/campos`, `PUT /admin/plantillas/:id/tienda`.
+
 ## Portal de clientes (`/mi-cuenta`)
 
-Empresas y personas (tabla `clientes`) ingresan **sin contraseña, con un enlace enviado a su correo**
-(`clientes.email`). No se agregó ninguna tabla ni columna.
+Al entrar se elige **Empresa** o **Persona**:
 
-1. El cliente escribe su correo. Si existe, recibe un enlace por cada cliente con ese correo
-   (una persona puede tener varias empresas). La respuesta es siempre la misma, exista o no el correo.
-2. El enlace lleva un token firmado (HMAC con `CLIENTE_SECRETO`), vence en 15 minutos, sirve una vez
-   y deja de servir si el correo del cliente cambia.
-3. Al abrirlo se crea una sesión de cliente (cookie `eo_cli`, separada de la del personal).
-4. El panel muestra sus servicios vigentes, documentos, pagos y datos. Las consultas son de **solo lectura**
-   y filtran por el `cliente_id` de la sesión. Los ingresos y salidas quedan en `registros_actividad`.
+| Tipo | Ingresa con | Quién puede |
+|---|---|---|
+| Empresa (`clientes.tipo_persona = 'juridica'`) | RUT de la empresa + su correo + contraseña | El representante legal (`representantes_legales.email`) y las personas que el ejecutivo autorice en la ficha del cliente |
+| Persona (`'natural'`) | Correo + contraseña | El propio cliente (`clientes.email`) |
+
+Las contraseñas están en la tabla **`cuentas_portal`** (bcrypt, una por persona y por cliente: quien representa a
+varias empresas tiene una contraseña en cada una). Una base creada con una versión anterior de `easyoffice_v2.sql`
+necesita el script `Desarrollo/base de datos/easyoffice_v2_cuentas_portal.sql` (en pgAdmin: Query Tool sobre EO_ER → F5).
+
+1. **Crear o recuperar contraseña**: la persona indica tipo, (RUT) y correo. Si está vinculada, recibe un enlace
+   por cada cliente. La respuesta es siempre la misma, exista o no la cuenta.
+2. El enlace lleva un token firmado (HMAC con `CLIENTE_SECRETO`), vence en 15 minutos, sirve una vez y deja de
+   servir si la persona ya no está vinculada. Al abrirlo define su contraseña y queda con la sesión iniciada.
+3. **Ingresar**: tipo, (RUT), correo y contraseña. El mensaje de error no dice qué dato falló. Máximo 10 intentos
+   cada 15 minutos por IP y por correo.
+4. La sesión de cliente usa la cookie `eo_cli`, separada de la del personal. El panel muestra servicios vigentes,
+   documentos, pagos y datos con consultas de **solo lectura** filtradas por el `cliente_id` de la sesión.
+   Los ingresos y salidas quedan en `registros_actividad`.
+
+En el CRM, la ficha del cliente tiene la sección **Acceso al portal**: muestra quién puede ingresar, si ya creó su
+contraseña y su último ingreso; permite **autorizar personas** (solo empresas), quitarlas y **bloquear** un acceso.
 
 Configuración en `.env`: `APP_URL` (para armar el enlace), `CLIENTE_SECRETO` y `SMTP_*`.
 **Sin SMTP** (desarrollo) los correos se guardan en `correos-dev/` y el enlace aparece en la consola
 del servidor; con un servidor SMTP (Gmail/Workspace, Brevo, etc.) se envían de verdad.
 
-API: `POST /api/cliente/acceso`, `POST /api/cliente/verificar`, `POST /api/cliente/salir`,
-`GET /api/cliente/yo`, `GET /api/cliente/panel`.
+API: `POST /api/cliente/ingresar`, `POST /api/cliente/clave` (pide el enlace), `POST /api/cliente/clave/definir`,
+`POST /api/cliente/salir`, `GET /api/cliente/yo`, `GET /api/cliente/panel`.
 
 ### Módulos del CRM y tablas que usan
 
 | Módulo | Qué permite | Tablas / vistas |
 |---|---|---|
 | Dashboard | Indicadores, vencimientos, pendientes del día, carga por ejecutivo | contratos, contrato_servicios, alertas, documentos, pagos, usuarios |
-| Clientes | Listado, ficha, alta y edición con representante y domicilio | clientes, representantes_legales, direcciones, comunas, regiones |
+| Clientes | Listado, ficha, alta y edición con representante y domicilio; acceso al portal (personas autorizadas, bloqueo) | clientes, representantes_legales, direcciones, comunas, regiones, cuentas_portal |
 | Contratos | Alta (folio, vencimiento y alertas los pone la BD), servicios, edición, renovación, alertas, pagos, impresión | contratos, contrato_servicios, alertas, pagos, v_saldo_contrato, v_datos_contrato, v_datos_contrato_servicios |
 | Renovaciones | Etapas D-60 a D+30, avisos, saldo, renovar | contratos, alertas, v_saldo_contrato |
 | Documentos | Alta desde plantilla con partes y cláusulas; revisión, aprobación, firma con código de verificación | documentos, documento_partes, documento_clausulas, plantillas_documento, clausulas_documento |
@@ -94,7 +142,7 @@ El detalle por tabla y columna está en `Desarrollo/base de datos/diccionario_da
 |---|---|
 | Sesión | `POST /login`, `POST /logout`, `GET /yo` |
 | Listas para formularios | `GET /opciones` |
-| Clientes | `GET/POST /clientes`, `GET/PUT/DELETE /clientes/:id` |
+| Clientes | `GET/POST /clientes`, `GET/PUT/DELETE /clientes/:id`, `PUT /clientes/:id/accesos` |
 | Contratos | `GET/POST /contratos`, `GET/PATCH /contratos/:id`, `POST /contratos/:id/servicios`, `DELETE /contratos/:id/servicios/:csId`, `POST /contratos/:id/renovar`, `GET /contratos/:id/impresion`, `POST /contratos/:id/notificar-alertas`, `POST /alertas/:id/notificar`, `GET /renovaciones` |
 | Documentos | `GET/POST /documentos`, `GET /documentos/:id`, `POST /documentos/:id/aprobar`, `POST /documentos/:id/estado` |
 | Pagos | `GET /ventas`, `POST /pagos`, `PATCH /pagos/:id` |
@@ -114,12 +162,12 @@ por sección desde `modulos/`; `modal.js` genera los formularios; `api.js` llama
 | `/firmas-electronicas` | `public/firmas-electronicas.html` | sitio actual |
 | `/asesoria-empresas` | `public/asesoria-empresas.html` | sitio actual |
 | `/rebaja-tributaria` | `public/rebaja-tributaria.html` | sitio actual |
-| `/contratar` (`?plan=<id>` preselecciona) | `public/contratar.html` | `ecommerce_easyoffice.html` |
+| `/contratar` (`?plan=<id>` preselecciona) — guarda la compra | `public/contratar.html` | `ecommerce_easyoffice.html` |
 | `/mi-cuenta` | `public/mi-cuenta.html` | `panel_cliente_easyoffice.html` |
 | `/crm` | `public/crm.html` | `crm_easyoffice.html` |
 | `/api/catalogo` | `server.js` | catálogo en JSON |
 
-Los accesos (inicio de sesión, pagos, formulario de contacto) son **de demostración**: no validan ni envían datos.
+El **cobro** de la tienda y el formulario de contacto del inicio son **de demostración**: la compra se guarda, pero el pago queda pendiente hasta que el personal lo confirme.
 
 ## Arquitectura por capas
 

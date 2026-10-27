@@ -43,6 +43,8 @@ const B = {
     enviado_firma: ['amb', 'Enviado a firma'], firmado: ['grn', 'Firmado'], rechazado: ['red', 'Rechazado'], anulado: ['gry', 'Anulado']
   },
   pago: { pendiente: ['amb', 'Pendiente'], pagado: ['grn', 'Pagado'], rechazado: ['red', 'Rechazado'], reembolsado: ['gry', 'Reembolsado'] },
+  cliente_doc: { sin_publicar: ['gry', 'Sin publicar'], por_revisar: ['amb', 'Por revisar'], aceptado: ['grn', 'Aceptado'], objetado: ['red', 'No está de acuerdo'] },
+  ticket: { abierto: ['red', 'Abierto'], en_proceso: ['amb', 'En proceso'], resuelto: ['grn', 'Resuelto'], cerrado: ['gry', 'Cerrado'] },
   cliente: { 'Activo': ['grn', 'Activo'], 'Por vencer': ['amb', 'Por vencer'], 'Vencido': ['red', 'Vencido'], 'Pendiente': ['blu', 'Pendiente'], 'Sin contrato': ['gry', 'Sin contrato'] }
 };
 export function badge(tipo, valor) {

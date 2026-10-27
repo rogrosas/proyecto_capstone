@@ -17,26 +17,85 @@
 
 <header id="cabecera" data-sub="mi cuenta" data-menu="no" data-derecha="cuenta"></header>
 
-<!-- ================= ACCESO POR ENLACE AL CORREO ================= -->
+<!-- ================= ACCESO: EMPRESA O PERSONA ================= -->
 <div class="gate" id="gate" hidden>
-  <form class="gate-card" id="accesoForm" novalidate>
+
+  <!-- 1. ¿Cómo ingresa? -->
+  <div class="gate-card" id="pasoTipo">
     <div class="gate-head">
       <h2>Ingrese a su cuenta</h2>
-      <p>Revise sus servicios, contratos, documentos y pagos. No necesita contraseña: le enviamos un enlace de acceso al correo registrado en Easy Office.</p>
+      <p>Revise sus servicios, contratos, documentos y pagos. ¿La cuenta es de una empresa o suya como persona?</p>
     </div>
     <div class="gate-body">
+      <div class="aviso-ok" id="tipoOk" hidden></div>
+      <div class="aviso-error" id="tipoError" hidden></div>
+      <div class="tipo-opc">
+        <button type="button" class="tipo-btn" data-tipo="empresa">
+          <span class="tt">Empresa</span>
+          <span class="td">RUT de la empresa, su correo y contraseña</span>
+        </button>
+        <button type="button" class="tipo-btn" data-tipo="persona">
+          <span class="tt">Persona</span>
+          <span class="td">Su correo y contraseña</span>
+        </button>
+      </div>
+      <div class="gate-foot">
+        ¿Aún no es cliente? <a class="link" href="/contratar">Contrate en línea</a> o <a class="link" data-agenda>agende 30 minutos</a> con un ejecutivo.
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Iniciar sesión, o pedir el enlace para crear / recuperar la contraseña -->
+  <form class="gate-card" id="accesoForm" novalidate hidden>
+    <div class="gate-head">
+      <button type="button" class="btn-link" data-volver>← Cambiar tipo de cuenta</button>
+      <h2 id="accesoTitulo" style="margin-top:10px;">Ingreso empresa</h2>
+      <p id="accesoTexto"></p>
+    </div>
+    <div class="gate-body">
+      <div class="gf" id="fRut">
+        <label for="cRut">RUT de la empresa</label>
+        <input type="text" id="cRut" name="rut" placeholder="77.496.835-0" autocomplete="off" inputmode="text">
+      </div>
       <div class="gf">
-        <label for="cMail">Correo electrónico</label>
+        <label for="cMail" id="cMailLbl">Correo electrónico</label>
         <input type="email" id="cMail" name="email" placeholder="nombre@correo.cl" autocomplete="email" required>
-        <span class="hint">El mismo correo con el que contrató. Si tiene varias empresas con ese correo, recibirá un enlace para cada una.</span>
+        <span class="hint" id="cMailHint"></span>
+      </div>
+      <div class="gf" id="fClave">
+        <label for="cPw">Contraseña</label>
+        <div class="pw-wrap">
+          <input type="password" id="cPw" name="password" autocomplete="current-password">
+          <button type="button" class="pw-toggle" data-pw="cPw">Mostrar</button>
+        </div>
       </div>
       <div class="aviso-ok" id="accesoOk" hidden></div>
       <div class="aviso-error" id="accesoError" hidden></div>
-      <button class="btn btn-g btn-w" type="submit" id="btnAcceso">Enviarme el enlace de acceso</button>
-      <div class="gate-foot">
-        ¿Aún no es cliente? <a class="link" href="/contratar">Contrate en línea</a> o <a class="link" data-agenda>agende 30 minutos</a> con un ejecutivo.
-        Si cambió de correo, escríbanos a info@easyoffice.cl para actualizarlo.
+      <button class="btn btn-g btn-w" type="submit" id="btnAcceso">Ingresar</button>
+      <div class="gate-foot" id="accesoPie"></div>
+    </div>
+  </form>
+
+  <!-- 3. Crear la contraseña con el enlace del correo -->
+  <form class="gate-card" id="claveForm" novalidate hidden>
+    <div class="gate-head">
+      <h2>Cree su contraseña</h2>
+      <p>Úsela desde ahora para ingresar a su cuenta. Debe tener al menos 8 caracteres.</p>
+    </div>
+    <div class="gate-body">
+      <div class="gf">
+        <label for="nPw">Nueva contraseña</label>
+        <div class="pw-wrap">
+          <input type="password" id="nPw" autocomplete="new-password" minlength="8" maxlength="72" required>
+          <button type="button" class="pw-toggle" data-pw="nPw">Mostrar</button>
+        </div>
       </div>
+      <div class="gf">
+        <label for="nPw2">Repita la contraseña</label>
+        <input type="password" id="nPw2" autocomplete="new-password" minlength="8" maxlength="72" required>
+      </div>
+      <div class="aviso-error" id="claveError" hidden></div>
+      <button class="btn btn-g btn-w" type="submit" id="btnClave">Guardar e ingresar</button>
     </div>
   </form>
 </div>
@@ -111,6 +170,9 @@
     </div>
   </section>
 </main>
+
+<!-- Revisión de un documento: borrador con marca de agua, aceptación o ticket -->
+<div class="revision" id="revision" hidden></div>
 
 <footer id="pie" data-tipo="simple"></footer>
 

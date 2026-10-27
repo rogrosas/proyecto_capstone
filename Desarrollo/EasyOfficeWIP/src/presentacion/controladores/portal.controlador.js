@@ -6,10 +6,16 @@ const portalServicio = require('../../negocio/servicios/portal.servicio');
 const { leerSesionCliente, escribirSesionCliente, borrarSesionCliente } = require('../middleware/cookies');
 
 module.exports = {
-  solicitarAcceso: async (req, res) => res.json(await portalServicio.solicitarAcceso(req.body?.email, req.ip)),
+  ingresar: async (req, res) => {
+    const { token, cliente } = await portalServicio.iniciarSesion(req.body, req.ip);
+    escribirSesionCliente(res, token, config.cliente.duracionMs);
+    res.json({ cliente });
+  },
 
-  verificar: async (req, res) => {
-    const { token, cliente } = await portalServicio.verificarEnlace(req.body?.token);
+  solicitarClave: async (req, res) => res.json(await portalServicio.solicitarClave(req.body, req.ip)),
+
+  definirClave: async (req, res) => {
+    const { token, cliente } = await portalServicio.definirClave(req.body?.token, req.body?.password);
     escribirSesionCliente(res, token, config.cliente.duracionMs);
     res.json({ cliente });
   },

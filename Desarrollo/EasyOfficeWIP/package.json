@@ -17,6 +17,7 @@
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "express": "^4.21.2",
+    "mammoth": "^1.11.0",
     "nodemailer": "^10.2.1",
     "pg": "^8.23.1",
     "pizzip": "^3.1.7"

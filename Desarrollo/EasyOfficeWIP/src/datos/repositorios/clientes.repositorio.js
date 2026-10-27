@@ -46,7 +46,7 @@ async function eliminar(db, id) {
 
 async function obtener(db, id) {
   const r = await db.query(
-    `SELECT cl.id, cl.rut, fn_rut_formato(cl.rut) AS rut_fmt, cl.razon_social, cl.nombre_fantasia, cl.giro_principal,
+    `SELECT cl.id, cl.rut, fn_rut_formato(cl.rut) AS rut_fmt, cl.tipo_persona, cl.razon_social, cl.nombre_fantasia, cl.giro_principal,
             cl.email, cl.celular, cl.representante_legal_id, cl.fecha_escritura::text AS fecha_escritura, cl.sitio_notaria,
             cl.creado_en::date::text AS creado_en, u.nombre AS registrado_por
        FROM clientes cl LEFT JOIN usuarios u ON u.id = cl.registrado_por

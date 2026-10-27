@@ -4,6 +4,7 @@ import { esc, fecha, fechaHora, filaVacia, badge, toast, hoyISO, enlaceArchivo }
 import { estado, opciones, aOpciones } from '../estado.js';
 import { abrirModal, cerrarModal, formularioHTML, leerFormulario, validar, confirmar } from '../modal.js';
 import { registrarPago } from './ventas.js';
+import { ticketHTML, responderTicket } from './tickets.js';
 
 let contenedor = null;
 
@@ -34,7 +35,7 @@ async function cargar() {
         <td><div class="nm">${esc(x.tipo)}</div><div class="sb mono">${esc(x.folio || 'DOC-' + x.id)} · ${fecha(x.generado)}</div></td>
         <td>${esc(x.cliente)}</td>
         <td>${x.requiere_revision ? '<span class="bg blu">Requiere revisión</span>' : '<span class="bg gry">Automático</span>'}</td>
-        <td>${badge('documento', x.estado)}${x.firmado ? `<div class="sb">${fecha(x.firmado)}</div>` : ''}</td>
+        <td>${badge('documento', x.estado)}${x.firmado ? `<div class="sb">${fecha(x.firmado)}</div>` : ''}${x.estado_cliente ? `<div style="margin-top:4px;">${badge('cliente_doc', x.estado_cliente)}</div>` : ''}</td>
         <td>${esc(x.ejecutivo || '—')}</td>
         <td>${esc(x.revisor || '—')}</td>
         <td class="right">${x.estado === 'en_revision' ? `<button class="btn btn-g btn-row" data-aprobar="${x.id}">Aprobar</button>` : ''}</td>
@@ -47,8 +48,9 @@ const recargarLista = () => { if (contenedor && document.body.contains(contenedo
 
 /* ---------- Detalle ---------- */
 export async function abrirDocumento(id) {
-  const d = await get('/documentos/' + id);
+  const [d, t] = await Promise.all([get('/documentos/' + id), get('/tickets?documento=' + id)]);
   const doc = d.documento;
+  const puedePublicar = doc.url_archivo && !/^https?:/i.test(doc.url_archivo) && doc.estado !== 'anulado' && [null, 'objetado'].includes(doc.estado_cliente);
   const cuerpo = abrirModal({
     titulo: `${doc.tipo} · DOC-${doc.id}`, ancho: 'lg',
     contenido: `
@@ -76,6 +78,19 @@ export async function abrirDocumento(id) {
           <div class="kv"><span class="k">Código de verificación</span><span class="v mono">${esc(doc.codigo_verificacion || '—')}</span></div>
         </div>
       </div>
+      <h4 class="sub-h">Entrega al cliente</h4>
+      <div class="panel plano">
+        <div class="kv"><span class="k">Estado para el cliente</span><span class="v">${badge('cliente_doc', doc.estado_cliente || 'sin_publicar')}</span></div>
+        <div class="kv"><span class="k">Forma de entrega de la plantilla</span><span class="v">${doc.entrega === 'automatica' ? 'Automática' : 'Con revisión del personal'}</span></div>
+        <div class="kv"><span class="k">Publicado</span><span class="v">${fechaHora(doc.publicado_en)}</span></div>
+        <div class="kv"><span class="k">Aceptado por el cliente</span><span class="v">${doc.aceptado_en ? `${esc(doc.aceptado_por)} · ${fechaHora(doc.aceptado_en)} · versión ${doc.version_aceptada}` : '—'}</span></div>
+        <div class="ficha-acciones" style="margin:12px 0 0;">
+          ${doc.url_archivo && !/^https?:/i.test(doc.url_archivo) ? `<a class="btn btn-o btn-s" href="/api/crm/documentos/${doc.id}/borrador" target="_blank" rel="noopener">Ver borrador (marca de agua)</a>` : ''}
+          ${puedePublicar ? `<button class="btn btn-g btn-s" data-publicar>${doc.estado_cliente === 'objetado' ? 'Volver a publicar al cliente' : 'Publicar al cliente'}</button>` : ''}
+        </div>
+        ${doc.estado_cliente === 'objetado' ? '<div class="note warn" style="margin:12px 0 0;">El cliente no está de acuerdo. Responda su ticket, corrija los datos, genere una nueva versión desde el contrato y vuelva a publicarlo.</div>' : ''}
+      </div>
+      ${t.tickets.length ? `<h4 class="sub-h">Tickets del cliente</h4>${t.tickets.map((x) => ticketHTML(x, t.motivos)).join('')}` : ''}
       <h4 class="sub-h">Partes que comparecen</h4>
       <div class="tbl-wrap"><table>
         <thead><tr><th>#</th><th>Rol</th><th>Nombre</th><th>RUT</th><th>Detalle</th></tr></thead>
@@ -91,9 +106,20 @@ export async function abrirDocumento(id) {
   });
 
   cuerpo.addEventListener('click', async (e) => {
-    const t = e.target.closest('[data-aprobar],[data-estado],[data-pago]');
+    const t = e.target.closest('[data-aprobar],[data-estado],[data-pago],[data-publicar],[data-ticket]');
     if (!t) return;
     try {
+      if (t.dataset.ticket) {
+        const { tickets } = await get('/tickets?documento=' + id);
+        return responderTicket(tickets.find((x) => x.id === Number(t.dataset.ticket)), () => abrirDocumento(id));
+      }
+      if ('publicar' in t.dataset) {
+        if (!(await confirmar('El cliente verá el borrador con marca de agua en Mi cuenta y recibirá un aviso por correo. Para recibir el documento final deberá aceptarlo.', { titulo: 'Publicar al cliente', textoSi: 'Publicar' }))) return abrirDocumento(id);
+        await post(`/documentos/${id}/publicar`);
+        toast('Documento publicado al cliente.');
+        recargarLista();
+        return abrirDocumento(id);
+      }
       if ('pago' in t.dataset) return registrarPago({ documento_id: doc.id }, () => abrirDocumento(id));
       if ('aprobar' in t.dataset) {
         await post(`/documentos/${id}/aprobar`);

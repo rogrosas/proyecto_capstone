@@ -150,23 +150,26 @@ async function generarWord(k, alTerminar) {
     return alTerminar();
   }
   const sugerida = plantillas.find((p) => p.familia === 'CONTRATO_SERVICIO') || plantillas[0];
-  abrirModal({
+  const cuerpo = abrirModal({
     titulo: `Generar contrato Word · ${k.folio}`,
     contenido: formularioHTML([
       { nombre: 'plantilla_id', etiqueta: 'Plantilla', tipo: 'select', requerido: true, ancho: 'full', valor: sugerida.id,
         opciones: plantillas.map((p) => ({ valor: p.id, texto: `${p.tipo_documento} v${p.version} · ${p.archivo_base.split('/').pop()}` })) },
-      { nombre: '_n', tipo: 'html', ancho: 'full', html: '<div class="note">Los campos del Word se completan con los datos actuales del contrato, el cliente y la sucursal. Cada vez que se genera queda una versión nueva; las anteriores se conservan.</div>' }
+      { nombre: '_n', tipo: 'html', ancho: 'full', html: '<div class="note">Los campos del Word se completan con los datos actuales del contrato, el cliente y la sucursal. Cada vez que se genera queda una versión nueva; las anteriores se conservan.</div>' },
+      { nombre: '_p', tipo: 'html', ancho: 'full', html: '<div id="pregWord"></div>' }
     ]),
     acciones: [{ texto: 'Cancelar', alHacer: alTerminar }, {
       texto: 'Generar', clase: 'btn-g', alHacer: async (c) => {
         validar(c);
-        const r = await post(`/contratos/${k.id}/generar`, leerFormulario(c));
+        const valores = Object.fromEntries([...c.querySelectorAll('[data-marca]')].map((x) => [x.dataset.marca, x.value.trim()]));
+        const r = await post(`/contratos/${k.id}/generar`, { plantilla_id: leerFormulario(c).plantilla_id, valores });
         const avisos = [
+          r.pendientes.length && `sin completar: ${r.pendientes.map((x) => x.etiqueta).join(', ')}`,
           r.sin_dato.length && `faltan datos: ${r.sin_dato.join(', ')}`,
           r.servicios_omitidos && `${r.servicios_omitidos} servicio(s) no caben en la plantilla (máx. 3)`,
           r.campos_desconocidos.length && `campos sin equivalencia: ${r.campos_desconocidos.join(', ')}`
         ].filter(Boolean);
-        toast(`Versión ${r.version} generada.${avisos.length ? ' Revise: ' + avisos.join(' · ') : ''}`, avisos.length > 0);
+        toast(`Versión ${r.version} generada${r.publicado ? ' y publicada al cliente para su revisión' : ''}.${avisos.length ? ' Revise: ' + avisos.join(' · ') : ''}`, avisos.length > 0);
         const a = document.createElement('a');
         a.href = `/api/crm/documentos/${r.documento_id}/archivo`; a.download = '';
         document.body.appendChild(a); a.click(); a.remove();
@@ -174,6 +177,24 @@ async function generarWord(k, alTerminar) {
       }
     }]
   });
+
+  // Datos que no salen de la base: los completa el personal (con lo que respondió el comprador, si lo hay)
+  const pintarPreguntas = async () => {
+    const caja = cuerpo.querySelector('#pregWord');
+    const id = cuerpo.querySelector('[name="plantilla_id"]').value;
+    caja.innerHTML = '';
+    try {
+      const { preguntas } = await get(`/plantillas/${id}/preguntas?contrato=${k.id}`);
+      if (!preguntas.length) return;
+      caja.innerHTML = `<h4 class="sub-h">Datos para completar</h4><div class="grid2">${preguntas.map((q) => `
+        <div class="f"><label>${esc(q.etiqueta)} <span class="sb mono">${esc(q.marca)}</span></label>
+          <input data-marca="${esc(q.marca)}" value="${esc(q.valor)}">${q.fuente === '_tienda' ? '<span class="hint">Lo responde el cliente en la tienda</span>' : ''}</div>`).join('')}</div>`;
+    } catch (err) {
+      if (err.message !== 'sesion') caja.innerHTML = `<div class="note warn">${esc(err.message)}</div>`;
+    }
+  };
+  cuerpo.querySelector('[name="plantilla_id"]').addEventListener('change', pintarPreguntas);
+  pintarPreguntas();
 }
 
 const addDia = (iso) => { const x = new Date(iso + 'T12:00:00'); x.setDate(x.getDate() + 1); return x.toISOString().slice(0, 10); };

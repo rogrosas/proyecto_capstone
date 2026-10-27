@@ -1,23 +1,39 @@
 /* =========================================================
    /contratar · flujo de 4 etapas: Servicio → Datos → Pago → Documento
    Requiere catalogo.js. Acepta ?plan=<id> para preseleccionar un plan.
+   Etapa 2 pide los datos del titular (y de la empresa) más lo que piden
+   los documentos del plan (GET /api/tienda/planes/<id>/preguntas).
+   «Pagar» registra la compra (POST /api/tienda/compras): cliente,
+   contrato, pago pendiente (el cobro es de demostración) y documentos.
    ========================================================= */
 (function () {
   const CAT = window.CATALOGO;
   const STEPS = ['Servicio', 'Datos', 'Pago', 'Documento'];
-  const ORDEN = 'EO-2026-04417'; // número de orden de ejemplo
 
   const $ = (id) => document.getElementById(id);
   const clp = (n) => '$' + n.toLocaleString('es-CL');
+  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   const state = {
     fam: CAT[0].id,
     sel: null,
-    logged: false,
-    guest: false,
     payMode: 'total',
-    payPM: 'tbk'
+    payPM: 'tbk',
+    preguntas: [],
+    resultado: null
   };
+
+  async function api(metodo, ruta, datos) {
+    const r = await fetch(ruta, {
+      method: metodo, credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+      body: datos === undefined ? undefined : JSON.stringify(datos)
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw Object.assign(new Error(d.error || 'No pudimos completar la operación. Intente de nuevo.'), { status: r.status });
+    return d;
+  }
+
+  function aviso(id, texto) { $(id).hidden = !texto; $(id).textContent = texto || ''; }
 
   /* ---------- Etapa 1: catálogo ---------- */
   function renderTabs() {
@@ -61,69 +77,70 @@
     renderPlans();
     $('b1').disabled = false;
     $('selinfo').innerHTML = `Seleccionado: <b>${state.sel.name}</b> · ${state.sel.fam}`;
+    cargarPreguntas();
   }
 
-  /* ---------- Etapa 2: cuenta y datos ---------- */
-  function setAuth(which) {
-    $('atLogin').classList.toggle('on', which === 'login');
-    $('atReg').classList.toggle('on', which === 'reg');
-    $('paneLogin').hidden = which !== 'login';
-    $('paneReg').hidden = which !== 'reg';
-    $('s2title').textContent = which === 'reg' ? 'Cree su cuenta' : 'Ingrese a su cuenta';
-  }
-
-  function login(asGuest) {
-    state.logged = true;
-    state.guest = !!asGuest;
-    $('auth').hidden = true;
-    $('logged').hidden = false;
-    $('logged').classList.toggle('guest', state.guest);
-    $('datosForm').hidden = false;
-    $('b2').disabled = false;
-    $('s2title').textContent = 'Confirme sus datos';
-    $('s2sub').textContent = state.guest
-      ? 'Está comprando como invitado. Revise sus datos; al finalizar podrá crear su cuenta con un clic para conservar el historial.'
-      : 'Estos datos vienen de su cuenta. Puede corregirlos antes de pagar; los cambios quedan guardados en su perfil.';
-    $('loggedT').textContent = state.guest ? 'Compra como invitado' : 'Sesión iniciada · Camila Andrea Torres Reyes';
-    $('loggedS').textContent = state.guest
-      ? 'Sin cuenta. Podrá crearla al terminar para ver sus documentos después.'
-      : 'camila.torres@correo.cl · correo confirmado · último acceso hoy 10:24';
-    if (state.guest) {
-      $('dNombre').value = '';
-      $('dRut').value = '';
-      $('dMail').value = '';
-    }
-    updateNav();
-  }
-
-  function logout() {
-    state.logged = false;
-    state.guest = false;
-    $('auth').hidden = false;
-    $('logged').hidden = true;
-    $('datosForm').hidden = true;
-    $('b2').disabled = true;
-    setAuth('login');
-    updateNav();
-    go(2);
-  }
-
-  function updateNav() {
-    const sess = $('sess');
-    if (state.logged && !state.guest) {
-      sess.innerHTML = '<span class="avatar">CT</span> <span style="color:var(--ink);font-weight:600">Camila Torres</span> · <span class="link" data-logout>Salir</span>';
-    } else if (state.logged && state.guest) {
-      sess.innerHTML = '<span>Compra como invitado</span> · <span class="link" data-logout>Iniciar sesión</span>';
-    } else {
-      sess.innerHTML = '<button class="nav-btn" data-go="2">Iniciar sesión</button><button class="nav-btn solid" data-go="2" data-auth="reg">Crear cuenta</button>';
-    }
-  }
-
+  /* ---------- Etapa 2: datos ---------- */
   function tipoChange() {
     const t = $('tipo').value;
     $('fRut').hidden = t !== 'empresa';
-    $('fExtra').querySelector('label').textContent =
-      t === 'nueva' ? 'Nombre que desea para su empresa' : 'Nombre o razón social';
+    $('fGiro').hidden = t !== 'empresa';
+    $('fExtra').hidden = t === 'persona';
+    $('lRazon').textContent = t === 'nueva' ? 'Nombre que desea para su empresa (opcional)' : 'Razón social';
+    $('lNombre').textContent = t === 'empresa' ? 'Nombre completo del representante legal' : 'Nombre completo del titular';
+    $('lRut').textContent = t === 'empresa' ? 'RUT del representante legal' : 'RUT';
+    $('lDom').textContent = t === 'empresa' ? 'Domicilio del representante legal' : 'Su domicilio';
+  }
+
+  async function cargarComunas() {
+    try {
+      const { comunas } = await api('GET', '/api/tienda/comunas');
+      const porRegion = {};
+      comunas.forEach((c) => (porRegion[c.region] ||= []).push(c));
+      $('dComuna').innerHTML = '<option value="">Comuna…</option>' + Object.entries(porRegion).map(([r, l]) =>
+        `<optgroup label="${esc(r)}">${l.map((c) => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('')}</optgroup>`).join('');
+    } catch { /* la compra avisará si falta la comuna */ }
+  }
+
+  // Lo que piden los documentos del plan y no está en los datos del cliente (ej. patente de un vehículo)
+  async function cargarPreguntas() {
+    state.preguntas = [];
+    $('preguntas').hidden = true;
+    if (!state.sel || state.sel.price === null) return;
+    try {
+      const d = await api('GET', `/api/tienda/planes/${encodeURIComponent(state.sel.id)}/preguntas`);
+      state.preguntas = d.preguntas;
+      $('preguntasDoc').textContent = d.documentos.length ? `Se usan en: ${d.documentos.join(', ')}.` : '';
+      $('preguntasCampos').innerHTML = d.preguntas.map((q, i) => `
+        <div class="f"><label for="q${i}">${esc(q.etiqueta)}</label><input id="q${i}" data-marca="${esc(q.marca)}" required></div>`).join('');
+      $('preguntas').hidden = !d.preguntas.length;
+    } catch { /* sin preguntas: el plan no tiene documentos o la tienda no está conectada */ }
+  }
+
+  function leerDatos() {
+    const t = $('tipo').value;
+    const datos = {
+      plan: state.sel && state.sel.id,
+      tipo: t,
+      region: $('region').value,
+      titular: { nombre: $('dNombre').value.trim(), rut: $('dRut').value.trim(), email: $('dMail').value.trim(), celular: $('dCel').value.trim() },
+      direccion: { calle: $('dCalle').value.trim(), numero: $('dNum').value.trim(), complemento: $('dDepto').value.trim(), comuna_id: $('dComuna').value },
+      empresa: t === 'persona' ? undefined : { rut: $('eRut').value.trim(), razon_social: $('eRazon').value.trim(), giro: $('eGiro').value.trim() },
+      respuestas: Object.fromEntries([...document.querySelectorAll('#preguntasCampos [data-marca]')].map((x) => [x.dataset.marca, x.value.trim()]))
+    };
+    return datos;
+  }
+
+  // Validación previa (el servidor vuelve a validar): evita llegar al pago con datos incompletos
+  function faltante(d) {
+    if (!d.titular.nombre) return 'Ingrese el nombre completo.';
+    if (!d.titular.rut) return 'Ingrese el RUT.';
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.titular.email)) return 'Ingrese un correo válido.';
+    if (d.tipo === 'empresa' && (!d.empresa.rut || !d.empresa.razon_social)) return 'Ingrese el RUT y la razón social de la empresa.';
+    if (!d.direccion.calle || !d.direccion.numero || !d.direccion.comuna_id) return 'Ingrese su domicilio: calle, número y comuna.';
+    const sin = state.preguntas.find((q) => !d.respuestas[q.marca]);
+    if (sin) return `Complete "${sin.etiqueta}" para su documento.`;
+    return null;
   }
 
   /* ---------- Etapa 3: pago ---------- */
@@ -173,7 +190,7 @@
       } else {
         rows += `<div class="srow tot"><span>Paga hoy</span><span>${clp(total)}</span></div>`;
       }
-      rows += '<div class="sum-note">Valores en pesos chilenos, IVA incluido. Boleta electrónica emitida al RUT registrado en su cuenta.</div>';
+      rows += '<div class="sum-note">Valores en pesos chilenos, IVA incluido. Boleta electrónica emitida al RUT ingresado. Pago de demostración: queda pendiente hasta que un ejecutivo lo confirme.</div>';
       $('bPay').textContent = state.payMode === 'split' ? 'Pagar primer abono' : 'Pagar';
     }
     $('sum').innerHTML = rows;
@@ -184,19 +201,52 @@
     document.querySelectorAll('.pm').forEach((e) => e.classList.toggle('on', e.dataset.pm === p));
   }
 
-  /* ---------- Etapa 4: confirmación ---------- */
+  async function pagar() {
+    aviso('errPago');
+    if (!$('legal').checked) return aviso('errPago', 'Acepte las condiciones del servicio para continuar.');
+    const datos = leerDatos();
+    datos.pago = { modo: state.payMode, medio: state.payPM };
+    const btn = $('bPay'), texto = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Procesando…';
+    try {
+      state.resultado = await api('POST', '/api/tienda/compras', datos);
+      go(4);
+    } catch (err) {
+      // Un dato mal escrito se corrige en la etapa 2
+      if (err.status === 400) { go(2); aviso('errDatos', err.message); } else aviso('errPago', err.message);
+    } finally {
+      btn.disabled = false; btn.textContent = texto;
+    }
+  }
+
+  /* ---------- Etapa 4: resultado ---------- */
   function renderOk() {
-    const sel = state.sel;
-    if (!sel) return;
-    const cotiza = sel.price === null;
-    const total = cotiza ? 0 : sel.price;
-    const half = Math.round(total / 2);
-    const medio = state.payPM === 'tbk' ? 'Webpay Plus (Transbank)' : 'Mercado Pago';
-    $('okTitle').textContent = cotiza ? 'Asesoría agendada' : 'Pago recibido';
-    $('okmsg').textContent = `Orden ${ORDEN} · ${sel.name} · comprobante enviado a su correo.`;
-    $('pay1').textContent = cotiza
-      ? 'Asesoría agendada — sin cargo'
-      : (state.payMode === 'split' ? `Primer abono de ${clp(half)} recibido vía ${medio}` : `${clp(total)} recibidos vía ${medio}`);
+    const r = state.resultado;
+    if (!r) return;
+    const etapa = (estado, titulo, sub, txt) => `<div class="pstage ${estado}"><div class="pdot">${estado === 'done' ? '✓' : estado === 'now' ? '…' : '·'}</div>
+      <div><div class="ptitle">${titulo}</div><div class="psub">${sub}</div></div><div class="pst">${txt}</div></div>`;
+
+    if (r.cotizacion) {
+      $('okTitle').textContent = 'Asesoría solicitada';
+      $('okmsg').textContent = r.mensaje;
+      $('pipeOk').innerHTML = etapa('now', 'Un ejecutivo lo contactará', 'Para agendar 30 minutos y entregarle la propuesta con el valor final.', 'En curso');
+      $('okNota').textContent = '';
+      return;
+    }
+    const medio = r.pasarela === 'transbank' ? 'Webpay Plus (Transbank)' : 'Mercado Pago';
+    $('okTitle').textContent = 'Contratación registrada';
+    $('okmsg').textContent = `Contrato ${r.orden} · ${r.plan} · ${r.familia}`;
+    const docs = r.documentos.length ? r.documentos.map((d) => d.publicado
+      ? etapa('now', `${esc(d.tipo)}: listo para su revisión`, 'Revise el borrador en Mi cuenta y acéptelo para recibir el documento final. Si algo no está correcto, envíenos un ticket desde ahí mismo.', 'Su turno')
+      : etapa('now', `${esc(d.tipo)}: en revisión`, 'Un ejecutivo revisa el documento y se lo envía a Mi cuenta para que usted lo revise y acepte.', 'En curso')).join('')
+      : etapa('now', 'Activación del servicio', 'Un ejecutivo confirma el pago y activa su servicio.', 'En curso');
+    $('pipeOk').innerHTML =
+      etapa('done', 'Pago registrado', `${clp(r.monto)} vía ${medio} · pago de demostración: queda pendiente hasta que un ejecutivo lo confirme`, 'Listo') +
+      etapa('done', 'Contrato generado', `Folio ${esc(r.orden)} con los datos que ingresó`, 'Listo') + docs +
+      etapa('', 'Firma electrónica avanzada', 'Después de que usted acepte el documento · Ley 19.799', 'Pendiente');
+    $('okNota').innerHTML = r.cuenta === 'enlace_enviado'
+      ? `Le enviamos a <b>${esc(r.email)}</b> un enlace para crear su contraseña de <b>Mi cuenta</b> (vence en 15 minutos; si vence, pida otro en Mi cuenta → "Crear o recuperar contraseña").`
+      : `Ingrese a <b>Mi cuenta</b> con <b>${esc(r.email)}</b> y su contraseña.`;
   }
 
   /* ---------- Stepper y navegación ---------- */
@@ -210,8 +260,13 @@
   }
 
   function go(n) {
-    if (n >= 3 && !state.sel) n = 1;     // no se paga sin plan: vuelve al catálogo
-    if (n >= 3 && !state.logged) n = 2;  // ni sin cuenta o compra como invitado
+    if (n >= 2 && !state.sel) n = 1;                 // sin plan: vuelve al catálogo
+    if (n === 3) {                                   // no se paga con datos incompletos
+      const falta = faltante(leerDatos());
+      if (falta) { n = 2; aviso('errDatos', falta); } else aviso('errDatos');
+    }
+    if (n === 4 && !state.resultado) n = 3;          // el resultado solo existe después de pagar
+    if (n === 1) state.resultado = null;
     document.querySelectorAll('.stage').forEach((s) => s.classList.remove('active'));
     $('s' + n).classList.add('active');
     renderStepper(n);
@@ -220,9 +275,21 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  // Si ya ingresó a Mi cuenta, se muestra y se usa su correo
+  async function sesionPortal() {
+    $('sess').innerHTML = '<a class="nav-btn" href="/mi-cuenta">Mi cuenta</a>';
+    try {
+      const { cliente } = await api('GET', '/api/cliente/yo');
+      $('sesionCli').hidden = false;
+      $('sesionT').textContent = `Sesión iniciada · ${cliente.razon_social}`;
+      if (!$('dMail').value) $('dMail').value = cliente.email;
+      $('sess').innerHTML = `<span style="color:var(--ink);font-weight:600">${esc(cliente.razon_social)}</span> · <a class="link" href="/mi-cuenta">Mi cuenta</a>`;
+    } catch { /* sin sesión de cliente */ }
+  }
+
   /* ---------- Eventos (delegación) ---------- */
   document.addEventListener('click', (e) => {
-    const t = e.target.closest('[data-fam],[data-plan],[data-auth],[data-login],[data-logout],[data-go],[data-mode],[data-pm],[data-pw]');
+    const t = e.target.closest('[data-fam],[data-plan],[data-go],[data-mode],[data-pm],[data-pagar]');
     if (!t) return;
     const d = t.dataset;
 
@@ -230,18 +297,9 @@
     else if (d.plan) pick(d.plan);
     else if (d.mode) { state.payMode = d.mode; renderModes(); renderSum(); }
     else if (d.pm) setPM(d.pm);
-    else if (d.pw) {
-      const el = $(d.pw);
-      const show = el.type === 'password';
-      el.type = show ? 'text' : 'password';
-      t.textContent = show ? 'Ocultar' : 'Mostrar';
-    }
-    else if ('login' in d) login(d.login === 'guest');
-    else if ('logout' in d) logout();
+    else if ('pagar' in d) pagar();
 
-    // data-go y data-auth pueden venir juntos (botón «Crear cuenta» de la cabecera)
     if (d.go) go(Number(d.go));
-    if (d.auth) setAuth(d.auth);
   });
 
   document.addEventListener('keydown', (e) => {
@@ -253,6 +311,7 @@
   });
 
   $('tipo').addEventListener('change', tipoChange);
+  $('datosForm').addEventListener('submit', (e) => { e.preventDefault(); go(3); });
 
   /* ---------- Inicio ---------- */
   const pre = new URLSearchParams(location.search).get('plan');
@@ -267,5 +326,6 @@
   }
   renderStepper(1);
   tipoChange();
-  updateNav();
+  cargarComunas();
+  sesionPortal();
 })();

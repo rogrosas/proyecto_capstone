@@ -15,16 +15,16 @@
 </head>
 <body class="pg-publico pg-contratar">
 
-<div class="flag">VERSIÓN DE DESARROLLO — contratación y pago en línea. Aún no procesa pagos ni guarda datos; planes y precios tomados de easyoffice.cl</div>
+<div class="flag">VERSIÓN DE DESARROLLO — la contratación se guarda de verdad, pero el pago es de demostración: queda pendiente hasta que un ejecutivo lo confirme.</div>
 <header id="cabecera" data-sub="contratar en línea" data-activo="contratar" data-derecha="contratar"></header>
 
 <section class="hero" style="background-image:url('/img/hero-inicio.png')">
   <h1>Contrate su servicio en línea, en minutos</h1>
-  <p>Elija su plan, cree su cuenta y pague con Webpay o Mercado Pago. Su documento se genera, se revisa y se firma electrónicamente sin que usted mueva un papel.</p>
+  <p>Elija su plan, ingrese sus datos y pague con Webpay o Mercado Pago. Su documento se genera, se revisa y se firma electrónicamente sin que usted mueva un papel.</p>
   <div class="tags">
     <div class="tag">Firma electrónica avanzada · Ley 19.799</div>
     <div class="tag">Pago seguro Transbank / Mercado Pago</div>
-    <div class="tag">Su cuenta con historial y documentos</div>
+    <div class="tag">Revise y acepte su documento en Mi cuenta</div>
   </div>
 </section>
 <svg class="wave" viewBox="0 0 1440 44" preserveAspectRatio="none" aria-hidden="true"><path d="M0,26 C240,50 480,0 720,14 C960,28 1200,48 1440,26 L1440,44 L0,44 Z" fill="#F5F7F7"/></svg>
@@ -56,111 +56,64 @@
   <section class="stage" id="s2">
     <div class="card">
       <div class="head">
-        <h2 id="s2title">Ingrese a su cuenta</h2>
-        <p id="s2sub">Con su cuenta guarda sus datos, ve el estado de sus trámites y descarga sus documentos firmados cuando quiera.</p>
+        <h2>Sus datos</h2>
+        <p>Con estos datos se arma su contrato. Al terminar le llegará un correo para entrar a <b>Mi cuenta</b>, donde revisa y acepta su documento.</p>
       </div>
 
-      <!-- Autenticación -->
-      <div class="auth" id="auth">
-        <div class="auth-tabs">
-          <button class="at on" id="atLogin" data-auth="login">Ya tengo cuenta</button>
-          <button class="at" id="atReg" data-auth="reg">Crear cuenta</button>
-        </div>
-
-        <div class="auth-body" id="paneLogin">
-          <div class="auth-narrow">
-            <div class="grid2">
-              <div class="f"><label for="loginMail">Correo electrónico</label><input type="email" id="loginMail" placeholder="camila.torres@correo.cl" autocomplete="off"></div>
-              <div class="f"><label for="loginPw">Contraseña</label>
-                <div class="pw-wrap">
-                  <input type="password" id="loginPw" placeholder="••••••••" autocomplete="off">
-                  <button type="button" class="pw-toggle" data-pw="loginPw">Mostrar</button>
-                </div>
-              </div>
-            </div>
-            <div class="auth-row">
-              <label class="chk"><input type="checkbox" checked> Mantener la sesión iniciada</label>
-              <span class="link">¿Olvidó su contraseña?</span>
-            </div>
-            <button class="btn btn-g btn-w" style="margin-top:18px;" data-login>Ingresar</button>
-            <div class="auth-alt">
-              ¿Primera vez en Easy Office? <button class="btn-link" data-auth="reg">Cree su cuenta en 30 segundos</button>, o
-              <button class="btn-link" data-login="guest">continúe como invitado</button> y créela al final de la compra.
-            </div>
-            <div class="demo-note">Pantalla de demostración: no valida credenciales ni envía datos a ningún servidor. Presione «Ingresar» para continuar el recorrido.</div>
-          </div>
-        </div>
-
-        <div class="auth-body" id="paneReg" hidden>
-          <div class="grid2">
-            <div class="f"><label>Nombre completo</label><input placeholder="Camila Andrea Torres Reyes" autocomplete="off"></div>
-            <div class="f"><label>RUT</label><input placeholder="18.204.331-5" autocomplete="off"></div>
-            <div class="f"><label>Correo electrónico</label><input type="email" placeholder="camila.torres@correo.cl" autocomplete="off"><span class="hint">Le enviaremos un enlace para confirmar el correo.</span></div>
-            <div class="f"><label>Teléfono</label><input placeholder="+56 9 0000 0000" autocomplete="off"></div>
-            <div class="f"><label for="regPw">Contraseña</label>
-              <div class="pw-wrap">
-                <input type="password" id="regPw" placeholder="Mínimo 8 caracteres" autocomplete="off">
-                <button type="button" class="pw-toggle" data-pw="regPw">Mostrar</button>
-              </div>
-            </div>
-            <div class="f"><label for="regPw2">Repita la contraseña</label>
-              <div class="pw-wrap">
-                <input type="password" id="regPw2" placeholder="Repita la contraseña" autocomplete="off">
-                <button type="button" class="pw-toggle" data-pw="regPw2">Mostrar</button>
-              </div>
-            </div>
-          </div>
-          <div class="auth-row">
-            <label class="chk"><input type="checkbox" checked> Acepto los términos del servicio y la política de privacidad de Easy Office.</label>
-          </div>
-          <button class="btn btn-g" style="margin-top:18px;" data-login>Crear cuenta y continuar</button>
-          <div class="auth-alt">¿Ya tiene cuenta? <button class="btn-link" data-auth="login">Inicie sesión</button></div>
-          <div class="demo-note">Pantalla de demostración: no valida credenciales ni envía datos a ningún servidor.</div>
-        </div>
-      </div>
-
-      <!-- Sesión iniciada -->
-      <div class="cu" id="logged" hidden>
+      <div class="cu" id="sesionCli" hidden>
         <div class="ico">✓</div>
-        <div>
-          <div class="t" id="loggedT">Sesión iniciada</div>
-          <div class="s" id="loggedS">camila.torres@correo.cl · correo confirmado</div>
-        </div>
-        <button class="chg" data-logout>Cerrar sesión</button>
+        <div><div class="t" id="sesionT"></div><div class="s">Use el mismo correo con que ingresa a Mi cuenta.</div></div>
       </div>
 
-      <div id="datosForm" hidden>
+      <form id="datosForm" novalidate>
         <div class="grid2">
-          <div class="f"><label for="dNombre">Nombre completo del titular</label><input id="dNombre" value="Camila Andrea Torres Reyes"></div>
-          <div class="f"><label for="dRut">RUT</label><input id="dRut" value="18.204.331-5"><span class="hint">Se usa para emitir la boleta y para el documento.</span></div>
-          <div class="f"><label for="dMail">Correo electrónico</label><input id="dMail" value="camila.torres@correo.cl"><span class="hint">Aquí llegarán las notificaciones y el documento firmado.</span></div>
-          <div class="f"><label>Teléfono de contacto</label><input placeholder="+56 9 0000 0000"></div>
-          <div class="f"><label for="tipo">¿Contrata como…?</label>
+          <div class="f full"><label for="tipo">¿Contrata como…?</label>
             <select id="tipo">
               <option value="persona">Persona natural con giro</option>
               <option value="empresa">Empresa ya constituida</option>
               <option value="nueva">Aún no tengo empresa</option>
             </select>
           </div>
-          <div class="f" id="fRut"><label>RUT de la empresa</label><input placeholder="76.000.000-0"></div>
-          <div class="f full" id="fExtra"><label>Nombre o razón social</label><input placeholder="Ej: Torres Diseño y Marketing SpA"></div>
-          <div class="f full"><label>Región donde necesita el domicilio</label>
-            <select>
-              <option>Región Metropolitana — Sucursal ZIP 8260183</option>
-              <option>Región de Valparaíso — Casa Matriz ZIP 2362633</option>
+          <div class="f"><label for="dNombre" id="lNombre">Nombre completo del titular</label><input id="dNombre" autocomplete="name" required></div>
+          <div class="f"><label for="dRut" id="lRut">RUT</label><input id="dRut" placeholder="18.204.331-5" autocomplete="off" required><span class="hint">Se usa para la boleta y para el documento.</span></div>
+          <div class="f"><label for="dMail">Correo electrónico</label><input type="email" id="dMail" placeholder="nombre@correo.cl" autocomplete="email" required><span class="hint">Aquí llegará el enlace para revisar su documento en Mi cuenta.</span></div>
+          <div class="f"><label for="dCel">Celular</label><input id="dCel" placeholder="+56 9 0000 0000" autocomplete="tel"></div>
+          <div class="f" id="fRut"><label for="eRut">RUT de la empresa</label><input id="eRut" placeholder="76.000.000-0" autocomplete="off"></div>
+          <div class="f" id="fGiro"><label for="eGiro">Giro</label><input id="eGiro" placeholder="Ej: Asesorías en marketing"></div>
+          <div class="f full" id="fExtra"><label for="eRazon" id="lRazon">Razón social</label><input id="eRazon" placeholder="Ej: Torres Diseño y Marketing SpA"></div>
+          <div class="f full"><label for="dCalle" id="lDom">Su domicilio</label>
+            <div class="dom">
+              <input id="dCalle" placeholder="Calle" autocomplete="address-line1" required>
+              <input id="dNum" placeholder="Número" autocomplete="off" required>
+              <input id="dDepto" placeholder="Depto u oficina (opcional)" autocomplete="address-line2">
+              <select id="dComuna" required><option value="">Comuna…</option></select>
+            </div>
+            <span class="hint">Va en la comparecencia del contrato.</span>
+          </div>
+          <div class="f full"><label for="region">Región donde necesita el servicio</label>
+            <select id="region">
+              <option value="metropolitana">Región Metropolitana</option>
+              <option value="valparaiso">Región de Valparaíso</option>
             </select>
-            <span class="hint">Cobertura verificada ante SII y municipalidades en ambas regiones.</span>
           </div>
         </div>
+
+        <div id="preguntas" hidden>
+          <div class="lbl" style="margin-top:22px;">Datos para su documento</div>
+          <p class="hint" id="preguntasDoc" style="margin:0 0 10px;"></p>
+          <div class="grid2" id="preguntasCampos"></div>
+        </div>
+
+        <div class="aviso-error" id="errDatos" hidden style="margin-top:16px;"></div>
 
         <div class="idnote">
           <b>Sobre la verificación de identidad.</b> Los datos que usted ingresa son declarados. La verificación de identidad se realiza en el momento de firmar, a cargo del proveedor de firma electrónica avanzada acreditado, conforme a la Ley 19.799. Easy Office no solicita ni almacena su ClaveÚnica: su uso está reservado a organismos del Estado.
         </div>
-      </div>
+      </form>
 
       <div class="acts">
         <button class="btn btn-o" data-go="1">Volver</button>
-        <button class="btn btn-g" id="b2" data-go="3" disabled>Ir a pagar</button>
+        <button class="btn btn-g" id="b2" data-go="3">Ir a pagar</button>
       </div>
     </div>
   </section>
@@ -184,7 +137,8 @@
             <button class="pm" data-pm="mp"><div class="n">Mercado Pago</div><div class="s">Tarjetas y saldo en cuenta</div></button>
           </div>
 
-          <label class="legal"><input type="checkbox" checked> Acepto las condiciones del servicio y autorizo la emisión de la boleta electrónica a mi RUT. Declaro que los datos ingresados son correctos y de mi titularidad.</label>
+          <div class="aviso-error" id="errPago" hidden style="margin-top:14px;"></div>
+          <label class="legal"><input type="checkbox" id="legal"> Acepto las condiciones del servicio y autorizo la emisión de la boleta electrónica a mi RUT. Declaro que los datos ingresados son correctos y de mi titularidad.</label>
         </div>
 
         <div class="sum">
@@ -195,7 +149,7 @@
 
       <div class="acts">
         <button class="btn btn-o" data-go="2">Volver</button>
-        <button class="btn btn-g" id="bPay" data-go="4">Pagar</button>
+        <button class="btn btn-g" id="bPay" data-pagar>Pagar</button>
       </div>
     </div>
   </section>
@@ -205,27 +159,20 @@
     <div class="card">
       <div class="ok">
         <div class="ok-ico">✓</div>
-        <h2 id="okTitle">Pago recibido</h2>
-        <p id="okmsg">Orden EO-2026-04417 · comprobante enviado a su correo.</p>
+        <h2 id="okTitle">Contratación registrada</h2>
+        <p id="okmsg"></p>
       </div>
 
-      <div class="pipe">
-        <div class="pstage done"><div class="pdot">✓</div><div><div class="ptitle">Pago confirmado</div><div class="psub" id="pay1">—</div></div><div class="pst">Listo</div></div>
-        <div class="pstage done"><div class="pdot">✓</div><div><div class="ptitle">Contrato generado automáticamente</div><div class="psub">Armado desde plantilla con los datos de su cuenta</div></div><div class="pst">Listo</div></div>
-        <div class="pstage now"><div class="pdot">…</div><div><div class="ptitle">Verificación humana</div><div class="psub">Un ejecutivo revisa el documento antes de habilitar la firma · estimado 2 h hábiles</div></div><div class="pst">En curso</div></div>
-        <div class="pstage"><div class="pdot">4</div><div><div class="ptitle">Firma electrónica avanzada</div><div class="psub">Verificación de identidad y firma de ambas partes ante proveedor acreditado · Ley 19.799</div></div><div class="pst">Pendiente</div></div>
-        <div class="pstage"><div class="pdot">5</div><div><div class="ptitle">Servicio activo</div><div class="psub">Documento disponible en su panel y activación del servicio contratado</div></div><div class="pst">Pendiente</div></div>
-      </div>
+      <div class="pipe" id="pipeOk"></div>
 
       <div class="okgrid">
-        <a class="btn btn-d btn-w" href="/mi-cuenta">Ir a mi panel</a>
-        <button class="btn btn-o btn-w" disabled>Descargar documento (al firmar)</button>
+        <a class="btn btn-d btn-w" href="/mi-cuenta">Ir a Mi cuenta</a>
+        <button class="btn btn-o btn-w" data-go="1">Contratar otro servicio</button>
       </div>
 
-      <div class="fam-note">Le avisaremos por correo y WhatsApp en cada cambio de estado. No necesita llamar para saber en qué va su trámite.</div>
+      <div class="fam-note" id="okNota"></div>
 
       <div class="acts">
-        <button class="btn btn-o" data-go="1">Contratar otro servicio</button>
         <span class="info">¿Dudas? info@easyoffice.cl · +56 22 277 7781</span>
       </div>
     </div>
