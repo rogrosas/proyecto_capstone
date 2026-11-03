@@ -6,12 +6,15 @@
 /**
  * filtros = { texto, rut, estado }  (ya normalizados por la capa de negocio)
  */
-async function listar(db, { texto, rut, estado }, limite) {
+const { POR_REVISAR } = require('../sql/fragmentos');
+
+async function listar(db, { texto, rut, estado, porRevisar }, limite) {
   const r = await db.query(`
     WITH base AS (
       SELECT cl.id, cl.rut, fn_rut_formato(cl.rut) AS rut_fmt, cl.razon_social, cl.nombre_fantasia,
              cl.email, cl.celular, cl.creado_en::date::text AS desde,
-             ult.ejecutivo, ult.vence, ult.estado_contrato, ult.folio, srv.servicios,
+             ult.ejecutivo, ult.vence, ult.estado_contrato, ult.folio, ult.contrato_id, srv.servicios,
+             (SELECT count(*)::int FROM documentos d WHERE d.cliente_id = cl.id AND ${POR_REVISAR('d')}) AS docs_por_revisar,
              CASE
                WHEN ult.vence IS NULL                                                   THEN 'Sin contrato'
                WHEN ult.estado_contrato = 'vencido' OR ult.vence::date < CURRENT_DATE   THEN 'Vencido'
@@ -20,7 +23,7 @@ async function listar(db, { texto, rut, estado }, limite) {
                ELSE 'Activo' END AS estado
         FROM clientes cl
         LEFT JOIN LATERAL (
-          SELECT u.nombre AS ejecutivo, k.fecha_vencimiento::text AS vence, k.estado AS estado_contrato, k.folio
+          SELECT u.nombre AS ejecutivo, k.fecha_vencimiento::text AS vence, k.estado AS estado_contrato, k.folio, k.id AS contrato_id
             FROM contratos k LEFT JOIN usuarios u ON u.id = k.ejecutivo_id
            WHERE k.cliente_id = cl.id AND k.estado <> 'cancelado'
            ORDER BY k.fecha_vencimiento DESC LIMIT 1) ult ON true
@@ -33,8 +36,8 @@ async function listar(db, { texto, rut, estado }, limite) {
               OR ($2 <> '' AND cl.rut LIKE '%' || $2 || '%')
               OR EXISTS (SELECT 1 FROM contratos k WHERE k.cliente_id = cl.id AND k.folio ILIKE '%' || $1 || '%'))
     )
-    SELECT * FROM base WHERE ($3 = '' OR estado = $3)
-    ORDER BY razon_social LIMIT $4`, [texto, rut, estado, limite]);
+    SELECT * FROM base WHERE ($3 = '' OR estado = $3) AND (NOT $5::boolean OR docs_por_revisar > 0)
+    ORDER BY docs_por_revisar > 0 DESC, razon_social LIMIT $4`, [texto, rut, estado, limite, !!porRevisar]);
   return r.rows;
 }
 

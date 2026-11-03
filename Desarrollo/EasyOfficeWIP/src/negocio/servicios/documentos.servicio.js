@@ -6,15 +6,22 @@
 const { conUsuario } = require('../../datos/conexion');
 const { errores } = require('../../comun/errores');
 const documentosRepo = require('../../datos/repositorios/documentos.repositorio');
+const firmaRepo = require('../../datos/repositorios/firma.repositorio');
+const plataformaFirma = require('../../datos/firma');
+const { impedimento: impedimentoFirma } = require('./firma.servicio');
 
 const LIMITE = 300;
-const TIPOS = { revision: true, automatico: false };
+const TIPOS = { revision: true, automatico: false };   // 'pendientes' = esperan la revisión del personal
+// Filtros por etapa: trámites en curso y documentos esperando la firma electrónica
+const POR_ESTADO = { tramite: ['borrador', 'en_revision', 'aprobado'], firma: ['enviado_firma'], firmados: ['firmado'] };
 
 async function listar(usuario, { tipo }) {
   const revision = tipo in TIPOS ? TIPOS[tipo] : null;
+  const porRevisar = tipo === 'pendientes';
+  const estados = POR_ESTADO[tipo] || null;
   return conUsuario(usuario, async (db) => ({
     etapas: await documentosRepo.contarPorEstado(db),
-    documentos: await documentosRepo.listar(db, { revision }, LIMITE)
+    documentos: await documentosRepo.listar(db, { revision, porRevisar, estados }, LIMITE)
   }));
 }
 
@@ -73,7 +80,15 @@ async function detalle(usuario, id) {
       .filter(Boolean).join('\n\n');
     const siguientes = TRANSICIONES[doc.estado].filter((e) =>
       !(e === 'en_revision' && !doc.requiere_revision) && !(e === 'enviado_firma' && doc.estado === 'borrador' && doc.requiere_revision));
-    return { documento: doc, partes, clausulas, texto, siguientes, puedeAprobar: doc.estado === 'en_revision' };
+    // Firma electrónica: firmantes y, si todavía no se puede enviar, por qué
+    const paraFirma = await firmaRepo.paraFirmar(db, id);
+    const firma = {
+      plataforma: plataformaFirma.activo() ? plataformaFirma.nombre() : null,
+      proveedor: doc.firma_proveedor, enviado: doc.enviado_firma_en, con_firmado: doc.con_firmado, hash: doc.hash_firmado,
+      firmantes: await firmaRepo.firmantes(db, id),
+      impedimento: impedimentoFirma(paraFirma)
+    };
+    return { documento: doc, partes, clausulas, texto, siguientes, puedeAprobar: doc.estado === 'en_revision', firma };
   });
 }
 

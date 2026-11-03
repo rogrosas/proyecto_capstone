@@ -6,6 +6,7 @@ const { asincrono: a } = require('../middleware/errores');
 const { requiereSesionCliente } = require('../middleware/sesionCliente');
 const portal = require('../controladores/portal.controlador');
 const entrega = require('../controladores/entrega.controlador');
+const correspondencia = require('../controladores/correspondencia.controlador');
 
 // Públicas
 router.post('/ingresar', a(portal.ingresar));             // empresa (RUT + correo) o persona (correo) + contraseña
@@ -25,5 +26,10 @@ router.post('/documentos/:id/ticket', a(entrega.ticketDocumento));
 router.get('/documentos/:id/archivo', a(entrega.archivoFinal));
 router.get('/tickets', a(entrega.ticketsCliente));
 router.post('/tickets', a(entrega.ticket));
+
+// Correspondencia recibida en su domicilio tributario (abrir el escaneo la marca como leída)
+router.get('/correspondencia', a(correspondencia.delCliente));
+router.get('/correspondencia/:id/archivo', a(correspondencia.archivoCliente));
+router.post('/correspondencia/:id/leida', a(correspondencia.marcarLeida));
 
 module.exports = router;

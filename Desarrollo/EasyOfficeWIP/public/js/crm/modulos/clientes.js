@@ -1,11 +1,11 @@
 /* CRM · Clientes (clientes, representantes_legales, direcciones) */
-import { get, post, put, del } from '../api.js';
-import { esc, clp, fecha, fechaHora, filaVacia, badge, toast } from '../util.js';
-import { estado, opciones } from '../estado.js';
+import { get, post, put, del, exportar } from '../api.js';
+import { esc, clp, fecha, fechaHora, filaVacia, badge, toast, hoyISO } from '../util.js';
+import { estado, opciones, tomarFiltros } from '../estado.js';
 import { abrirModal, cerrarModal, formularioHTML, leerFormulario, validar, confirmar } from '../modal.js';
 import { direccionHTML, activarDirecciones, direccionLimpia } from '../direccion.js';
 import { abrirContrato, nuevoContrato } from './contratos.js';
-import { abrirDocumento, nuevoDocumento } from './documentos.js';
+import { abrirDocumento, nuevoDocumento, revisarDocumento } from './documentos.js';
 
 let contenedor = null;
 
@@ -21,8 +21,8 @@ async function cargar() {
         <td class="mono">${esc(c.rut_fmt)}</td>
         <td>${esc(c.servicios || '—')}</td>
         <td>${esc(c.ejecutivo || '—')}</td>
-        <td>${c.vence ? fecha(c.vence) : '—'}${c.folio ? `<div class="sb mono">${esc(c.folio)}</div>` : ''}</td>
-        <td>${badge('cliente', c.estado)}</td>
+        <td>${c.vence ? fecha(c.vence) : '—'}${c.folio ? `<div class="sb"><button class="lnk mono" data-contrato="${c.contrato_id}" title="Abrir el contrato">${esc(c.folio)}</button></div>` : ''}</td>
+        <td>${badge('cliente', c.estado)}${c.docs_por_revisar ? `<div style="margin-top:4px;"><span class="bg amb" title="Documentos pendientes de revisión">${c.docs_por_revisar} por revisar</span></div>` : ''}</td>
         <td class="right"><button class="btn btn-o btn-row" data-cliente="${c.id}">Ficha</button></td>
       </tr>`).join('') : filaVacia(7, 'No hay clientes que coincidan.');
     contenedor.querySelector('#ntClientes').textContent = estado.usuario.admin
@@ -54,7 +54,7 @@ function accesosHTML(c, accesos) {
       </td>
     </tr>`).join('');
   return `
-    <h4 class="sub-h">Acceso al portal de clientes
+    <h4 class="sub-h" id="sec-portal">Acceso al portal de clientes
       <span class="hint">(${empresa ? 'RUT de la empresa + correo + contraseña' : 'correo + contraseña'})</span></h4>
     ${empresa ? '<div class="ficha-acciones"><button class="btn btn-o btn-s" data-acc="autorizar">Autorizar persona</button></div>' : ''}
     <div class="tbl-wrap"><table>
@@ -91,6 +91,10 @@ function autorizarPersona(c) {
 export async function abrirFicha(id) {
   const f = await get('/clientes/' + id);
   const c = f.cliente, r = f.representante;
+  const pendientes = f.documentos.filter((d) => d.por_revisar);
+  const vigentes = f.contratos.filter((k) => ['activo', 'pendiente'].includes(k.estado));
+  const saldo = f.contratos.reduce((s, k) => s + Math.max(0, Number(k.saldo) || 0), 0);
+  const proxima = f.gestiones.map((g) => g.proxima).filter((p) => p && p >= hoyISO()).sort()[0];
   const cuerpo = abrirModal({
     titulo: c.razon_social, ancho: 'lg',
     contenido: `
@@ -99,6 +103,19 @@ export async function abrirFicha(id) {
         <button class="btn btn-g btn-s" data-acc="contrato">Nuevo contrato</button>
         <button class="btn btn-o btn-s" data-acc="documento">Nuevo documento</button>
         ${estado.usuario.admin ? '<button class="btn btn-peligro btn-s" data-acc="eliminar">Eliminar</button>' : ''}
+      </div>
+      ${pendientes.length ? `<div class="pend-rev">
+        <div class="pr-t">${pendientes.length === 1 ? 'Hay un documento pendiente de revisión' : `Hay ${pendientes.length} documentos pendientes de revisión`}</div>
+        ${pendientes.map((d) => `<div class="pr-i"><div><b>${esc(d.tipo)}</b><span class="sb"> · ${esc(d.folio || 'DOC-' + d.id)} · generado ${fecha(d.generado)}</span></div>
+          <button class="btn btn-g btn-row" data-revisar="${d.id}">Ver y aprobar</button></div>`).join('')}
+      </div>` : ''}
+      <div class="resumen-ficha">
+        <button class="rs" data-ir-sec="contratos" title="Ir a sus contratos"><span class="v">${vigentes.length}</span><span class="l">contrato(s) vigente(s) de ${f.contratos.length}</span></button>
+        <button class="rs" data-ir-sec="documentos" title="Ir a sus documentos"><span class="v">${f.documentos.length}</span><span class="l">documento(s)${pendientes.length ? ` · ${pendientes.length} por revisar` : ''}</span></button>
+        <button class="rs" data-ir-sec="pagos" title="Ir a sus pagos"><span class="v">${clp(saldo)}</span><span class="l">saldo por cobrar · ${f.pagos.length} pago(s)</span></button>
+        <button class="rs" data-ir-sec="portal" title="Ir al acceso al portal"><span class="v">${(f.accesos || []).filter((a) => a.con_clave && a.activo).length}</span><span class="l">persona(s) con acceso a Mi cuenta</span></button>
+        <button class="rs" data-ir-sec="gestiones" title="Ir a la bitácora de gestiones"><span class="v">${f.gestiones.length}</span><span class="l">gestión(es)${proxima ? ` · próxima ${fecha(proxima)}` : ''}</span></button>
+        ${f.firmas ? `<div class="rs" title="Bolsas y planes con firmas incluidas"><span class="v">${f.firmas.disponibles}</span><span class="l">firma(s) disponible(s) de ${f.firmas.compradas}${f.firmas.vence ? ` · vencen ${fecha(f.firmas.vence)}` : ''}</span></div>` : ''}
       </div>
       <div class="g2e">
         <div class="panel plano">
@@ -110,7 +127,7 @@ export async function abrirFicha(id) {
           <div class="kv"><span class="k">Correo</span><span class="v">${esc(c.email || '—')}</span></div>
           <div class="kv"><span class="k">Celular</span><span class="v">${c.celular ? '+56 ' + esc(c.celular) : '—'}</span></div>
           <div class="kv"><span class="k">Escritura</span><span class="v">${fecha(c.fecha_escritura)}${c.sitio_notaria ? ' · ' + esc(c.sitio_notaria) : ''}</span></div>
-          <div class="kv"><span class="k">Registrado por</span><span class="v">${esc(c.registrado_por)} · ${fecha(c.creado_en)}</span></div>
+          <div class="kv"><span class="k">Registrado por</span><span class="v">${esc(c.registrado_por || 'Tienda en línea')} · ${fecha(c.creado_en)}</span></div>
         </div>
         <div class="panel plano">
           <h3>Representante legal</h3>
@@ -125,7 +142,7 @@ export async function abrirFicha(id) {
         </div>
       </div>
       ${accesosHTML(c, f.accesos || [])}
-      <h4 class="sub-h">Contratos</h4>
+      <h4 class="sub-h" id="sec-contratos">Contratos</h4>
       <div class="tbl-wrap"><table>
         <thead><tr><th>Folio</th><th>Servicios</th><th>Vigencia</th><th>Total neto</th><th>Saldo</th><th>Estado</th></tr></thead>
         <tbody>${f.contratos.length ? f.contratos.map((k) => `
@@ -134,27 +151,43 @@ export async function abrirFicha(id) {
             <td class="money">${k.saldo > 0 ? `<span class="rojo">${clp(k.saldo)}</span>` : clp(k.saldo)}</td><td>${badge('contrato', k.estado)}</td></tr>`).join('')
           : filaVacia(6, 'Sin contratos.')}</tbody>
       </table></div>
-      <h4 class="sub-h">Documentos</h4>
+      <h4 class="sub-h" id="sec-documentos">Documentos</h4>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>Documento</th><th>Folio</th><th>Generado</th><th>Estado</th><th>Código</th></tr></thead>
+        <thead><tr><th>Documento</th><th>Folio</th><th>Generado</th><th>Estado</th><th>Cliente</th><th>Código</th><th></th></tr></thead>
         <tbody>${f.documentos.length ? f.documentos.map((d) => `
           <tr class="clic" data-documento="${d.id}"><td class="nm">${esc(d.tipo)}</td><td class="mono">${esc(d.folio || '—')}</td>
-            <td>${fecha(d.generado)}</td><td>${badge('documento', d.estado)}</td><td class="mono">${esc(d.codigo_verificacion || '—')}</td></tr>`).join('')
-          : filaVacia(5, 'Sin documentos.')}</tbody>
+            <td>${fecha(d.generado)}</td><td>${badge('documento', d.estado)}</td>
+            <td>${d.por_revisar ? '<span class="bg amb">Por revisar</span>' : d.estado_cliente ? badge('cliente_doc', d.estado_cliente) : '<span class="sb">—</span>'}</td>
+            <td class="mono">${esc(d.codigo_verificacion || '—')}</td>
+            <td class="right">${d.por_revisar ? `<button class="btn btn-g btn-row" data-revisar="${d.id}">Ver y aprobar</button>` : ''}</td></tr>`).join('')
+          : filaVacia(7, 'Sin documentos.')}</tbody>
       </table></div>
-      <h4 class="sub-h">Pagos</h4>
+      <h4 class="sub-h" id="sec-pagos">Pagos</h4>
       <div class="tbl-wrap"><table>
         <thead><tr><th>Fecha</th><th>Referencia</th><th>Monto</th><th>Cuota</th><th>Estado</th></tr></thead>
         <tbody>${f.pagos.length ? f.pagos.map((p) => `
-          <tr><td>${fechaHora(p.fecha)}</td><td class="mono">${esc(p.referencia)}</td><td class="money">${clp(p.monto)}</td>
+          <tr class="clic" ${p.contrato_id ? `data-contrato="${p.contrato_id}"` : `data-documento="${p.documento_id}"`} title="Abrir el ${p.contrato_id ? 'contrato' : 'documento'}"><td>${fechaHora(p.fecha)}</td><td class="mono">${esc(p.referencia)}</td><td class="money">${clp(p.monto)}</td>
             <td>${p.cuota} de ${p.total_cuotas}</td><td>${badge('pago', p.estado)}</td></tr>`).join('')
           : filaVacia(5, 'Sin pagos.')}</tbody>
+      </table></div>
+      <h4 class="sub-h" id="sec-gestiones">Bitácora de gestiones <button class="btn btn-o btn-row" data-acc="gestion">Registrar gestión</button></h4>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Fecha</th><th>Gestión</th><th>Resultado</th><th>Nota</th><th>Próxima acción</th></tr></thead>
+        <tbody>${f.gestiones.length ? f.gestiones.map((g) => `
+          <tr><td>${fechaHora(g.fecha)}<div class="sb">${esc(g.usuario)}</div></td>
+            <td>${TIPO_GESTION[g.tipo] || esc(g.tipo)}${g.folio ? `<div class="sb mono">${esc(g.folio)}</div>` : ''}</td>
+            <td>${g.resultado ? `<span class="bg ${RESULTADO_GESTION[g.resultado][0]}">${RESULTADO_GESTION[g.resultado][1]}</span>` : '<span class="sb">—</span>'}</td>
+            <td style="white-space:pre-wrap;max-width:340px;">${esc(g.nota || '')}</td>
+            <td>${g.proxima ? `${fecha(g.proxima)}${g.proxima < hoyISO() ? ' <span class="bg red">Atrasada</span>' : ''}` : '<span class="sb">—</span>'}</td></tr>`).join('')
+          : filaVacia(5, 'Sin gestiones registradas. Anote aquí llamadas, correos, reuniones y acuerdos con el cliente.')}</tbody>
       </table></div>`
   });
 
   cuerpo.addEventListener('click', async (e) => {
-    const t = e.target.closest('[data-acc],[data-contrato],[data-documento],[data-acceso]');
+    const t = e.target.closest('[data-acc],[data-contrato],[data-documento],[data-acceso],[data-revisar],[data-ir-sec]');
     if (!t) return;
+    if (t.dataset.irSec) return cuerpo.querySelector('#sec-' + t.dataset.irSec)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (t.dataset.revisar) return revisarDocumento(t.dataset.revisar, () => abrirFicha(id)).catch((err) => toast(err.message, true));
     if (t.dataset.acceso) {
       const quitar = t.dataset.quitar !== undefined;
       const datos = quitar ? { email: t.dataset.acceso, autorizado: false } : { email: t.dataset.acceso, activo: t.dataset.activo === 'true' };
@@ -168,6 +201,7 @@ export async function abrirFicha(id) {
       return abrirFicha(id);
     }
     if (t.dataset.acc === 'autorizar') return autorizarPersona(c);
+    if (t.dataset.acc === 'gestion') return registrarGestion(c, f.contratos);
     if (t.dataset.contrato) return abrirContrato(t.dataset.contrato);
     if (t.dataset.documento) return abrirDocumento(t.dataset.documento);
     if (t.dataset.acc === 'editar') return formularioCliente(f);
@@ -185,6 +219,34 @@ export async function abrirFicha(id) {
         abrirFicha(id);
       }
     }
+  });
+}
+
+/* ---------- Bitácora de gestiones ---------- */
+const TIPO_GESTION = { llamada: 'Llamada', correo: 'Correo', whatsapp: 'WhatsApp', reunion: 'Reunión', link_pago: 'Link de pago', nota: 'Nota' };
+const RESULTADO_GESTION = {
+  contactado: ['grn', 'Contactado'], sin_respuesta: ['gry', 'Sin respuesta'], promete_pago: ['blu', 'Promete pagar'],
+  renueva: ['grn', 'Renueva'], no_renueva: ['red', 'No renueva'], otro: ['gry', 'Otro']
+};
+
+function registrarGestion(c, contratos) {
+  abrirModal({
+    titulo: `Registrar gestión · ${c.razon_social}`,
+    contenido: formularioHTML([
+      { nombre: 'tipo', etiqueta: 'Gestión', tipo: 'select', requerido: true, valor: 'llamada', opciones: Object.entries(TIPO_GESTION).map(([valor, texto]) => ({ valor, texto })) },
+      { nombre: 'resultado', etiqueta: 'Resultado', tipo: 'select', opciones: [{ valor: '', texto: '—' }, ...Object.entries(RESULTADO_GESTION).map(([valor, [, texto]]) => ({ valor, texto }))] },
+      { nombre: 'contrato_id', etiqueta: 'Contrato (opcional)', tipo: 'select', opciones: [{ valor: '', texto: '—' }, ...contratos.map((k) => ({ valor: k.id, texto: `${k.folio} · ${k.servicios || ''}` }))] },
+      { nombre: 'proxima_accion_en', etiqueta: 'Próxima acción', tipo: 'fecha' },
+      { nombre: 'nota', etiqueta: 'Nota', tipo: 'textarea', ancho: 'full', placeholder: 'Qué se conversó, acuerdos, compromisos…' }
+    ]),
+    acciones: [{ texto: 'Cancelar' }, {
+      texto: 'Guardar', clase: 'btn-g', alHacer: async (cont) => {
+        validar(cont);
+        await post(`/clientes/${c.id}/gestiones`, leerFormulario(cont));
+        toast('Gestión registrada.');
+        abrirFicha(c.id);
+      }
+    }]
   });
 }
 
@@ -249,7 +311,9 @@ export default {
         <select class="fl" id="fEstado">
           <option value="">Todos los estados</option>
           <option>Activo</option><option>Por vencer</option><option>Vencido</option><option>Pendiente</option><option>Sin contrato</option>
+          <option value="Por revisar">Con documentos por revisar</option>
         </select>
+        <button class="btn btn-o" data-exportar title="Descargar este listado como CSV para Excel">Exportar a Excel</button>
         <button class="btn btn-g" id="btnNuevoCliente">Nuevo cliente</button>
       </div>
       <div class="panel tbl-panel tbl-wrap"><table>
@@ -261,7 +325,13 @@ export default {
     el.querySelector('#qClientes').addEventListener('input', () => { clearTimeout(t); t = setTimeout(cargar, 300); });
     el.querySelector('#fEstado').addEventListener('change', cargar);
     el.querySelector('#btnNuevoCliente').addEventListener('click', () => formularioCliente());
+    el.querySelector('[data-exportar]').addEventListener('click', () => exportar('clientes', { q: el.querySelector('#qClientes').value, estado: el.querySelector('#fEstado').value })
+      .catch((err) => { if (err.message !== 'sesion') toast(err.message, true); }));
+    const fl = tomarFiltros('clientes');
+    if (fl?.estado) el.querySelector('#fEstado').value = fl.estado;
     el.querySelector('#tbClientes').addEventListener('click', (e) => {
+      const k = e.target.closest('[data-contrato]');
+      if (k) { e.stopPropagation(); return abrirContrato(k.dataset.contrato).catch((err) => toast(err.message, true)); }
       const fila = e.target.closest('[data-cliente]');
       if (fila) abrirFicha(fila.dataset.cliente).catch((err) => toast(err.message, true));
     });

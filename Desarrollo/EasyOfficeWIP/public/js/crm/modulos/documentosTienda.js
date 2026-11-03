@@ -41,10 +41,11 @@ export async function verDocumentosTienda(panel) {
     </table></div>`;
 
   panel.querySelector('[data-nuevo]').addEventListener('click', subirDocumento);
-  panel.addEventListener('click', (e) => {
+  // onclick (no addEventListener): al recargar se dibuja en el mismo panel y no deben sumarse eventos
+  panel.onclick = (e) => {
     const b = e.target.closest('[data-configurar]');
     if (b) configurar(b.dataset.configurar);
-  });
+  };
 }
 
 const recargar = () => { if (panelActual && document.body.contains(panelActual)) verDocumentosTienda(panelActual); };

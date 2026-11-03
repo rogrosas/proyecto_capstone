@@ -10,12 +10,14 @@
 const path = require('path');
 const express = require('express');
 const { manejarErrores } = require('./presentacion/middleware/errores');
+const { cabecerasSeguras } = require('./presentacion/middleware/seguridad');
 
 const PUBLIC = path.join(__dirname, '..', 'public');
 const app = express();
 
 app.disable('x-powered-by');
 app.set('trust proxy', 'loopback');
+app.use(cabecerasSeguras);
 app.use(express.json({ limit: '100kb' }));
 
 // Sitio estático con URLs limpias: /contabilidad sirve public/contabilidad.html
@@ -27,6 +29,7 @@ app.use('/api/catalogo', require('./presentacion/rutas/catalogo.rutas'));
 app.use('/api/crm', require('./presentacion/rutas/crm.rutas'));
 app.use('/api/cliente', require('./presentacion/rutas/cliente.rutas'));
 app.use('/api/tienda', require('./presentacion/rutas/tienda.rutas'));
+app.use('/api', require('./presentacion/rutas/publico.rutas'));   // firma electrónica y verificación de documentos
 app.use('/api', (req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
 
 // Errores de la API y 404 del sitio

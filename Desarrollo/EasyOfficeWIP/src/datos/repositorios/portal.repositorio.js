@@ -59,6 +59,36 @@ async function guardarClave(clienteId, email, hash) {
     [clienteId, email, hash]);
 }
 
+// ¿Esta persona ya puede ingresar por este cliente? (cuenta activa con contraseña)
+async function tieneClave(clienteId, email) {
+  const r = await consultaSistema(
+    'SELECT 1 FROM cuentas_portal WHERE cliente_id = $1 AND email = $2 AND activo AND password_hash IS NOT NULL', [clienteId, email]);
+  return r.rowCount > 0;
+}
+
+// Contraseña vigente de esa persona en cualquier cliente (la más reciente), o null si no tiene cuenta
+async function claveDe(email) {
+  const r = await consultaSistema(
+    `SELECT password_hash FROM cuentas_portal WHERE email = $1 AND activo AND password_hash IS NOT NULL
+      ORDER BY clave_definida_en DESC NULLS LAST LIMIT 1`, [email]);
+  return r.rows[0]?.password_hash || null;
+}
+
+/*
+ * Vincula un cliente nuevo a la cuenta que la persona ya tiene: la misma contraseña sirve para entrar
+ * por él. No toca un acceso bloqueado ni una contraseña ya definida para ese cliente.
+ */
+async function vincularCuenta(clienteId, email, hash) {
+  const r = await consultaSistema(
+    `INSERT INTO cuentas_portal (cliente_id, email, password_hash, clave_definida_en)
+     VALUES ($1, $2, $3, now())
+     ON CONFLICT (cliente_id, email) DO UPDATE
+        SET password_hash = EXCLUDED.password_hash, clave_definida_en = now()
+      WHERE cuentas_portal.activo AND cuentas_portal.password_hash IS NULL
+     RETURNING id`, [clienteId, email, hash]);
+  return r.rowCount > 0;
+}
+
 async function marcarIngreso(clienteId, email) {
   await consultaSistema('UPDATE cuentas_portal SET ultimo_ingreso = now() WHERE cliente_id = $1 AND email = $2', [clienteId, email]);
 }
@@ -74,4 +104,4 @@ async function registrarAcceso(clienteId, accion) {
     [String(clienteId), accion]);
 }
 
-module.exports = { vinculos, contactos, guardarClave, marcarIngreso, registrarAcceso };
+module.exports = { vinculos, contactos, tieneClave, claveDe, vincularCuenta, guardarClave, marcarIngreso, registrarAcceso };

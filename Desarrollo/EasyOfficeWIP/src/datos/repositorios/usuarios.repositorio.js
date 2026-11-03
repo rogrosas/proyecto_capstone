@@ -5,12 +5,39 @@
    ========================================================= */
 const { consultaSistema } = require('../conexion');
 
+const COLUMNAS_ACCESO = `u.id, u.nombre, u.email, u.password_hash, u.activo, r.rol,
+       u.totp_activo, u.totp_secreto, u.intentos_fallidos, u.bloqueado_hasta > now() AS bloqueado`;
+
 async function buscarPorEmail(email) {
-  const r = await consultaSistema(
-    `SELECT u.id, u.nombre, u.email, u.password_hash, u.activo, r.rol
-       FROM usuarios u JOIN roles r ON r.id = u.rol_id
-      WHERE u.email = $1`, [email]);
+  const r = await consultaSistema(`SELECT ${COLUMNAS_ACCESO} FROM usuarios u JOIN roles r ON r.id = u.rol_id WHERE u.email = $1`, [email]);
   return r.rows[0] || null;
+}
+
+async function porId(id) {
+  const r = await consultaSistema(`SELECT ${COLUMNAS_ACCESO} FROM usuarios u JOIN roles r ON r.id = u.rol_id WHERE u.id = $1`, [id]);
+  return r.rows[0] || null;
+}
+
+/* ---------- Bloqueo por claves malas seguidas ---------- */
+async function registrarFallo(id, max, bloqueoMs) {
+  const r = await consultaSistema(`
+    UPDATE usuarios SET intentos_fallidos = intentos_fallidos + 1,
+           bloqueado_hasta = CASE WHEN intentos_fallidos + 1 >= $2 THEN now() + make_interval(secs => $3 / 1000.0) ELSE bloqueado_hasta END
+     WHERE id = $1 RETURNING intentos_fallidos`, [id, max, bloqueoMs]);
+  return r.rows[0]?.intentos_fallidos || 0;
+}
+
+async function ingresoExitoso(id) {
+  await consultaSistema('UPDATE usuarios SET intentos_fallidos = 0, bloqueado_hasta = NULL, ultimo_acceso = now() WHERE id = $1', [id]);
+}
+
+/* ---------- Segundo factor y contraseña (los cambia el propio usuario) ---------- */
+async function guardarTotp(id, secretoCifrado) {
+  await consultaSistema('UPDATE usuarios SET totp_secreto = $2::text, totp_activo = $2::text IS NOT NULL WHERE id = $1', [id, secretoCifrado]);
+}
+
+async function cambiarClave(id, hash) {
+  await consultaSistema('UPDATE usuarios SET password_hash = $2, intentos_fallidos = 0, bloqueado_hasta = NULL WHERE id = $1', [id, hash]);
 }
 
 async function registrarAcceso(usuarioId, accion) {
@@ -32,7 +59,7 @@ async function permisosDe(rolNombre) {
 
 async function listar(db) {
   const r = await db.query(`
-    SELECT u.id, u.nombre, u.email, u.rol_id, r.rol, u.activo,
+    SELECT u.id, u.nombre, u.email, u.rol_id, r.rol, u.activo, u.totp_activo, u.bloqueado_hasta > now() AS bloqueado,
            (SELECT max(fecha) FROM registros_actividad ra WHERE ra.usuario_id = u.id AND ra.accion = 'LOGIN')::date::text AS ultimo_acceso
       FROM usuarios u JOIN roles r ON r.id = u.rol_id ORDER BY u.activo DESC, u.nombre`);
   return r.rows;
@@ -44,7 +71,7 @@ async function crear(db, u) {
   return r.rows[0].id;
 }
 
-const EDITABLES = ['nombre', 'email', 'rol_id', 'activo', 'password_hash'];
+const EDITABLES = ['nombre', 'email', 'rol_id', 'activo', 'password_hash', 'totp_activo', 'totp_secreto', 'intentos_fallidos', 'bloqueado_hasta'];
 async function actualizar(db, id, cambios) {
   const cols = EDITABLES.filter((c) => c in cambios);
   if (!cols.length) return true;
@@ -53,4 +80,6 @@ async function actualizar(db, id, cambios) {
   return r.rowCount > 0;
 }
 
-module.exports = { buscarPorEmail, registrarAcceso, permisosDe, listar, crear, actualizar };
+module.exports = {
+  buscarPorEmail, porId, registrarFallo, ingresoExitoso, guardarTotp, cambiarClave, registrarAcceso, permisosDe, listar, crear, actualizar
+};

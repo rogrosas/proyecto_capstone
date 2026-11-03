@@ -1,7 +1,7 @@
 /* CRM · Documentos (documentos, documento_partes, documento_clausulas, plantillas_documento, clausulas_documento) */
-import { get, post } from '../api.js';
+import { get, post, exportar } from '../api.js';
 import { esc, fecha, fechaHora, filaVacia, badge, toast, hoyISO, enlaceArchivo } from '../util.js';
-import { estado, opciones, aOpciones } from '../estado.js';
+import { estado, opciones, aOpciones, tomarFiltros } from '../estado.js';
 import { abrirModal, cerrarModal, formularioHTML, leerFormulario, validar, confirmar } from '../modal.js';
 import { registrarPago } from './ventas.js';
 import { ticketHTML, responderTicket } from './tickets.js';
@@ -38,7 +38,7 @@ async function cargar() {
         <td>${badge('documento', x.estado)}${x.firmado ? `<div class="sb">${fecha(x.firmado)}</div>` : ''}${x.estado_cliente ? `<div style="margin-top:4px;">${badge('cliente_doc', x.estado_cliente)}</div>` : ''}</td>
         <td>${esc(x.ejecutivo || '—')}</td>
         <td>${esc(x.revisor || '—')}</td>
-        <td class="right">${x.estado === 'en_revision' ? `<button class="btn btn-g btn-row" data-aprobar="${x.id}">Aprobar</button>` : ''}</td>
+        <td class="right">${x.por_revisar ? `<button class="btn btn-g btn-row" data-revisar="${x.id}">Revisar</button>` : ''}</td>
       </tr>`).join('') : filaVacia(7, 'No hay documentos.');
   } catch (err) {
     if (err.message !== 'sesion') tb.innerHTML = filaVacia(7, err.message, true);
@@ -46,11 +46,74 @@ async function cargar() {
 }
 const recargarLista = () => { if (contenedor && document.body.contains(contenedor)) cargar(); };
 
+/* ---------- Revisar y aprobar (desde Clientes, el tablero o esta lista) ----------
+   Un Word: se ve el mismo borrador con marca de agua que verá el cliente; "Aprobar y enviar al cliente"
+   lo aprueba (queda quién y cuándo) y se lo publica. Un documento sin Word: se ve su texto y se aprueba. */
+export async function revisarDocumento(id, alTerminar = cerrarModal) {
+  const d = await get('/documentos/' + id);
+  const doc = d.documento;
+  const conWord = !!doc.url_archivo && !/^https?:/i.test(doc.url_archivo);
+  const puede = conWord ? doc.estado !== 'anulado' && [null, 'objetado'].includes(doc.estado_cliente) : d.puedeAprobar;
+  abrirModal({
+    titulo: `Revisar · ${doc.tipo}${doc.folio ? ' · ' + doc.folio : ''}`, ancho: 'lg',
+    contenido: `
+      <div class="rev-cab">
+        <div><b>${esc(doc.cliente)}</b> · generado ${fecha(doc.generado)} · ${badge('documento', doc.estado)} ${doc.estado_cliente ? badge('cliente_doc', doc.estado_cliente) : ''}</div>
+        ${conWord ? `<a class="lnk" href="/api/crm/documentos/${doc.id}/borrador" target="_blank" rel="noopener">Abrir en otra pestaña</a>` : ''}
+      </div>
+      ${conWord ? `<iframe class="rev-doc" src="/api/crm/documentos/${doc.id}/borrador" title="Borrador del documento"></iframe>`
+        : `<div class="doc-texto rev-texto">${esc(d.texto || 'El documento no tiene texto.')}</div>`}
+      <div class="note" style="margin-top:12px;">${!puede ? 'Este documento ya no está pendiente de revisión.'
+        : conWord ? 'Al aprobarlo queda registrado quién lo aprobó y cuándo, y el cliente recibe el borrador: en Mi cuenta si tiene cuenta, o en su correo (Word con marca de agua) si aún no la tiene. Para recibir el documento final deberá aceptarlo.'
+        : 'Al aprobarlo queda registrado quién lo aprobó y cuándo, y queda listo para enviar a firma.'}</div>`,
+    acciones: [
+      { texto: 'Cerrar', alHacer: async () => alTerminar() },
+      { texto: 'Ver ficha del documento', alHacer: async () => abrirDocumento(id) },
+      ...(puede ? [{
+        texto: conWord ? 'Aprobar y enviar al cliente' : 'Aprobar', clase: 'btn-g', alHacer: async () => {
+          if (conWord) {
+            const r = await post(`/documentos/${id}/publicar`);
+            toast(r.enviado_por_correo ? 'Aprobado. El cliente no tiene cuenta: le enviamos el borrador por correo.' : 'Aprobado y publicado: el cliente lo revisa en Mi cuenta.');
+          } else {
+            await post(`/documentos/${id}/aprobar`);
+            toast('Documento aprobado: quedó registrado con su nombre y la hora.');
+          }
+          recargarLista();
+          await alTerminar();
+        }
+      }] : [])
+    ]
+  });
+}
+
 /* ---------- Detalle ---------- */
 export async function abrirDocumento(id) {
   const [d, t] = await Promise.all([get('/documentos/' + id), get('/tickets?documento=' + id)]);
   const doc = d.documento;
-  const puedePublicar = doc.url_archivo && !/^https?:/i.test(doc.url_archivo) && doc.estado !== 'anulado' && [null, 'objetado'].includes(doc.estado_cliente);
+  const conWord = doc.url_archivo && !/^https?:/i.test(doc.url_archivo);
+  const puedePublicar = conWord && doc.estado !== 'anulado' && [null, 'objetado'].includes(doc.estado_cliente);
+  // Con plataforma de firma, un Word se envía a firma desde su sección (no cambiando el estado a mano)
+  const f = d.firma;
+  if (f.plataforma && conWord) d.siguientes = d.siguientes.filter((s) => s !== 'enviado_firma');
+  const FIRMANTE = { pendiente: ['amb', 'Pendiente'], firmado: ['grn', 'Firmó'], rechazado: ['red', 'Rechazó'] };
+  const seccionFirma = `
+      <h4 class="sub-h">Firma electrónica</h4>
+      <div class="panel plano">
+        <div class="kv"><span class="k">Plataforma</span><span class="v">${f.proveedor === 'simulador' || (!f.proveedor && f.plataforma === 'simulador') ? 'Simulador de laboratorio' : esc(f.proveedor || f.plataforma || 'No configurada')}</span></div>
+        <div class="kv"><span class="k">Enviado a firma</span><span class="v">${fechaHora(f.enviado)}</span></div>
+        ${f.hash ? `<div class="kv"><span class="k">Huella del firmado (SHA-256)</span><span class="v mono" style="font-size:11px;word-break:break-all;">${esc(f.hash)}</span></div>` : ''}
+        ${f.firmantes.length ? `<div class="tbl-wrap" style="margin-top:10px;"><table>
+          <thead><tr><th>Firmante</th><th>Correo</th><th>Estado</th><th>Fecha</th></tr></thead>
+          <tbody>${f.firmantes.map((x) => `<tr><td class="nm">${esc(x.nombre)}<div class="sb mono">${esc(x.rut_fmt || '')}</div></td><td>${esc(x.email)}</td>
+            <td><span class="bg ${FIRMANTE[x.estado][0]}">${FIRMANTE[x.estado][1]}</span>${x.motivo_rechazo ? `<div class="sb">${esc(x.motivo_rechazo)}</div>` : ''}</td>
+            <td>${fechaHora(x.firmado)}</td></tr>`).join('')}</tbody></table></div>` : ''}
+        ${f.impedimento && !['enviado_firma', 'firmado', 'anulado'].includes(doc.estado) && f.plataforma ? `<div class="note" style="margin:12px 0 0;">Para enviarlo a firma: ${esc(f.impedimento)}</div>` : ''}
+        <div class="ficha-acciones" style="margin:12px 0 0;">
+          ${f.plataforma && !f.impedimento ? '<button class="btn btn-g btn-s" data-firma>Enviar a firma</button>' : ''}
+          ${f.con_firmado ? `<a class="btn btn-o btn-s" href="/api/crm/documentos/${doc.id}/firmado">Descargar firmado</a>` : ''}
+          ${doc.codigo_verificacion && doc.estado === 'firmado' ? `<a class="btn btn-o btn-s" href="/verificar?codigo=${encodeURIComponent(doc.codigo_verificacion)}" target="_blank" rel="noopener">Verificar ${esc(doc.codigo_verificacion)}</a>` : ''}
+        </div>
+      </div>`;
   const cuerpo = abrirModal({
     titulo: `${doc.tipo} · DOC-${doc.id}`, ancho: 'lg',
     contenido: `
@@ -86,10 +149,11 @@ export async function abrirDocumento(id) {
         <div class="kv"><span class="k">Aceptado por el cliente</span><span class="v">${doc.aceptado_en ? `${esc(doc.aceptado_por)} · ${fechaHora(doc.aceptado_en)} · versión ${doc.version_aceptada}` : '—'}</span></div>
         <div class="ficha-acciones" style="margin:12px 0 0;">
           ${doc.url_archivo && !/^https?:/i.test(doc.url_archivo) ? `<a class="btn btn-o btn-s" href="/api/crm/documentos/${doc.id}/borrador" target="_blank" rel="noopener">Ver borrador (marca de agua)</a>` : ''}
-          ${puedePublicar ? `<button class="btn btn-g btn-s" data-publicar>${doc.estado_cliente === 'objetado' ? 'Volver a publicar al cliente' : 'Publicar al cliente'}</button>` : ''}
+          ${puedePublicar ? `<button class="btn btn-g btn-s" data-publicar>${doc.estado_cliente === 'objetado' ? 'Aprobar y volver a publicar' : 'Aprobar y publicar al cliente'}</button>` : ''}
         </div>
         ${doc.estado_cliente === 'objetado' ? '<div class="note warn" style="margin:12px 0 0;">El cliente no está de acuerdo. Responda su ticket, corrija los datos, genere una nueva versión desde el contrato y vuelva a publicarlo.</div>' : ''}
       </div>
+      ${seccionFirma}
       ${t.tickets.length ? `<h4 class="sub-h">Tickets del cliente</h4>${t.tickets.map((x) => ticketHTML(x, t.motivos)).join('')}` : ''}
       <h4 class="sub-h">Partes que comparecen</h4>
       <div class="tbl-wrap"><table>
@@ -106,17 +170,25 @@ export async function abrirDocumento(id) {
   });
 
   cuerpo.addEventListener('click', async (e) => {
-    const t = e.target.closest('[data-aprobar],[data-estado],[data-pago],[data-publicar],[data-ticket]');
+    const t = e.target.closest('[data-aprobar],[data-estado],[data-pago],[data-publicar],[data-ticket],[data-firma]');
     if (!t) return;
     try {
+      if ('firma' in t.dataset) {
+        if (!(await confirmar('La plataforma de firma le enviará a cada firmante un correo con su enlace. Cuando todos firmen, el documento firmado quedará en Mi cuenta y aquí.', { titulo: 'Enviar a firma', textoSi: 'Enviar a firma' }))) return abrirDocumento(id);
+        t.disabled = true;
+        const r = await post(`/documentos/${id}/firma`);
+        toast(`Enviado a firma: ${r.firmantes.map((x) => x.nombre).join(', ')}.`);
+        recargarLista();
+        return abrirDocumento(id);
+      }
       if (t.dataset.ticket) {
         const { tickets } = await get('/tickets?documento=' + id);
         return responderTicket(tickets.find((x) => x.id === Number(t.dataset.ticket)), () => abrirDocumento(id));
       }
       if ('publicar' in t.dataset) {
-        if (!(await confirmar('El cliente verá el borrador con marca de agua en Mi cuenta y recibirá un aviso por correo. Para recibir el documento final deberá aceptarlo.', { titulo: 'Publicar al cliente', textoSi: 'Publicar' }))) return abrirDocumento(id);
-        await post(`/documentos/${id}/publicar`);
-        toast('Documento publicado al cliente.');
+        if (!(await confirmar('Queda registrado que usted lo aprobó. El cliente verá el borrador con marca de agua en Mi cuenta (o lo recibe por correo si aún no tiene cuenta). Para recibir el documento final deberá aceptarlo.', { titulo: 'Aprobar y publicar al cliente', textoSi: 'Aprobar y publicar' }))) return abrirDocumento(id);
+        const r = await post(`/documentos/${id}/publicar`);
+        toast(r.enviado_por_correo ? 'Aprobado. El cliente no tiene cuenta: le enviamos el borrador por correo.' : 'Aprobado y publicado al cliente.');
         recargarLista();
         return abrirDocumento(id);
       }
@@ -272,21 +344,25 @@ export default {
       <div class="sh"><p>Los documentos cuya plantilla "requiere revisión" no pueden enviarse a firma sin la aprobación de una persona identificada: la base de datos lo impide. Al firmar se genera el código de verificación.</p></div>
       <div class="pipe" id="pipeDocs"></div>
       <div class="toolbar">
-        <select class="fl" id="fDocTipo"><option value="">Todos los tipos</option><option value="automatico">Automático</option><option value="revision">Requiere revisión</option></select>
+        <select class="fl" id="fDocTipo"><option value="">Todos los tipos</option><option value="pendientes">Pendientes de revisión</option><option value="tramite">Trámites en curso</option><option value="firma">Esperando firma</option><option value="firmados">Firmados</option><option value="automatico">Automático</option><option value="revision">Requiere revisión</option></select>
+        <button class="btn btn-o" data-exportar title="Descargar este listado como CSV para Excel">Exportar a Excel</button>
         <button class="btn btn-g" id="btnNuevoDoc">Nuevo documento</button>
       </div>
       <div class="panel tbl-panel tbl-wrap"><table>
         <thead><tr><th>Documento</th><th>Cliente</th><th>Origen</th><th>Estado</th><th>Ejecutivo</th><th>Revisó</th><th></th></tr></thead>
         <tbody id="tbDocs"></tbody>
       </table></div>`;
+    const f = tomarFiltros('documentos');
+    if (f?.tipo) el.querySelector('#fDocTipo').value = f.tipo;
     el.querySelector('#fDocTipo').addEventListener('change', cargar);
+    el.querySelector('[data-exportar]').addEventListener('click', () => exportar('documentos', { tipo: el.querySelector('#fDocTipo').value })
+      .catch((err) => { if (err.message !== 'sesion') toast(err.message, true); }));
     el.querySelector('#btnNuevoDoc').addEventListener('click', () => nuevoDocumento().catch((err) => toast(err.message, true)));
     el.querySelector('#tbDocs').addEventListener('click', async (e) => {
-      const ap = e.target.closest('[data-aprobar]');
-      if (ap) {
+      const rv = e.target.closest('[data-revisar]');
+      if (rv) {
         e.stopPropagation();
-        try { await post(`/documentos/${ap.dataset.aprobar}/aprobar`); toast('Documento aprobado.'); cargar(); } catch (err) { toast(err.message, true); }
-        return;
+        return revisarDocumento(rv.dataset.revisar).catch((err) => toast(err.message, true));
       }
       const f = e.target.closest('[data-documento]');
       if (f) abrirDocumento(f.dataset.documento).catch((err) => toast(err.message, true));

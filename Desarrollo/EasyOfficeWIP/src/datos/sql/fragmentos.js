@@ -28,4 +28,9 @@ const SERVICIOS_CONTRATO = `
      FROM contrato_servicios cs JOIN servicios sv ON sv.id = cs.servicio_id
     WHERE cs.contrato_id = k.id)`;
 
-module.exports = { MENSUALIZADO, SIN_RENOVAR, TOTAL_CONTRATO, SERVICIOS_CONTRATO };
+// Documento que espera la revisión del personal: en revisión interna, o un Word generado que aún
+// no se publica al cliente (compra en la tienda con entrega "con revisión", o generado desde el CRM)
+const POR_REVISAR = (d = 'd') =>
+  `(${d}.estado = 'en_revision' OR (${d}.estado = 'borrador' AND ${d}.url_archivo IS NOT NULL AND ${d}.estado_cliente IS NULL))`;
+
+module.exports = { MENSUALIZADO, SIN_RENOVAR, TOTAL_CONTRATO, SERVICIOS_CONTRATO, POR_REVISAR };

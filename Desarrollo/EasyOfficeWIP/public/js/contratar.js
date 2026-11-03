@@ -209,7 +209,10 @@
     const btn = $('bPay'), texto = btn.textContent;
     btn.disabled = true; btn.textContent = 'Procesando…';
     try {
-      state.resultado = await api('POST', '/api/tienda/compras', datos);
+      const r = await api('POST', '/api/tienda/compras', datos);
+      // Con pasarela: se paga allá y se vuelve a /contratar?pago=… con el resultado
+      if (r.pago?.url) { btn.textContent = 'Redirigiendo a la pasarela…'; location.assign(r.pago.url); return; }
+      state.resultado = r;
       go(4);
     } catch (err) {
       // Un dato mal escrito se corrige en la etapa 2
@@ -234,19 +237,34 @@
       return;
     }
     const medio = r.pasarela === 'transbank' ? 'Webpay Plus (Transbank)' : 'Mercado Pago';
-    $('okTitle').textContent = 'Contratación registrada';
-    $('okmsg').textContent = `Contrato ${r.orden} · ${r.plan} · ${r.familia}`;
+    $('okmsg').textContent = `Contrato ${r.orden} · ${r.plan}${r.familia ? ' · ' + r.familia : ''}`;
+    // Volvió de la pasarela sin pagar, o con el pago rechazado: la compra espera el pago
+    if (['por_pagar', 'rechazado'].includes(r.estado) || (r.estado === 'pendiente' && !r.documentos)) {
+      $('okTitle').textContent = r.estado === 'rechazado' ? 'Pago rechazado' : 'Falta el pago';
+      $('pipeOk').innerHTML = etapa('done', 'Contratación registrada', `Folio ${esc(r.orden)} con los datos que ingresó`, 'Listo')
+        + etapa('now', r.estado === 'rechazado' ? 'La pasarela rechazó el pago' : 'Pago pendiente',
+          `${clp(r.monto)} vía ${medio}. Su contrato se activa y sus documentos se generan apenas se apruebe el pago.`, 'Su turno');
+      $('okNota').innerHTML = state.pagoUrl ? `<a class="btn btn-g" href="${esc(state.pagoUrl)}">${r.estado === 'rechazado' ? 'Intentar de nuevo' : 'Ir a pagar'}</a>` : '';
+      return;
+    }
+    $('okTitle').textContent = r.estado === 'pagado' ? 'Pago aprobado: contratación lista' : 'Contratación registrada';
     const docs = r.documentos.length ? r.documentos.map((d) => d.publicado
       ? etapa('now', `${esc(d.tipo)}: listo para su revisión`, 'Revise el borrador en Mi cuenta y acéptelo para recibir el documento final. Si algo no está correcto, envíenos un ticket desde ahí mismo.', 'Su turno')
       : etapa('now', `${esc(d.tipo)}: en revisión`, 'Un ejecutivo revisa el documento y se lo envía a Mi cuenta para que usted lo revise y acepte.', 'En curso')).join('')
       : etapa('now', 'Activación del servicio', 'Un ejecutivo confirma el pago y activa su servicio.', 'En curso');
     $('pipeOk').innerHTML =
-      etapa('done', 'Pago registrado', `${clp(r.monto)} vía ${medio} · pago de demostración: queda pendiente hasta que un ejecutivo lo confirme`, 'Listo') +
+      (r.estado === 'pagado'
+        ? etapa('done', 'Pago aprobado', `${clp(r.monto)} vía ${medio} · verificado con la pasarela (simulador de laboratorio)`, 'Listo')
+        : etapa('done', 'Pago registrado', `${clp(r.monto)} vía ${medio} · queda pendiente hasta que un ejecutivo lo confirme`, 'Listo')) +
       etapa('done', 'Contrato generado', `Folio ${esc(r.orden)} con los datos que ingresó`, 'Listo') + docs +
-      etapa('', 'Firma electrónica avanzada', 'Después de que usted acepte el documento · Ley 19.799', 'Pendiente');
-    $('okNota').innerHTML = r.cuenta === 'enlace_enviado'
-      ? `Le enviamos a <b>${esc(r.email)}</b> un enlace para crear su contraseña de <b>Mi cuenta</b> (vence en 15 minutos; si vence, pida otro en Mi cuenta → "Crear o recuperar contraseña").`
-      : `Ingrese a <b>Mi cuenta</b> con <b>${esc(r.email)}</b> y su contraseña.`;
+      etapa('', 'Firma electrónica', 'Al aceptar el documento le llega a su correo el enlace para firmarlo · Ley 19.799', 'Pendiente');
+    const NOTAS = {
+      con_clave: `La compra quedó en su cuenta. Ingrese a <b>Mi cuenta</b> con <b>${esc(r.email)}</b> y su contraseña.`,
+      vinculada: `La compra quedó vinculada a la cuenta de <b>${esc(r.email)}</b>: entre a <b>Mi cuenta</b> con la contraseña que ya tiene.`,
+      documento_enviado: `Le enviamos el documento a <b>${esc(r.email)}</b>: el borrador en Word, con marca de agua, y un enlace para crear su contraseña de <b>Mi cuenta</b>, donde lo acepta y descarga el documento final (el enlace vence en 15 minutos; si vence, pida otro en Mi cuenta → "Crear o recuperar contraseña").`,
+      enlace_enviado: `Le enviamos a <b>${esc(r.email)}</b> un enlace para crear su contraseña de <b>Mi cuenta</b> (vence en 15 minutos; si vence, pida otro en Mi cuenta → "Crear o recuperar contraseña").`
+    };
+    $('okNota').innerHTML = NOTAS[r.cuenta] || `Ingrese a <b>Mi cuenta</b> con <b>${esc(r.email)}</b>.`;
   }
 
   /* ---------- Stepper y navegación ---------- */
@@ -328,4 +346,17 @@
   tipoChange();
   cargarComunas();
   sesionPortal();
+
+  // Vuelta desde la pasarela de pago: /contratar?pago=<token>
+  const tokenPago = new URLSearchParams(location.search).get('pago');
+  if (tokenPago) {
+    state.pagoUrl = `/pago-simulado?t=${encodeURIComponent(tokenPago)}`;
+    api('GET', `/api/tienda/pago/${encodeURIComponent(tokenPago)}`).then((r) => {
+      state.resultado = r;
+      document.querySelectorAll('.stage').forEach((x) => x.classList.remove('active'));
+      $('s4').classList.add('active');
+      renderStepper(4);
+      renderOk();
+    }).catch((err) => aviso('errPago', err.message));
+  }
 })();

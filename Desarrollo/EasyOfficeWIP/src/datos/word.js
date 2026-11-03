@@ -211,4 +211,94 @@ function combinar(buffer, valor) {
   };
 }
 
-module.exports = { campos, marcas, combinar };
+/* ---------- Marca de agua (borrador que se envía por correo) ---------- */
+const NS_VML = {
+  'xmlns:v': 'urn:schemas-microsoft-com:vml',
+  'xmlns:o': 'urn:schemas-microsoft-com:office:office',
+  'xmlns:w10': 'urn:schemas-microsoft-com:office:word',
+  'xmlns:r': 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
+};
+const NS_W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+const T_HEADER = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/header';
+
+// La misma forma que usa Word en "Diseño → Marca de agua": texto diagonal detrás del contenido, centrado en la página
+function runMarca(texto, n) {
+  return `<w:r><w:rPr><w:noProof/></w:rPr><w:pict><v:shapetype id="_x0000_t136" coordsize="21600,21600" o:spt="136" adj="10800" path="m@7,l@8,m@5,21600l@6,21600e"><v:formulas><v:f eqn="sum #0 0 10800"/><v:f eqn="prod #0 2 1"/><v:f eqn="sum 21600 0 @1"/><v:f eqn="sum 0 0 @2"/><v:f eqn="sum 21600 0 @3"/><v:f eqn="if @0 @3 0"/><v:f eqn="if @0 21600 @1"/><v:f eqn="if @0 0 @2"/><v:f eqn="if @0 @4 21600"/><v:f eqn="mid @5 @6"/><v:f eqn="mid @8 @5"/><v:f eqn="mid @7 @8"/><v:f eqn="mid @6 @7"/><v:f eqn="sum @6 0 @5"/></v:formulas><v:path textpathok="t" o:connecttype="custom" o:connectlocs="@9,0;@10,10800;@11,21600;@12,10800" o:connectangles="270,180,90,0"/><v:textpath on="t" fitshape="t"/><v:handles><v:h position="#0,bottomRight" xrange="6629,14971"/></v:handles><o:lock v:ext="edit" text="t" shapetype="t"/></v:shapetype><v:shape id="BorradorEasyOffice${n}" o:spid="_x0000_s${2049 + n}" type="#_x0000_t136" style="position:absolute;margin-left:0;margin-top:0;width:468pt;height:117pt;rotation:315;z-index:-251657216;mso-position-horizontal:center;mso-position-horizontal-relative:margin;mso-position-vertical:center;mso-position-vertical-relative:margin" o:allowincell="f" fillcolor="#C83232" stroked="f"><v:fill opacity=".22"/><v:textpath style="font-family:&quot;Arial&quot;;font-size:1pt;font-weight:bold" string="${escaparXml(texto)}"/><w10:wrap anchorx="margin" anchory="margin"/></v:shape></w:pict></w:r>`;
+}
+
+// Declara en la raíz de la parte los espacios de nombres VML que falten
+function conNamespaces(xml, raiz) {
+  return xml.replace(new RegExp(`<${raiz}\\b[^>]*>`), (tag) => {
+    const faltan = Object.entries(NS_VML).filter(([k]) => !tag.includes(`${k}=`)).map(([k, v]) => ` ${k}="${v}"`).join('');
+    return tag.replace(/>$/, `${faltan}>`);
+  });
+}
+
+/*
+ * Copia del Word con una marca de agua diagonal en todas las páginas (en los encabezados).
+ * Si una sección no tiene encabezado, se le crea uno solo con la marca.
+ */
+function marcaDeAgua(buffer, texto = 'BORRADOR') {
+  const zip = abrir(buffer);
+  let doc = zip.file('word/document.xml').asText();
+  const relsF = 'word/_rels/document.xml.rels';
+  let rels = zip.file(relsF)?.asText() || '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>';
+  const objetivo = Object.fromEntries([...rels.matchAll(/<Relationship\b[^>]*>/g)].map(([r]) => [
+    (/\bId="([^"]+)"/.exec(r) || [])[1], { tipo: (/\bType="([^"]+)"/.exec(r) || [])[1], destino: (/\bTarget="([^"]+)"/.exec(r) || [])[1] }]));
+
+  // La primera sección sin encabezado propio: se le crea uno (las siguientes heredan el anterior)
+  const sectPrs = doc.match(/<w:sectPr\b[\s\S]*?<\/w:sectPr>/g) || [];
+  if (sectPrs.length && !/<w:headerReference\b/.test(sectPrs[0])) {
+    const id = 'rIdBorradorEO';
+    zip.file('word/headerBorradorEO.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:hdr xmlns:w="${NS_W}"${Object.entries(NS_VML).map(([k, v]) => ` ${k}="${v}"`).join('')}><w:p></w:p></w:hdr>`);
+    rels = rels.replace('</Relationships>', `<Relationship Id="${id}" Type="${T_HEADER}" Target="headerBorradorEO.xml"/></Relationships>`);
+    objetivo[id] = { tipo: T_HEADER, destino: 'headerBorradorEO.xml' };
+    const tipos = zip.file('[Content_Types].xml').asText();
+    if (!tipos.includes('/word/headerBorradorEO.xml')) {
+      zip.file('[Content_Types].xml', tipos.replace('</Types>',
+        '<Override PartName="/word/headerBorradorEO.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/></Types>'));
+    }
+    doc = doc.replace(sectPrs[0], sectPrs[0].replace(/(<w:sectPr\b[^>]*>)/, `$1<w:headerReference w:type="default" r:id="${id}"/>`));
+    doc = conNamespaces(doc, 'w:document');
+    zip.file('word/document.xml', doc);
+    zip.file(relsF, rels);
+  }
+
+  // Todas las partes de encabezado que usa el documento llevan la marca, dentro de su primer párrafo
+  const partes = new Set([...doc.matchAll(/<w:headerReference\b[^>]*r:id="([^"]+)"/g)]
+    .map(([, id]) => objetivo[id]).filter((o) => o && o.tipo === T_HEADER).map((o) => 'word/' + o.destino.replace(/^\/?word\//, '')));
+  let n = 0;
+  for (const parte of partes) {
+    const f = zip.file(parte);
+    if (!f) continue;
+    let xml = conNamespaces(f.asText(), 'w:hdr');
+    const marca = runMarca(texto, n++);
+    // Primer párrafo del encabezado: <w:p …/> vacío o <w:p …>[<w:pPr>…</w:pPr>]
+    const primero = /<w:p(\s[^>]*?)?(\/?)>((?:<w:pPr>[\s\S]*?<\/w:pPr>)?)/.exec(xml);
+    if (!primero) xml = xml.replace('</w:hdr>', `<w:p>${marca}</w:p></w:hdr>`);
+    else {
+      const [todo, attrs = '', cerrado, pPr] = primero;
+      const nuevo = cerrado ? `<w:p${attrs}>${marca}</w:p>${pPr}` : `<w:p${attrs}>${pPr}${marca}`;
+      xml = xml.slice(0, primero.index) + nuevo + xml.slice(primero.index + todo.length);
+    }
+    zip.file(parte, xml);
+  }
+  return zip.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
+}
+
+/* ---------- Hoja anexa al final del documento (constancia de firma electrónica) ----------
+   parrafos: [{ texto, negrita, tamano (pt), centrado }]. Se agregan tras un salto de página. */
+function anexar(buffer, parrafos) {
+  const zip = abrir(buffer);
+  let xml = zip.file('word/document.xml').asText();
+  const p = (x) => `<w:p><w:pPr>${x.centrado ? '<w:jc w:val="center"/>' : ''}<w:spacing w:after="120"/></w:pPr>`
+    + `<w:r><w:rPr>${x.negrita ? '<w:b/>' : ''}${x.tamano ? `<w:sz w:val="${x.tamano * 2}"/>` : ''}</w:rPr>`
+    + `<w:t xml:space="preserve">${escaparXml(x.texto)}</w:t></w:r></w:p>`;
+  // La sección final (<w:sectPr> hijo de <w:body>) va siempre al último: los párrafos se insertan antes
+  const fin = xml.lastIndexOf('<w:sectPr') > xml.lastIndexOf('</w:p>') ? xml.lastIndexOf('<w:sectPr') : xml.lastIndexOf('</w:body>');
+  xml = xml.slice(0, fin) + '<w:p><w:r><w:br w:type="page"/></w:r></w:p>' + parrafos.map(p).join('') + xml.slice(fin);
+  zip.file('word/document.xml', xml);
+  return zip.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
+}
+
+module.exports = { campos, marcas, combinar, marcaDeAgua, anexar };

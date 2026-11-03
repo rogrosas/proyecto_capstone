@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pago · Easy Office</title>
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<link rel="icon" href="/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=Albert+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/sitio.css">
+<link rel="stylesheet" href="/css/firma.css">
+</head>
+<body class="pg-firma">
+
+<header id="cabecera" data-sub="pago en línea" data-menu="no"></header>
+
+<!--
+  Simulador de la pasarela de pago (laboratorio, TRL 4): imita la ida y vuelta de Webpay / Mercado Pago.
+  No pide datos de tarjeta. Con la pasarela real, esta página es la de Transbank o Mercado Pago.
+-->
+<main class="vwrap">
+  <div class="aviso-error" id="error" hidden></div>
+  <div class="fcard" id="panel" hidden>
+    <div class="gate-head">
+      <span class="lab">Simulador de pasarela</span>
+      <h2 id="titulo">Pagar</h2>
+      <p>Easy Office · compra en línea</p>
+    </div>
+    <div class="gate-body">
+      <div class="dato"><span class="k">Orden</span><span class="v mono" id="orden"></span></div>
+      <div class="dato"><span class="k">Servicio</span><span class="v" id="plan"></span></div>
+      <div class="dato"><span class="k">Medio</span><span class="v" id="medio"></span></div>
+      <div class="dato"><span class="k">Total a pagar</span><span class="v" id="monto" style="font-size:18px;"></span></div>
+      <p class="hint" style="margin:14px 0 0;">Ambiente de laboratorio: elija el resultado que respondería la pasarela. No se cobra nada ni se piden datos de tarjeta.</p>
+      <div class="acc">
+        <button class="btn btn-g btn-w" type="button" id="btnAprobar">Aprobar pago</button>
+        <button class="btn btn-o btn-w" type="button" id="btnRechazar">Rechazar pago</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer id="pie" data-tipo="simple"></footer>
+
+<script src="/js/layout.js"></script>
+<script src="/js/pago-simulado.js"></script>
+</body>
+</html>

@@ -28,6 +28,8 @@ const clientesRepo = require('../../datos/repositorios/clientes.repositorio');
 const representantesRepo = require('../../datos/repositorios/representantes.repositorio');
 const direccionesRepo = require('../../datos/repositorios/direcciones.repositorio');
 const contratosRepo = require('../../datos/repositorios/contratos.repositorio');
+const firmaRepo = require('../../datos/repositorios/firma.repositorio');
+const firmaServicio = require('./firma.servicio');
 const documentosRepo = require('../../datos/repositorios/documentos.repositorio');
 const pagosRepo = require('../../datos/repositorios/pagos.repositorio');
 const v = require('../validacion');
@@ -164,6 +166,9 @@ async function iniciarSesion(datos, ip) {
   throw errores.noAutenticado(DATOS_INCORRECTOS);
 }
 
+// Enlace para crear la contraseña de una persona vinculada a un cliente (va en el correo con el documento)
+const enlaceClave = (clienteId, tipoCliente, email) => `${config.appUrl}/mi-cuenta?clave=${crearToken(clienteId, tipoCliente, email)}`;
+
 async function solicitarClave(datos, ip) {
   const { tipo, rut, email } = leerAcceso(datos);
   if (excedido('clave-ip:' + ip, config.cliente.maxSolicitudes) || excedido('clave:' + email, config.cliente.maxSolicitudes)) {
@@ -225,7 +230,11 @@ async function panel(sesion) {
     const contratos = await contratosRepo.porCliente(db, sesion.id);
     for (const k of contratos) k.detalle_servicios = await contratosRepo.servicios(db, k.id);
     const documentos = await documentosRepo.porCliente(db, sesion.id);
+    for (const d of documentos) {
+      if (['enviado_firma', 'firmado', 'rechazado'].includes(d.estado)) d.firma = await firmaServicio.firmaParaCliente(db, d, sesion.email);
+    }
     const pagos = await pagosRepo.porCliente(db, sesion.id);
+    const saldoFirmas = await firmaRepo.saldo(db, sesion.id);
     return {
       cliente: {
         razon_social: cliente.razon_social, nombre_fantasia: cliente.nombre_fantasia, rut: cliente.rut_fmt,
@@ -243,11 +252,14 @@ async function panel(sesion) {
       })),
       documentos: documentos.map((d) => ({
         id: d.id, tipo: d.tipo, folio: d.folio, estado: d.estado, generado: d.generado, firmado: d.firmado, codigo: d.codigo_verificacion,
-        estado_cliente: d.estado_cliente, publicado: d.publicado, aceptado: d.aceptado
+        estado_cliente: d.estado_cliente, publicado: d.publicado, aceptado: d.aceptado,
+        con_firmado: d.con_firmado, firma: d.firma || null
       })),
+      // Bolsas y planes con firmas incluidas: saldo vigente y últimos movimientos
+      firmas: saldoFirmas && { ...saldoFirmas, movimientos: await firmaRepo.movimientos(db, sesion.id, 10) },
       pagos: pagos.map((p) => ({ fecha: p.fecha, referencia: p.referencia, monto: p.monto, pasarela: p.pasarela, estado: p.estado, cuota: p.cuota, total_cuotas: p.total_cuotas }))
     };
   });
 }
 
-module.exports = { iniciarSesion, solicitarClave, definirClave, validarSesion, cerrarSesion, panel };
+module.exports = { iniciarSesion, solicitarClave, definirClave, enlaceClave, validarSesion, cerrarSesion, panel };

@@ -10,7 +10,9 @@
      4. Documentos: cada plantilla vinculada al plan se genera con los datos del cliente
         y las respuestas del comprador. Con entrega automática queda publicada para que
         el cliente la revise; con revisión, espera al personal.
-     5. Si el comprador aún no tiene contraseña del portal, se le envía el enlace para crearla.
+     5. Cuenta: si el comprador ya tiene contraseña de Mi cuenta (por este cliente o por otro), la
+        compra queda vinculada a ella. Si no tiene cuenta, el documento publicado le llega al correo
+        del formulario (borrador con marca de agua + enlace para crear su contraseña y aceptarlo).
    ========================================================= */
 const config = require('../../config');
 const { conSistema } = require('../../datos/conexion');
@@ -28,6 +30,7 @@ const direccionesRepo = require('../../datos/repositorios/direcciones.repositori
 const archivosServicio = require('./archivos.servicio');
 const entregaServicio = require('./entrega.servicio');
 const portalServicio = require('./portal.servicio');
+const pasarela = require('../../datos/pago');
 const campos = require('../camposDocumento');
 const v = require('../validacion');
 
@@ -146,7 +149,7 @@ async function comprar(datos, ip) {
       cliente = { id, tipo_persona: tipoCliente };
     }
 
-    // 3. Contrato, servicio y pago
+    // 3. Contrato (pendiente hasta que se confirme el pago), servicio y pago
     const punto = await tiendaRepo.puntoDeVenta(db, REGION[c.region]);
     if (!punto) throw errores.sinBaseDatos('La tienda no está configurada: falta una empresa emisora con sucursal activa.');
     const contrato = await tiendaRepo.crearContrato(db, {
@@ -157,40 +160,130 @@ async function comprar(datos, ip) {
         nombre_empresa_nueva: c.nombre_empresa_nueva, region: c.region, pago: { modo: c.modo, medio: c.medio } }, respuestas: c.respuestas }
     });
     await contratosRepo.agregarServicio(db, contrato.id, { servicio_id: servicio.id, precio: plan.price, ciclo_pago: null, descripcion: null });
-    await pagosRepo.crear(db, { contrato_id: contrato.id, documento_id: null, monto, estado: 'pendiente', pasarela: PASARELA[c.medio],
+    const pagoId = await pagosRepo.crear(db, { contrato_id: contrato.id, documento_id: null, monto, estado: 'pendiente', pasarela: PASARELA[c.medio],
       fecha_pago: null, cuota: 1, total_cuotas: c.modo === 'split' ? 2 : 1 });
 
-    // 4. Documentos del plan
-    const documentos = [];
-    for (const p of await plantillasRepo.porPlan(db, plan.id)) {
-      const g = await archivosServicio.generarEnTransaccion(db, { plantilla: { ...p, activo: true }, contratoId: contrato.id, respuestas: c.respuestas });
-      documentos.push({ id: g.documento_id, tipo: p.tipo_documento, publicado: g.publicado });
-    }
-    return { cliente, contrato, documentos };
+    // 4. Con pasarela: el cobro se crea en la misma transacción (si falla, no queda una compra a medias)
+    const cobro = pasarela.activo() ? await pasarela.proveedor().crearCobro({ pagoId, monto, descripcion: `${plan.fam} · ${plan.name}`, pasarela: PASARELA[c.medio] }) : null;
+    if (cobro) await tiendaRepo.asignarTransaccion(db, pagoId, cobro.idTransaccion);
+    return { cliente, contrato, cobro };
   });
 
-  // Después de confirmar: avisos por correo y enlace para crear la contraseña del portal
+  const resumen = {
+    orden: r.contrato.folio, plan: plan.name, familia: plan.fam, monto, total: plan.price, modo: c.modo,
+    pasarela: PASARELA[c.medio], email: c.titular.email
+  };
+  // Con pasarela, el comprador va a pagar: el contrato se activa y los documentos se generan al volver con el pago aprobado
+  if (r.cobro) return { ...resumen, estado: 'por_pagar', pago: { url: r.cobro.url } };
+  // Sin pasarela (PAGO_PROVEEDOR=ninguno): como antes, la compra sigue con el pago pendiente de confirmar por el personal
+  return { ...resumen, estado: 'pendiente', ...(await completarCompra(r.contrato.id, ip)) };
+}
+
+/*
+ * Lo que sigue al pago: documentos del plan, cuenta del comprador y entrega.
+ *   1) La compra queda en la cuenta del comprador: si ya tiene contraseña (por este cliente o por otro),
+ *      entra con ella también por este.
+ *   2) Documentos publicados: con cuenta, aviso para revisarlos en Mi cuenta; sin cuenta, el documento va
+ *      adjunto al correo del formulario (borrador con marca de agua + enlace para crear la contraseña).
+ *   3) Sin cuenta y sin documento en el correo (plan sin documentos, o en revisión): enlace para la contraseña.
+ */
+async function completarCompra(contratoId, ip) {
+  const r = await conSistema(async (db) => {
+    const k = await tiendaRepo.compra(db, contratoId);
+    const t = k.datos_formulario?.tienda || {};
+    const documentos = [];
+    for (const p of await plantillasRepo.porPlan(db, t.plan)) {
+      const g = await archivosServicio.generarEnTransaccion(db, { plantilla: { ...p, activo: true }, contratoId, respuestas: k.datos_formulario?.respuestas || {} });
+      documentos.push({ id: g.documento_id, tipo: p.tipo_documento, publicado: g.publicado });
+    }
+    return { k, t, documentos };
+  });
+  const { k, t } = r;
+  const email = t.titular.email;
+
+  let cuenta = 'sin_cuenta';
+  try {
+    if (await portalRepo.tieneClave(k.cliente_id, email)) cuenta = 'con_clave';
+    else {
+      const hash = await portalRepo.claveDe(email);
+      if (hash && await portalRepo.vincularCuenta(k.cliente_id, email, hash)) cuenta = 'vinculada';
+    }
+  } catch (err) { console.warn('[tienda] no se pudo vincular la cuenta:', err.message); }
+
+  let enviados = 0;
   for (const d of r.documentos.filter((x) => x.publicado)) {
     const doc = await conSistema((db) => documentosRepo.entregaDe(db, d.id));
-    await entregaServicio.avisarPublicado(doc);
+    enviados += await entregaServicio.avisarPublicado(doc);
   }
-  let cuenta = 'con_clave';
-  try {
-    const tieneClave = (await portalRepo.vinculos(c.titular.email, tipoCliente, rutCliente)).some((x) => x.password_hash && x.activo);
-    if (!tieneClave) {
-      await portalServicio.solicitarClave({ tipo: c.empresa ? 'empresa' : 'persona', rut: rutCliente, email: c.titular.email }, ip);
-      cuenta = 'enlace_enviado';
+  if (cuenta === 'sin_cuenta') {
+    if (enviados) cuenta = 'documento_enviado';
+    else {
+      try {
+        await portalServicio.solicitarClave({ tipo: t.empresa ? 'empresa' : 'persona', rut: k.cliente_rut, email }, ip);
+        cuenta = 'enlace_enviado';
+      } catch (err) {
+        console.warn('[tienda] no se pudo enviar el enlace de contraseña:', err.message);
+        cuenta = 'sin_enlace';
+      }
     }
-  } catch (err) {
-    console.warn('[tienda] no se pudo enviar el enlace de contraseña:', err.message);
-    cuenta = 'sin_enlace';
   }
+  const entrega = { cuenta, documentos: r.documentos.map(({ tipo, publicado }) => ({ tipo, publicado })) };
+  await conSistema((db) => tiendaRepo.guardarEntrega(db, contratoId, entrega));
+  return entrega;
+}
 
+/* ---------- Vuelta de la pasarela de pago ---------- */
+const resumenDe = (p) => {
+  const t = p.datos_formulario?.tienda || {};
+  const plan = catalogoRepo.plan(t.plan);
   return {
-    orden: r.contrato.folio, plan: plan.name, familia: plan.fam, monto, total: plan.price, modo: c.modo,
-    pasarela: PASARELA[c.medio], email: c.titular.email, cuenta,
-    documentos: r.documentos.map(({ tipo, publicado }) => ({ tipo, publicado }))
+    orden: p.folio, plan: plan?.name || t.plan, familia: plan?.fam || '', monto: Number(p.monto), total: plan?.price ?? null,
+    modo: t.pago?.modo, pasarela: p.pasarela, email: t.titular?.email
   };
+};
+
+// Estado de un pago (página de la pasarela y vuelta a /contratar)
+async function estadoPago(token) {
+  const id = pasarela.proveedor().leerToken(token);
+  const p = await conSistema((db) => tiendaRepo.pagoPorTransaccion(db, id));
+  if (!p) throw errores.noEncontrado('Pago no encontrado.');
+  return { ...resumenDe(p), estado: p.estado, ...(p.estado === 'pagado' ? p.datos_formulario?.entrega || {} : {}) };
+}
+
+// Resultado de la pasarela: aprobado → contrato activo, documentos y entrega; rechazado → se puede reintentar
+async function confirmarPago(token, d = {}, ip) {
+  const prov = pasarela.proveedor();
+  const id = prov.leerToken(token);
+  const accion = v.opcion(d.accion, ['aprobar', 'rechazar'], 'Resultado del pago');
+  const r = await conSistema(async (db) => {
+    const p = await tiendaRepo.pagoPorTransaccion(db, id);
+    if (!p) throw errores.noEncontrado('Pago no encontrado.');
+    if (p.estado !== 'pendiente') throw errores.conflicto(p.estado === 'pagado' ? 'Este pago ya fue aprobado.' : 'Este pago ya fue rechazado: vuelva a intentarlo.');
+    if (accion === 'rechazar') {
+      await tiendaRepo.rechazarPago(db, p.id, { simulador: true, estado: 'REJECTED', id, fecha: new Date().toISOString() });
+      return { p, aprobado: false };
+    }
+    if (!(await tiendaRepo.aprobarPago(db, p.id, prov.respuestaAprobada(id)))) throw errores.conflicto('El pago cambió mientras tanto.');
+    await tiendaRepo.activarContrato(db, p.contrato_id);
+    return { p, aprobado: true };
+  });
+  if (!r.aprobado) return { ...resumenDe(r.p), estado: 'rechazado' };
+  return { ...resumenDe(r.p), estado: 'pagado', ...(await completarCompra(r.p.contrato_id, ip)) };
+}
+
+// Después de un rechazo: nuevo intento de la misma cuota, con un enlace nuevo a la pasarela
+async function reintentarPago(token) {
+  const prov = pasarela.proveedor();
+  const id = prov.leerToken(token);
+  return conSistema(async (db) => {
+    const p = await tiendaRepo.pagoPorTransaccion(db, id);
+    if (!p) throw errores.noEncontrado('Pago no encontrado.');
+    if (p.estado !== 'rechazado') throw errores.conflicto('Solo se reintenta un pago rechazado.');
+    const pagoId = await tiendaRepo.nuevoIntento(db, p);
+    const cobro = await prov.crearCobro({ pagoId, monto: p.monto, pasarela: p.pasarela });
+    await tiendaRepo.asignarTransaccion(db, pagoId, cobro.idTransaccion);
+    return { pago: { url: cobro.url } };
+  });
 }
 
 // Comunas para el formulario de la tienda
@@ -198,4 +291,4 @@ async function comunas() {
   return { comunas: await conSistema((db) => tiendaRepo.comunas(db)) };
 }
 
-module.exports = { preguntas, comprar, comunas };
+module.exports = { preguntas, comprar, comunas, estadoPago, confirmarPago, reintentarPago };

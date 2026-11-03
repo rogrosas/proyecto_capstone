@@ -2,6 +2,7 @@
    CAPA DE DATOS · Repositorio de contratos (renovaciones y cobranza)
    Usa contratos, contrato_servicios, alertas y la vista v_saldo_contrato.
    ========================================================= */
+const config = require('../../config');
 const { numeros } = require('../conversion');
 const { SIN_RENOVAR, SERVICIOS_CONTRATO } = require('../sql/fragmentos');
 
@@ -64,12 +65,18 @@ const FROM_LISTA = `
 
 const tipar = (x) => numeros(x, ['dias', 'total_servicios', 'pagado', 'saldo', 'duracion_meses']);
 
-async function listar(db, { texto, estado }, limite) {
+/** mes = 'YYYY-MM' de vencimiento ('' = todos); ejecutivo = id del usuario (null = todos) */
+async function listar(db, { texto, estado, mes = '', ejecutivo = null, desde = null, hasta = null }, limite) {
   const r = await db.query(`
     SELECT ${COLUMNAS_LISTA} ${FROM_LISTA}
      WHERE ($1 = '' OR k.folio ILIKE '%' || $1 || '%' OR cl.razon_social ILIKE '%' || $1 || '%')
        AND ($2 = '' OR k.estado = $2)
-     ORDER BY k.creado_en DESC LIMIT $3`, [texto, estado, limite]);
+       AND ($4 = '' OR to_char(k.fecha_vencimiento, 'YYYY-MM') = $4)
+       AND ($5::int IS NULL OR k.ejecutivo_id = $5)
+       AND ($6::date IS NULL OR (k.creado_en AT TIME ZONE $8)::date >= $6)
+       AND ($7::date IS NULL OR (k.creado_en AT TIME ZONE $8)::date <= $7)
+       AND ($6::date IS NULL OR k.estado <> 'cancelado')
+     ORDER BY k.creado_en DESC LIMIT $3`, [texto, estado, limite, mes, ejecutivo, desde, hasta, config.bd.zonaHoraria]);
   return r.rows.map(tipar);
 }
 

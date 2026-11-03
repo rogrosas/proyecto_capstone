@@ -1,7 +1,7 @@
-// Genera el diccionario de datos en HTML a partir de easyoffice_er.sql + descripciones.js
+// Genera el diccionario de datos en HTML a partir de easyoffice_v2.sql + descripciones (v1, uso en la app y v2)
 const fs = require('fs');
 const path = require('path');
-const D = require('./uso-app')(require('./descripciones'));
+const D = require('./descripciones-v2')(require('./uso-app')(require('./descripciones')));
 
 const SQL_PATH = process.argv[2];
 const OUT = process.argv[3];
@@ -39,7 +39,7 @@ while ((m = reTable.exec(sql))) {
   for (let seg of splitTop(limpio)) {
     seg = seg.replace(/\s+/g, ' ').trim();
     if (!seg) continue;
-    if (/^(UNIQUE|CHECK|FOREIGN KEY|PRIMARY KEY)/i.test(seg)) { restricciones.push(seg); continue; }
+    if (/^(UNIQUE|CHECK|FOREIGN KEY|PRIMARY KEY|CONSTRAINT)/i.test(seg)) { restricciones.push(seg); continue; }
     const [, col, resto] = seg.match(/^(\w+) (.*)$/);
     const tipoM = resto.match(/^(numeric\(\d+, ?\d+\)|[a-z]+)/i);
     const tipo = tipoM[1];

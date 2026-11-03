@@ -1,7 +1,8 @@
 /* CRM · Renovaciones y cobranza (contratos, alertas, v_saldo_contrato) */
-import { get, post } from '../api.js';
-import { esc, clp, fecha, dias, filaVacia, toast } from '../util.js';
+import { get, post, exportar } from '../api.js';
+import { esc, clp, fecha, fechaHora, dias, filaVacia, toast } from '../util.js';
 import { abrirContrato } from './contratos.js';
+import { estado, tomarFiltros } from '../estado.js';
 
 let contenedor = null;
 
@@ -51,6 +52,7 @@ export default {
     contenedor = el;
     el.innerHTML = `
       <div class="sh"><p>Las alertas a 60/30/15/7 días las genera la base de datos al crear el contrato o cambiar su vencimiento. "Renovar" crea el contrato siguiente con los mismos servicios a precio vigente.</p></div>
+      ${estado.usuario.admin ? '<div class="panel mb18 avisos" id="pnlAvisos"><div class="sb">Cargando avisos…</div></div>' : ''}
       <div class="pipe" id="pipeRenov"></div>
       <div class="toolbar">
         <select class="fl" id="fRenov">
@@ -58,12 +60,17 @@ export default {
           <option value="60" selected>Próximos 60 días</option>
           <option value="vencidos">Vencidos sin renovar</option>
         </select>
+        <button class="btn btn-o" data-exportar title="Descargar este listado como CSV para Excel">Exportar a Excel</button>
       </div>
       <div class="panel tbl-panel tbl-wrap"><table>
         <thead><tr><th>Cliente</th><th>Servicios</th><th>Monto neto</th><th>Vence</th><th>Avisos</th><th>Saldo</th><th>Estado</th><th></th></tr></thead>
         <tbody id="tbRenov"></tbody>
       </table></div>`;
+    const f = tomarFiltros('renovaciones');
+    if (f?.filtro && el.querySelector(`#fRenov option[value="${f.filtro}"]`)) el.querySelector('#fRenov').value = f.filtro;
     el.querySelector('#fRenov').addEventListener('change', cargar);
+    el.querySelector('[data-exportar]').addEventListener('click', () => exportar('renovaciones', { filtro: el.querySelector('#fRenov').value })
+      .catch((err) => { if (err.message !== 'sesion') toast(err.message, true); }));
     el.querySelector('#tbRenov').addEventListener('click', async (e) => {
       const t = e.target.closest('[data-ver],[data-renovar]');
       if (!t) return;
@@ -79,6 +86,43 @@ export default {
         t.disabled = false;
       }
     });
+    if (estado.usuario.admin) {
+      el.querySelector('#pnlAvisos').onclick = async (e) => {
+        const b = e.target.closest('[data-enviar-avisos]');
+        if (!b) return;
+        b.disabled = true;
+        try {
+          const r = await post('/avisos/enviar');
+          toast(r.contratos || r.sin_correo
+            ? `Avisos enviados: ${r.contratos} contrato(s)${r.sin_correo ? `, ${r.sin_correo} sin correo (llamar)` : ''}.`
+            : 'No había avisos pendientes.');
+          await Promise.all([cargarAvisos(), cargar()]);
+        } catch (err) {
+          if (err.message !== 'sesion') toast(err.message, true);
+          b.disabled = false;
+        }
+      };
+      cargarAvisos();
+    }
     await cargar();
   }
 };
+
+/* Avisos de vencimiento por correo: automáticos una vez al día; el administrador puede enviarlos ahora */
+async function cargarAvisos() {
+  const p = contenedor.querySelector('#pnlAvisos');
+  try {
+    const d = await get('/avisos');
+    const u = d.ejecuciones[0];
+    p.innerHTML = `
+      <div class="ph-row"><h3>Avisos de vencimiento por correo</h3>
+        <button class="btn btn-g btn-row" data-enviar-avisos ${d.pendientes ? '' : 'disabled'}>${d.pendientes ? `Enviar ${d.pendientes} aviso(s) pendiente(s) ahora` : 'No hay avisos pendientes'}</button></div>
+      <div class="ph">${d.automatico ? `Automático: todos los días desde las ${d.hora}:00 se avisa por correo a cada cliente cuyo contrato llega a su fecha de alerta, y cada ejecutivo recibe un resumen con los clientes sin correo para llamarlos.`
+        : 'El envío automático está apagado (AVISOS_AUTOMATICOS=no). Puede enviarlos con el botón.'}</div>
+      <div class="sb">${u ? `Último envío: ${fechaHora(u.iniciado)} · ${u.origen === 'manual' ? `manual (${esc(u.usuario || '')})` : 'automático'} · ${u.contratos} avisado(s)${u.sin_correo ? ` · <span class="rojo">${u.sin_correo} sin correo</span>` : ''}${u.errores ? ` · <span class="rojo">${u.errores} con error</span>` : ''}`
+        : 'Todavía no se ha enviado ningún aviso.'}
+        ${(u?.detalle || []).filter((x) => x.estado !== 'enviado').map((x) => `<div>· ${esc(x.folio)} ${esc(x.cliente)}: ${esc(x.resultado)}</div>`).join('')}</div>`;
+  } catch (err) {
+    if (err.message !== 'sesion') p.innerHTML = `<div class="sb rojo">${esc(err.message)}</div>`;
+  }
+}

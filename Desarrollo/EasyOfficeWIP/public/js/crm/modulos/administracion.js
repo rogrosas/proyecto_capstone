@@ -17,12 +17,17 @@ async function verUsuarios(panel) {
   panel.innerHTML = `
     <div class="toolbar"><h3 class="tt-sec">Usuarios del personal</h3><button class="btn btn-g" data-nuevo>Nuevo usuario</button></div>
     <div class="tbl-wrap"><table>
-      <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Último ingreso</th><th>Estado</th><th></th></tr></thead>
+      <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Último ingreso</th><th>Dos pasos</th><th>Estado</th><th></th></tr></thead>
       <tbody>${usuarios.map((u) => `<tr>
         <td class="nm">${esc(u.nombre)}${u.id === estado.usuario.id ? ' <span class="bg blu">usted</span>' : ''}</td>
         <td>${esc(u.email)}</td><td><span class="bg ${['admin', 'dueno'].includes(u.rol) ? 'grn' : 'gry'}">${esc(u.rol)}</span></td>
-        <td>${fecha(u.ultimo_acceso)}</td><td>${u.activo ? '<span class="bg grn">Activo</span>' : '<span class="bg gry">Inactivo</span>'}</td>
-        <td class="right"><button class="btn btn-o btn-row" data-editar="${u.id}">Editar</button></td></tr>`).join('')}</tbody>
+        <td>${fecha(u.ultimo_acceso)}</td>
+        <td>${u.totp_activo ? '<span class="bg grn">Activa</span>' : '<span class="sb">—</span>'}</td>
+        <td>${u.activo ? '<span class="bg grn">Activo</span>' : '<span class="bg gry">Inactivo</span>'}${u.bloqueado ? ' <span class="bg red" title="Varias contraseñas incorrectas seguidas">Bloqueado</span>' : ''}</td>
+        <td class="right acciones">
+          ${u.bloqueado ? `<button class="btn btn-o btn-row" data-desbloquear="${u.id}">Desbloquear</button>` : ''}
+          ${u.totp_activo && u.id !== estado.usuario.id ? `<button class="btn btn-o btn-row" data-quitar-totp="${u.id}" title="Si perdió su teléfono: podrá activarla de nuevo">Quitar 2 pasos</button>` : ''}
+          <button class="btn btn-o btn-row" data-editar="${u.id}">Editar</button></td></tr>`).join('')}</tbody>
     </table></div>
     <div class="note">Los roles "admin" y "dueno" trabajan como rol_admin en la base de datos (ven todo); los demás, como rol_ejecutivo (solo su cartera, sin eliminar).</div>`;
   const opRoles = roles.map((r) => ({ valor: r.id, texto: r.rol }));
@@ -48,7 +53,26 @@ async function verUsuarios(panel) {
     }]
   });
   panel.querySelector('[data-nuevo]').addEventListener('click', () => form(null));
-  panel.addEventListener('click', (e) => { const t = e.target.closest('[data-editar]'); if (t) form(usuarios.find((x) => x.id === Number(t.dataset.editar))); });
+  // onclick: el panel se reutiliza al recargar y no deben sumarse eventos
+  panel.onclick = async (e) => {
+    const t = e.target.closest('[data-editar],[data-desbloquear],[data-quitar-totp]');
+    if (!t) return;
+    if (t.dataset.editar) return form(usuarios.find((x) => x.id === Number(t.dataset.editar)));
+    const u = usuarios.find((x) => x.id === Number(t.dataset.desbloquear || t.dataset.quitarTotp));
+    try {
+      if (t.dataset.quitarTotp) {
+        if (!(await confirmar(`¿Quitar la verificación en dos pasos de ${u.nombre}? Podrá ingresar solo con su contraseña hasta que la active de nuevo.`, { textoSi: 'Quitar', peligro: true }))) return;
+        await patch('/admin/usuarios/' + u.id, { quitar_totp: true });
+        toast('Verificación en dos pasos quitada.');
+      } else {
+        await patch('/admin/usuarios/' + u.id, { desbloquear: true });
+        toast(`${u.nombre} puede volver a ingresar.`);
+      }
+      mostrar('usuarios');
+    } catch (err) {
+      if (err.message !== 'sesion') toast(err.message, true);
+    }
+  };
 }
 
 /* ---------- Roles y permisos ---------- */

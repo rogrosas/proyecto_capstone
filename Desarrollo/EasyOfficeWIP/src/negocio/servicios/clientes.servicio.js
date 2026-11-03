@@ -16,7 +16,8 @@ async function listar(usuario, { q, estado }) {
   const filtros = {
     texto,
     rut: texto.toUpperCase().replace(/[^0-9K-]/g, ''),   // "18.204.331-5" -> "18204331-5"
-    estado: ESTADOS.includes(estado) ? estado : ''
+    estado: ESTADOS.includes(estado) ? estado : '',
+    porRevisar: estado === 'Por revisar'
   };
   const clientes = await conUsuario(usuario, (db) => clientesRepo.listar(db, filtros, LIMITE));
   return { clientes };
@@ -39,6 +40,8 @@ const contratosRepo = require('../../datos/repositorios/contratos.repositorio');
 const documentosRepo = require('../../datos/repositorios/documentos.repositorio');
 const pagosRepo = require('../../datos/repositorios/pagos.repositorio');
 const cuentasPortalRepo = require('../../datos/repositorios/cuentasPortal.repositorio');
+const gestionesRepo = require('../../datos/repositorios/gestiones.repositorio');
+const firmaRepo = require('../../datos/repositorios/firma.repositorio');
 const v = require('../validacion');
 
 async function ficha(usuario, id) {
@@ -54,8 +57,35 @@ async function ficha(usuario, id) {
       accesos: accesosPortal(cliente, representante, await cuentasPortalRepo.porCliente(db, id)),
       contratos: await contratosRepo.porCliente(db, id),
       documentos: await documentosRepo.porCliente(db, id),
-      pagos: await pagosRepo.porCliente(db, id)
+      pagos: await pagosRepo.porCliente(db, id),
+      gestiones: await gestionesRepo.porCliente(db, id),
+      firmas: await firmaRepo.saldo(db, id)
     };
+  });
+}
+
+/* ---------- Bitácora de gestiones (HU-36): llamadas, correos, reuniones, links de pago y notas ---------- */
+const TIPOS_GESTION = ['llamada', 'correo', 'whatsapp', 'reunion', 'link_pago', 'nota'];
+const RESULTADOS_GESTION = ['sin_respuesta', 'contactado', 'promete_pago', 'renueva', 'no_renueva', 'otro'];
+
+async function registrarGestion(usuario, clienteId, d = {}) {
+  clienteId = v.id(clienteId, 'Cliente');
+  const g = {
+    cliente_id: clienteId,
+    contrato_id: v.id(d.contrato_id, 'Contrato', { opcional: true }),
+    tipo: v.opcion(d.tipo, TIPOS_GESTION, 'Tipo de gestión'),
+    resultado: v.opcion(d.resultado, RESULTADOS_GESTION, 'Resultado', { opcional: true }),
+    nota: v.texto(d.nota, 'Nota', { opcional: true, max: 2000 }),
+    proxima_accion_en: v.fecha(d.proxima_accion_en, 'Próxima acción', { opcional: true })
+  };
+  if (!g.nota && !g.resultado) throw errores.solicitudInvalida('Indique el resultado o escriba una nota.');
+  return conUsuario(usuario, async (db) => {
+    if (!(await clientesRepo.obtener(db, clienteId))) throw errores.noEncontrado('Cliente no encontrado o fuera de su cartera.');
+    if (g.contrato_id) {
+      const k = await contratosRepo.obtener(db, g.contrato_id);
+      if (!k || k.cliente_id !== clienteId) throw errores.solicitudInvalida('El contrato no es de este cliente.');
+    }
+    return { id: await gestionesRepo.crear(db, g) };
   });
 }
 
@@ -160,4 +190,4 @@ async function actualizar(usuario, id, datos) {
   });
 }
 
-module.exports = { listar, eliminar, ficha, crear, actualizar, guardarAcceso };
+module.exports = { listar, eliminar, ficha, crear, actualizar, guardarAcceso, registrarGestion };

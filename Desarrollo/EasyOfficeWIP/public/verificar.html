@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Verificar documento · Easy Office</title>
+<meta name="description" content="Compruebe la autenticidad de un documento firmado por Easy Office con su código de verificación.">
+<link rel="icon" href="/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=Albert+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/sitio.css">
+<link rel="stylesheet" href="/css/firma.css">
+</head>
+<body class="pg-firma">
+
+<header id="cabecera" data-sub="verificar documento" data-menu="no"></header>
+
+<main class="vwrap">
+  <div class="fcard">
+    <div class="gate-head">
+      <h2>Verificar un documento</h2>
+      <p>Ingrese el código de verificación que aparece en la hoja de firmas del documento (formato EO-XXXX-XXXX).</p>
+    </div>
+    <div class="gate-body">
+      <form class="vform gf" id="form" novalidate>
+        <input type="text" id="codigo" placeholder="EO-1A2B-3C4D" maxlength="12" autocomplete="off" aria-label="Código de verificación">
+        <button class="btn btn-g" type="submit" id="btn">Verificar</button>
+      </form>
+      <div class="aviso-error" id="error" hidden></div>
+      <div id="res"></div>
+    </div>
+  </div>
+</main>
+
+<footer id="pie" data-tipo="simple"></footer>
+
+<script src="/js/layout.js"></script>
+<script src="/js/verificar.js"></script>
+</body>
+</html>

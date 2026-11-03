@@ -41,9 +41,59 @@
       </div>
       <div class="login-error" id="loginError" hidden></div>
       <button class="btn btn-g btn-w" type="submit" id="btnLogin">Ingresar</button>
+      <p style="text-align:center;margin:14px 0 0;"><button type="button" class="btn-link" data-olvido>¿Olvidó su contraseña?</button></p>
       <div class="gate-foot">
         ¿Es cliente de Easy Office? Su panel está en <a class="link" href="/mi-cuenta">easyoffice.cl / mi cuenta</a>, no en esta dirección.
       </div>
+    </div>
+  </form>
+
+  <!-- Segundo factor: código de la aplicación autenticadora -->
+  <form class="gate-card" id="codigoForm" novalidate hidden>
+    <div class="gate-head">
+      <h2>Verificación en dos pasos</h2>
+      <p>Escriba el código de 6 dígitos que muestra su aplicación autenticadora (Google Authenticator, Microsoft Authenticator, Authy…).</p>
+    </div>
+    <div class="gate-body">
+      <div class="gf">
+        <label for="gCodigo">Código</label>
+        <input type="text" id="gCodigo" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="123 456" class="codigo-2fa">
+      </div>
+      <div class="login-error" id="codigoError" hidden></div>
+      <button class="btn btn-g btn-w" type="submit" id="btnCodigo">Verificar e ingresar</button>
+      <p style="text-align:center;margin:14px 0 0;"><button type="button" class="btn-link" data-volver-login>← Volver</button></p>
+    </div>
+  </form>
+
+  <!-- Olvidé mi contraseña -->
+  <form class="gate-card" id="olvidoForm" novalidate hidden>
+    <div class="gate-head">
+      <h2>Crear una nueva contraseña</h2>
+      <p>Le enviaremos a su correo corporativo un enlace de un solo uso (vence en 30 minutos).</p>
+    </div>
+    <div class="gate-body">
+      <div class="gf">
+        <label for="gMailOlvido">Correo corporativo</label>
+        <input type="email" id="gMailOlvido" autocomplete="username" placeholder="nombre@easyoffice.cl">
+      </div>
+      <div class="aviso-ok" id="olvidoOk" hidden></div>
+      <div class="login-error" id="olvidoError" hidden></div>
+      <button class="btn btn-g btn-w" type="submit" id="btnOlvido">Enviar enlace</button>
+      <p style="text-align:center;margin:14px 0 0;"><button type="button" class="btn-link" data-volver-login>← Volver al ingreso</button></p>
+    </div>
+  </form>
+
+  <!-- Nueva contraseña con el enlace del correo (/crm?clave=...) -->
+  <form class="gate-card" id="claveForm" novalidate hidden>
+    <div class="gate-head">
+      <h2>Nueva contraseña</h2>
+      <p>Mínimo 10 caracteres. Use una frase o combine palabras, números y símbolos.</p>
+    </div>
+    <div class="gate-body">
+      <div class="gf"><label for="gNueva">Nueva contraseña</label><input type="password" id="gNueva" autocomplete="new-password"></div>
+      <div class="gf"><label for="gNueva2">Repítala</label><input type="password" id="gNueva2" autocomplete="new-password"></div>
+      <div class="login-error" id="claveError" hidden></div>
+      <button class="btn btn-g btn-w" type="submit" id="btnClave">Guardar contraseña</button>
     </div>
   </form>
 </div>
@@ -72,6 +122,7 @@
         <div class="who">
           <div class="av" id="whoAv"></div>
           <div><div class="nmm" id="whoName"></div><div class="rr" id="whoMail"></div></div>
+          <button class="btn-out" data-action="seguridad" title="Contraseña y verificación en dos pasos">Seguridad</button>
           <button class="btn-out" data-action="exit">Salir</button>
         </div>
       </div>

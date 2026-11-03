@@ -52,5 +52,9 @@ module.exports = {
   // Tienda
   preguntasPlan: responder((req) => tienda.preguntas(req.params.codigo)),
   comunas: responder(() => tienda.comunas()),
-  comprar: async (req, res) => res.status(201).json(await tienda.comprar(req.body, req.ip))
+  comprar: async (req, res) => res.status(201).json(await tienda.comprar(req.body, req.ip)),
+  // Pasarela de pago: estado, resultado (aprobado / rechazado) y nuevo intento
+  estadoPago: responder((req) => tienda.estadoPago(req.params.token)),
+  confirmarPago: responder((req) => tienda.confirmarPago(req.params.token, req.body, req.ip)),
+  reintentarPago: responder((req) => tienda.reintentarPago(req.params.token))
 };

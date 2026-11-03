@@ -1,0 +1,38 @@
+/* =========================================================
+   /firma-simulada y /verificar · Firma electrónica y verificación de documentos
+   ========================================================= */
+.pg-firma .strip{padding:9px 34px;font-size:13px;}
+.pg-firma .nav{padding:13px 34px;position:static;}
+
+.fwrap{max-width:1120px;margin:0 auto;padding:28px 24px 70px;}
+.fgrid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(300px,1fr);gap:20px;align-items:start;}
+.fdoc{width:100%;height:min(76vh,900px);border:1px solid var(--line);background:#E9ECEE;display:block;}
+.fcard{background:#fff;box-shadow:var(--shadow);}
+.fcard .gate-body{padding-top:22px;}
+.lab{display:inline-block;background:var(--amber-tint);color:var(--amber);font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:4px 9px;margin-bottom:10px;}
+.dato{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px;}
+.dato .k{color:var(--muted);}
+.dato .v{color:var(--ink);font-weight:600;text-align:right;overflow-wrap:anywhere;}
+.mono{font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
+.acc{display:flex;flex-direction:column;gap:10px;margin-top:16px;}
+.btn-link{background:none;border:none;color:var(--muted);font-size:12.5px;cursor:pointer;padding:0;text-decoration:underline;}
+.resultado{padding:30px 32px;text-align:center;}
+.resultado .ic{width:54px;height:54px;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;}
+.resultado.ok .ic{background:var(--green-tint);color:var(--green-dark);}
+.resultado.mal .ic{background:var(--red-tint);color:var(--red);}
+.resultado h2{font-size:21px;}
+.resultado p{font-size:13.5px;color:var(--muted);line-height:1.6;margin:8px 0 0;}
+
+/* Verificación */
+.vwrap{max-width:620px;margin:0 auto;padding:40px 20px 80px;}
+.vform{display:flex;gap:10px;}
+.vform input{flex:1;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;letter-spacing:1px;}
+.archivo{margin-top:16px;border:1px dashed var(--line);padding:14px;font-size:13px;color:var(--muted);}
+.archivo input{margin-top:8px;font-size:12.5px;max-width:100%;}
+.coincide{margin-top:10px;font-weight:600;font-size:13px;}
+.coincide.si{color:var(--green-dark);} .coincide.no{color:var(--red);}
+
+@media (max-width:900px){.fgrid{grid-template-columns:1fr;} .fdoc{height:60vh;}}
+@media (max-width:640px){.fwrap{padding:16px 16px 50px;} .vform{flex-direction:column;} .pg-firma .strip,.pg-firma .nav{padding-left:16px;padding-right:16px;}}
+.gf textarea{border:1px solid var(--line);border-radius:3px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--text);resize:vertical;}
+.gf textarea:focus{outline:none;border-color:var(--green);}

@@ -239,24 +239,65 @@
 
   function accionDoc(d) {
     if (d.estado_cliente === 'por_revisar') return `<button class="btn btn-g btn-row" data-revisar="${d.id}">Revisar borrador</button>`;
+    if (d.firma?.enlace) return `<a class="btn btn-g btn-row" href="${esc(d.firma.enlace)}" target="_blank" rel="noopener">Firmar ahora</a>`;
+    if (d.con_firmado) {
+      return `<a class="btn btn-g btn-row" href="/api/cliente/documentos/${d.id}/archivo" download>Descargar firmado</a>
+        ${d.codigo ? `<a class="btn btn-o btn-row" href="/verificar?codigo=${encodeURIComponent(d.codigo)}" target="_blank" rel="noopener">Verificar</a>` : ''}`;
+    }
     if (d.estado_cliente === 'aceptado') return `<a class="btn btn-o btn-row" href="/api/cliente/documentos/${d.id}/archivo" download>Descargar Word</a>`;
     if (d.estado_cliente === 'objetado') return `<button class="btn btn-o btn-row" data-revisar="${d.id}">Ver borrador</button>`;
     return '<span class="sb">En preparación</span>';
   }
 
+  // Bolsas y planes con firmas incluidas (v_saldo_firmas)
+  function saldoFirmas(s) {
+    if (!s) return '';
+    const MOV = { compra: 'Compra', consumo: 'Firma usada', ajuste: 'Ajuste' };
+    return `<div class="panel" style="padding:16px 22px;margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;">
+        <h3 style="font-size:16px;">Saldo de firmas electrónicas</h3>
+        <span class="sb">${s.vence ? `Vigentes hasta el ${fecha(s.vence)}` : ''}</span></div>
+      <div class="saldo-f"><div><b>${s.disponibles}</b><span>disponibles</span></div><div><b>${s.consumidas}</b><span>usadas</span></div><div><b>${s.compradas}</b><span>compradas</span></div></div>
+      ${s.movimientos.length ? `<div class="sb" style="margin-top:8px;">Últimos movimientos: ${s.movimientos.slice(0, 5).map((m) => `${fecha(m.fecha)} · ${MOV[m.motivo] || m.motivo} ${m.cantidad > 0 ? '+' : ''}${m.cantidad}`).join(' · ')}</div>` : ''}
+    </div>`;
+  }
+
   async function documentos(p) {
     const porRevisar = p.documentos.filter((d) => d.estado_cliente === 'por_revisar');
     const firma = p.documentos.filter((d) => d.estado === 'enviado_firma').length;
+    const paraMi = p.documentos.filter((d) => d.firma?.enlace);
     const n = porRevisar.length + firma;
     $('bDocs').hidden = !n; $('bDocs').textContent = n;
-    let tickets = [];
+    let tickets = [], corr = [];
     try { ({ tickets, motivos } = await api('/tickets')); } catch { /* sin tickets */ }
+    try { ({ correspondencia: corr } = await api('/correspondencia')); } catch { /* sin correspondencia */ }
+    const sinLeer = corr.filter((c) => !c.leida && ['digitalizada', 'notificada'].includes(c.estado));
+    if (sinLeer.length) { $('bDocs').hidden = false; $('bDocs').textContent = n + sinLeer.length; }
+    const TIPO_C = { fiscal: 'Fiscal (SII)', judicial: 'Judicial', laboral: 'Laboral', municipal: 'Municipal', bancaria: 'Bancaria', comercial: 'Comercial', otra: 'Otra' };
+    const seccionCorr = corr.length ? `
+      <div class="sh" style="margin-top:26px;"><h2 style="font-size:18px;">Correspondencia en su domicilio tributario</h2>
+        <p>Cartas y notificaciones que recibimos por usted. Las urgentes (fiscales, judiciales y laborales) revíselas hoy.</p></div>
+      <div class="panel tbl-wrap" style="padding:10px 22px;"><table>
+        <thead><tr><th>Recibida</th><th>Remitente</th><th>Tipo</th><th>Estado</th><th></th></tr></thead>
+        <tbody>${corr.map((c) => `<tr>
+          <td>${fecha(c.recibida)}</td><td class="nm">${esc(c.remitente)}${c.descripcion ? `<div class="sb">${esc(c.descripcion)}</div>` : ''}</td>
+          <td>${esc(TIPO_C[c.tipo] || c.tipo)}${c.urgente ? ' <span class="bg red">Urgente</span>' : ''}</td>
+          <td>${c.estado === 'retirada' ? '<span class="bg gry">Retirada</span>' : c.estado === 'devuelta' ? '<span class="bg gry">Devuelta</span>'
+            : c.leida ? '<span class="bg grn">Vista</span>' : '<span class="bg amb">Nueva</span>'}</td>
+          <td class="right">${c.con_archivo ? `<a class="btn btn-o btn-row" href="/api/cliente/correspondencia/${c.id}/archivo" target="_blank" rel="noopener">Ver escaneo</a>`
+            : c.estado === 'notificada' ? '<span class="sb">Retírela en nuestra oficina</span>' : ''}</td></tr>`).join('')}</tbody>
+      </table></div>` : '';
     $('v-documentos').innerHTML = `
       <div class="sh"><h2>Mis documentos</h2><p>Antes de recibir cada documento, usted revisa un borrador con marca de agua y confirma que está de acuerdo. Si algo no está correcto, envíenos un ticket y lo corregimos.</p></div>
       ${porRevisar.map((d) => `<div class="alert"><div class="ai">!</div><div><div class="at">Tiene un documento para revisar: ${esc(d.tipo)}</div>
         <div class="ad">${d.folio ? `Contrato ${esc(d.folio)} · ` : ''}publicado el ${fecha(d.publicado)}. Revise el borrador y acéptelo para recibir el documento final.</div></div>
         <div class="aa"><button class="btn btn-g" data-revisar="${d.id}">Revisar ahora</button></div></div>`).join('')}
-      ${firma ? `<div class="alert ok"><div class="ai">✎</div><div><div class="at">Tiene ${firma} documento${firma > 1 ? 's' : ''} esperando su firma</div><div class="ad">Le llegará el enlace de firma electrónica a su correo.</div></div></div>` : ''}
+      ${paraMi.map((d) => `<div class="alert ok"><div class="ai">✎</div><div><div class="at">Firme su documento: ${esc(d.tipo)}</div>
+        <div class="ad">Usted lo aceptó y ya está en la plataforma de firma electrónica. También le enviamos el enlace a su correo.</div></div>
+        <div class="aa"><a class="btn btn-g" href="${esc(d.firma.enlace)}" target="_blank" rel="noopener">Firmar ahora</a></div></div>`).join('')}
+      ${firma > paraMi.length ? `<div class="alert ok"><div class="ai">✎</div><div><div class="at">${firma - paraMi.length} documento(s) esperando la firma de otra persona</div>
+        <div class="ad">${p.documentos.filter((d) => d.estado === 'enviado_firma' && !d.firma?.enlace).map((d) => `${esc(d.tipo)}: ${(d.firma?.firmantes || []).filter((x) => x.estado === 'pendiente').map((x) => esc(x.nombre)).join(', ') || 'firmantes'}`).join(' · ')}</div></div></div>` : ''}
+      ${saldoFirmas(p.firmas)}
       <div class="panel tbl-wrap" style="padding:10px 22px;"><table>
         <thead><tr><th>Documento</th><th>Contrato</th><th>Emitido</th><th>Su revisión</th><th>Estado</th><th>Código</th><th></th></tr></thead>
         <tbody>${p.documentos.length ? p.documentos.map((d) => `<tr>
@@ -266,6 +307,7 @@
           <td class="mono">${esc(d.codigo || '—')}</td><td class="right">${accionDoc(d)}</td></tr>`).join('')
           : '<tr><td colspan="7" class="empty">Aún no tiene documentos.</td></tr>'}</tbody>
       </table></div>
+      ${seccionCorr}
       <div class="sh" style="margin-top:26px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;">
         <div><h2 style="font-size:18px;">Mis tickets</h2><p>Reclamos sobre documentos y consultas a la administración.</p></div>
         <button class="btn btn-o" data-ticket-nuevo>Enviar una consulta</button>
@@ -320,8 +362,11 @@
     r.querySelector('[data-aceptar]').addEventListener('click', async (e) => {
       e.target.disabled = true;
       try {
-        await api(`/documentos/${doc.id}/aceptar`, { acepto: $('rvAcepto').checked });
-        $('rvPie').innerHTML = `<div class="aviso-ok">Gracias. Aceptó el documento y ya puede descargarlo. Le avisaremos cuando esté listo para la firma electrónica.</div>
+        const r = await api(`/documentos/${doc.id}/aceptar`, { acepto: $('rvAcepto').checked });
+        // Aceptado, pasa solo a la firma electrónica (si la plataforma está activa)
+        $('rvPie').innerHTML = r.en_firma
+          ? `<div class="aviso-ok">Gracias. Aceptó el documento y quedó listo para su firma electrónica: le enviamos el enlace a su correo y también lo verá en "Mis documentos" con el botón "Firmar ahora".</div>`
+          : `<div class="aviso-ok">Gracias. Aceptó el documento y ya puede descargarlo. Le avisaremos cuando esté listo para la firma electrónica.</div>
           <div class="rv-acc"><a class="btn btn-g" href="/api/cliente/documentos/${doc.id}/archivo" download>Descargar documento final (Word)</a></div>`;
         recargarPanel();
       } catch (err) {

@@ -529,8 +529,15 @@ CREATE TABLE documentos (
     aceptado_por        citext,                            -- correo de quien aceptó
     aceptado_ip         inet,
     version_aceptada    int,
+    -- Firma electrónica: plataforma usada, envío y documento firmado que devuelve (con su huella)
+    firma_proveedor     text,                              -- 'simulador' en laboratorio, o la plataforma real
+    enviado_firma_en    timestamptz,
+    archivo_firmado     text,                              -- ruta dentro de la carpeta de contratos
+    hash_firmado        text CHECK (hash_firmado ~ '^[0-9a-f]{64}$'),
     CONSTRAINT ck_documentos_aceptado
-        CHECK (estado_cliente IS DISTINCT FROM 'aceptado' OR (aceptado_en IS NOT NULL AND aceptado_por IS NOT NULL))
+        CHECK (estado_cliente IS DISTINCT FROM 'aceptado' OR (aceptado_en IS NOT NULL AND aceptado_por IS NOT NULL)),
+    CONSTRAINT ck_documentos_firmado_con_hash
+        CHECK (archivo_firmado IS NULL OR hash_firmado IS NOT NULL)
 );
 CREATE INDEX ix_documentos_cliente  ON documentos (cliente_id);
 CREATE INDEX ix_documentos_contrato ON documentos (contrato_id);
@@ -548,6 +555,27 @@ CREATE TABLE documento_versiones (
     generado_en   timestamptz NOT NULL DEFAULT now(),
     UNIQUE (documento_id, version)
 );
+
+-- Quienes firman el documento en la plataforma de firma electrónica (persona natural o representante legal)
+CREATE TABLE documento_firmantes (
+    id              int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    documento_id    int    NOT NULL REFERENCES documentos (id) ON DELETE CASCADE,
+    orden           smallint NOT NULL CHECK (orden > 0),
+    nombre          text   NOT NULL,
+    rut             text   CHECK (rut IS NULL OR fn_rut_valido(rut)),
+    email           citext NOT NULL,
+    estado          text   NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'firmado', 'rechazado')),
+    id_externo      text,                              -- id del firmante en la plataforma
+    firmado_en      timestamptz,
+    ip              inet,
+    motivo_rechazo  text,
+    creado_en       timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (documento_id, email),
+    UNIQUE (documento_id, orden),
+    CHECK (estado <> 'firmado' OR firmado_en IS NOT NULL),
+    CHECK (estado <> 'rechazado' OR motivo_rechazo IS NOT NULL)
+);
+CREATE INDEX ix_documento_firmantes_externo ON documento_firmantes (id_externo) WHERE id_externo IS NOT NULL;
 
 -- Partes que comparecen: arrendador/arrendatario, accionistas, poderdante/apoderado...
 CREATE TABLE documento_partes (
@@ -638,6 +666,22 @@ CREATE TABLE alertas (
     CHECK (NOT notificado OR enviado_en IS NOT NULL)
 );
 CREATE INDEX ix_alertas_fecha ON alertas (fecha_alerta) WHERE NOT notificado;
+
+-- Cada envío de avisos de vencimiento por correo: automático (una vez al día) o pedido por el personal
+CREATE TABLE ejecuciones_avisos (
+    id            int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    origen        text NOT NULL CHECK (origen IN ('automatico', 'manual')),
+    usuario_id    int  REFERENCES usuarios (id),            -- quién lo pidió (manual)
+    iniciado_en   timestamptz NOT NULL DEFAULT now(),
+    terminado_en  timestamptz,
+    contratos     int  NOT NULL DEFAULT 0 CHECK (contratos >= 0),   -- contratos avisados
+    correos       int  NOT NULL DEFAULT 0 CHECK (correos >= 0),     -- correos enviados a clientes
+    sin_correo    int  NOT NULL DEFAULT 0 CHECK (sin_correo >= 0),  -- contratos cuyo cliente no tiene correo
+    errores       int  NOT NULL DEFAULT 0 CHECK (errores >= 0),
+    detalle       jsonb,                                    -- [{ folio, cliente, resultado }]
+    CHECK (origen = 'automatico' OR usuario_id IS NOT NULL)
+);
+CREATE INDEX ix_ejecuciones_avisos_fecha ON ejecuciones_avisos (iniciado_en DESC);
 
 
 -- =====================================================================
@@ -1154,7 +1198,7 @@ BEGIN
         'propietarios_inmueble', 'sucursales', 'cuentas_recaudacion', 'servicios',
         'contratos', 'contrato_servicios',
         'plantillas_documento', 'clausulas_documento',
-        'documentos', 'documento_versiones', 'documento_partes', 'documento_clausulas', 'pagos',
+        'documentos', 'documento_versiones', 'documento_firmantes', 'documento_partes', 'documento_clausulas', 'pagos',
         'roles', 'permisos', 'roles_permisos', 'config_alertas',
         'movimientos_firmas', 'correspondencia', 'gestiones', 'prospectos', 'carros', 'solicitudes_titular',
         'plantilla_planes', 'tickets'
@@ -1194,6 +1238,7 @@ ALTER TABLE representantes_legales ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contrato_servicios     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE documentos             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE documento_versiones    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE documento_firmantes    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE documento_partes       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE documento_clausulas    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pagos                  ENABLE ROW LEVEL SECURITY;
@@ -1241,6 +1286,8 @@ CREATE POLICY p_alertas ON alertas
     USING (EXISTS (SELECT 1 FROM contratos c WHERE c.id = alertas.contrato_id));
 CREATE POLICY p_documento_versiones ON documento_versiones
     USING (EXISTS (SELECT 1 FROM documentos d WHERE d.id = documento_versiones.documento_id));
+CREATE POLICY p_documento_firmantes ON documento_firmantes
+    USING (EXISTS (SELECT 1 FROM documentos d WHERE d.id = documento_firmantes.documento_id));
 CREATE POLICY p_documento_partes ON documento_partes
     USING (EXISTS (SELECT 1 FROM documentos d WHERE d.id = documento_partes.documento_id));
 CREATE POLICY p_documento_clausulas ON documento_clausulas
@@ -1293,6 +1340,8 @@ $$;
 CREATE POLICY p_portal_clientes   ON clientes   FOR SELECT TO rol_portal USING (id = app_cliente());
 CREATE POLICY p_portal_contratos  ON contratos  FOR SELECT TO rol_portal USING (cliente_id = app_cliente());
 CREATE POLICY p_portal_documentos ON documentos FOR SELECT TO rol_portal USING (cliente_id = app_cliente());
+CREATE POLICY p_portal_firmantes  ON documento_firmantes FOR SELECT TO rol_portal
+    USING (EXISTS (SELECT 1 FROM documentos d WHERE d.id = documento_firmantes.documento_id AND d.cliente_id = app_cliente()));
 CREATE POLICY p_portal_firmas     ON movimientos_firmas FOR SELECT TO rol_portal USING (cliente_id = app_cliente());
 CREATE POLICY p_portal_correspondencia_ver ON correspondencia FOR SELECT TO rol_portal
     USING (cliente_id = app_cliente());
@@ -1310,7 +1359,7 @@ CREATE POLICY p_portal_tickets ON tickets FOR SELECT TO rol_portal USING (client
 GRANT SELECT, INSERT, UPDATE ON
     clientes, representantes_legales, direcciones,
     contratos, contrato_servicios,
-    documentos, documento_versiones, documento_partes, documento_clausulas, pagos,
+    documentos, documento_versiones, documento_firmantes, documento_partes, documento_clausulas, pagos,
     movimientos_firmas, correspondencia, gestiones, prospectos, solicitudes_titular
     TO rol_ejecutivo;
 GRANT SELECT, UPDATE ON alertas, carros TO rol_ejecutivo;
@@ -1339,7 +1388,7 @@ GRANT SELECT ON
     clientes, representantes_legales, direcciones, comunas, regiones,
     empresas_emisoras, sucursales, propietarios_inmueble, cuentas_recaudacion, servicios,
     contratos, contrato_servicios, alertas, pagos,
-    documentos, documento_versiones, documento_partes, documento_clausulas,
+    documentos, documento_versiones, documento_firmantes, documento_partes, documento_clausulas,
     plantillas_documento, clausulas_documento,
     movimientos_firmas, correspondencia, solicitudes_titular, tickets,
     v_datos_contrato, v_datos_contrato_servicios, v_saldo_contrato, v_estado_renovacion, v_saldo_firmas

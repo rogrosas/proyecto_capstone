@@ -70,8 +70,13 @@ columnas `entrega`/`mapa_campos` en plantillas y `estado_cliente`/`aceptado_*` e
    *lo responde el cliente en la tienda*, *lo completa el personal al generar* o *dejar tal cual*.
 3. **Tienda** (`/contratar`): la compra se guarda de verdad (cliente `origen = 'web'` con su domicilio, contrato
    `pendiente`, pago `pendiente` —el cobro sigue siendo de demostración— y los documentos del plan). Si el plan aún no
-   tiene servicio en la base (`servicios.codigo` = id del plan en `catalogo.js`), se crea. Si el comprador no tiene
-   contraseña de Mi cuenta, recibe el enlace para crearla. Un RUT que ya es cliente solo compra con un correo vinculado.
+   tiene servicio en la base (`servicios.codigo` = id del plan en `catalogo.js`), se crea. Un RUT que ya es cliente
+   solo compra con un correo vinculado.
+   - **Con cuenta**: la compra queda en su cuenta. Si ya tiene contraseña de Mi cuenta por otro cliente (por ejemplo,
+     compra para una empresa nueva), esa misma contraseña le sirve para entrar por el nuevo.
+   - **Sin cuenta**: cuando el documento se publica (al comprar, si la entrega es automática, o cuando el personal lo
+     publica), le llega al correo del formulario el **borrador en Word con marca de agua** adjunto y el enlace para
+     crear su contraseña. Si no hay documento que enviar, recibe solo el enlace.
 4. **Mi cuenta → Mis documentos**: el cliente siempre ve primero un **borrador con marca de agua** (HTML generado desde
    el Word con `mammoth`; el `.docx` no se entrega aún), marca *"he leído el borrador y estoy de acuerdo"* y lo acepta
    → descarga el Word final. Si no está de acuerdo envía un **ticket** (el documento queda "objetado").

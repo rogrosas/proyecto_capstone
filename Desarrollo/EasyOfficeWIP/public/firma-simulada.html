@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Firmar documento · Easy Office</title>
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<link rel="icon" href="/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=Albert+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/sitio.css">
+<link rel="stylesheet" href="/css/firma.css">
+</head>
+<body class="pg-firma">
+
+<header id="cabecera" data-sub="firma electrónica" data-menu="no"></header>
+
+<!--
+  Simulador de la plataforma de firma electrónica (laboratorio, TRL 4).
+  En la plataforma real, este paso valida la identidad con Clave Única o firma electrónica avanzada.
+-->
+<main class="fwrap">
+  <div class="aviso-error" id="error" hidden></div>
+  <div class="fgrid" id="contenido" hidden>
+    <iframe class="fdoc" id="doc" title="Documento para firmar" sandbox="allow-same-origin"></iframe>
+    <div class="fcard" id="panel">
+      <div class="gate-head">
+        <span class="lab">Simulador de laboratorio</span>
+        <h2>Firmar documento</h2>
+        <p id="titulo"></p>
+      </div>
+      <form class="gate-body" id="form" novalidate>
+        <div class="dato"><span class="k">Firmante</span><span class="v" id="firmante"></span></div>
+        <div class="dato" id="filaRut"><span class="k">RUT registrado</span><span class="v mono" id="rutReg"></span></div>
+        <div class="gf" id="fRut" style="margin-top:16px;">
+          <label for="rut">Confirme su RUT</label>
+          <input type="text" id="rut" autocomplete="off" placeholder="12.345.678-5">
+          <span class="hint">En la plataforma real, aquí se valida su identidad con Clave Única o su firma electrónica avanzada.</span>
+        </div>
+        <label class="chk" style="margin-top:14px;"><input type="checkbox" id="acepto"> <span>Leí el documento completo y lo firmo con mi identidad.</span></label>
+        <div class="acc">
+          <button class="btn btn-g btn-w" type="submit" id="btnFirmar">Firmar documento</button>
+          <button class="btn-link" type="button" id="btnRechazar">No estoy de acuerdo: rechazar la firma</button>
+        </div>
+        <div id="rechazo" hidden style="margin-top:14px;">
+          <div class="gf"><label for="motivo">¿Por qué rechaza la firma?</label><textarea id="motivo" rows="3" maxlength="1000"></textarea></div>
+          <button class="btn btn-o btn-w" type="button" id="btnConfirmarRechazo">Rechazar la firma</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</main>
+
+<footer id="pie" data-tipo="simple"></footer>
+
+<script src="/js/layout.js"></script>
+<script src="/js/firma-simulada.js"></script>
+</body>
+</html>

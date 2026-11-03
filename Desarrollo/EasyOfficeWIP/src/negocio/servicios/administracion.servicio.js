@@ -47,6 +47,10 @@ async function actualizarUsuario(usuario, id, d = {}) {
   if ('rol_id' in d) cambios.rol_id = v.id(d.rol_id, 'Rol');
   if ('activo' in d) cambios.activo = v.booleano(d.activo);
   if (d.password) cambios.password_hash = await clave(d.password);
+  // Si perdió el teléfono: el administrador le quita el segundo factor (lo vuelve a activar el usuario)
+  if (d.quitar_totp === true) Object.assign(cambios, { totp_activo: false, totp_secreto: null });
+  // Desbloquear una cuenta bloqueada por claves malas
+  if (d.desbloquear === true) Object.assign(cambios, { intentos_fallidos: 0, bloqueado_hasta: null });
   if (id === usuario.id && (cambios.activo === false || 'rol_id' in cambios)) {
     throw errores.conflicto('No puede desactivarse ni cambiarse el rol a sí mismo.');
   }

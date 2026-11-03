@@ -1,17 +1,23 @@
 /* CRM · Contratos (contratos, contrato_servicios, alertas, pagos, vistas de impresión) */
-import { get, post, patch, del } from '../api.js';
+import { get, post, patch, del, exportar } from '../api.js';
 import { esc, clp, fecha, fechaHora, dias, filaVacia, badge, toast, hoyISO, CICLO, pasarela, enlaceArchivo } from '../util.js';
-import { estado, opciones, aOpciones } from '../estado.js';
+import { estado, opciones, aOpciones, tomarFiltros } from '../estado.js';
 import { abrirModal, cerrarModal, formularioHTML, leerFormulario, validar, confirmar } from '../modal.js';
 import { abrirDocumento, nuevoDocumento } from './documentos.js';
 import { registrarPago, cambiarEstadoPago } from './ventas.js';
 
 let contenedor = null;
+let extra = {};   // { mes, ejecutivo, desde, hasta, etiqueta } desde un enlace del tablero
+const FILTROS_EXTRA = ['mes', 'ejecutivo', 'desde', 'hasta'];
 
 async function cargar() {
   const tb = contenedor.querySelector('#tbContratos');
   tb.innerHTML = filaVacia(8, 'Cargando…');
   const p = new URLSearchParams({ q: contenedor.querySelector('#qContratos').value, estado: contenedor.querySelector('#fEstadoK').value });
+  for (const k of FILTROS_EXTRA) if (extra[k]) p.set(k, extra[k]);
+  const chip = contenedor.querySelector('#chipK');
+  chip.hidden = !FILTROS_EXTRA.some((k) => extra[k]);
+  chip.innerHTML = chip.hidden ? '' : `${esc(extra.etiqueta || 'Filtro')} <button class="x" data-quitar title="Quitar el filtro">✕</button>`;
   try {
     const { contratos } = await get('/contratos?' + p);
     tb.innerHTML = contratos.length ? contratos.map((k) => `
@@ -333,15 +339,23 @@ export default {
       <div class="toolbar">
         <input class="search" id="qContratos" placeholder="Buscar por folio o cliente…">
         <select class="fl" id="fEstadoK"><option value="">Todos los estados</option><option value="activo">Activo</option><option value="pendiente">Pendiente</option><option value="vencido">Vencido</option><option value="cancelado">Cancelado</option></select>
+        <span class="chip-f" id="chipK" hidden></span>
+        <button class="btn btn-o" data-exportar title="Descargar este listado como CSV para Excel">Exportar a Excel</button>
         <button class="btn btn-g" id="btnNuevoContrato">Nuevo contrato</button>
       </div>
       <div class="panel tbl-panel tbl-wrap"><table>
         <thead><tr><th>Folio</th><th>Cliente</th><th>Servicios</th><th>Vigencia</th><th>Total neto</th><th>Saldo</th><th>Ejecutivo</th><th>Estado</th></tr></thead>
         <tbody id="tbContratos"></tbody>
       </table></div>`;
+    const f = tomarFiltros('contratos') || {};
+    extra = { mes: f.mes, ejecutivo: f.ejecutivo, desde: f.desde, hasta: f.hasta, etiqueta: f.etiqueta };
+    if (f.estado) el.querySelector('#fEstadoK').value = f.estado;
+    el.querySelector('#chipK').addEventListener('click', (e) => { if (e.target.closest('[data-quitar]')) { extra = {}; cargar(); } });
     let t;
     el.querySelector('#qContratos').addEventListener('input', () => { clearTimeout(t); t = setTimeout(cargar, 300); });
     el.querySelector('#fEstadoK').addEventListener('change', cargar);
+    el.querySelector('[data-exportar]').addEventListener('click', () => exportar('contratos', { q: el.querySelector('#qContratos').value, estado: el.querySelector('#fEstadoK').value, ...extra, etiqueta: undefined })
+      .catch((err) => { if (err.message !== 'sesion') toast(err.message, true); }));
     el.querySelector('#btnNuevoContrato').addEventListener('click', () => nuevoContrato().catch((err) => toast(err.message, true)));
     el.querySelector('#tbContratos').addEventListener('click', (e) => {
       const f = e.target.closest('[data-contrato]');

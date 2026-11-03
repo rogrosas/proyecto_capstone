@@ -84,4 +84,63 @@ async function crearContrato(db, c) {
   return r.rows[0];
 }
 
-module.exports = { servicioDePlan, crearServicioDePlan, clientePorRut, representante, crearCliente, comunas, puntoDeVenta, crearContrato };
+/* ---------- Pago en línea: la compra sigue solo con el pago aprobado ---------- */
+
+async function asignarTransaccion(db, pagoId, idTransaccion) {
+  await db.query('UPDATE pagos SET id_transaccion = $2 WHERE id = $1', [pagoId, idTransaccion]);
+}
+
+// Pago por su id en la pasarela, con su contrato y la compra (bloquea la fila: dos confirmaciones no se pisan)
+async function pagoPorTransaccion(db, idTransaccion) {
+  const r = await db.query(`
+    SELECT p.id, p.estado, p.monto, p.pasarela, p.cuota, p.total_cuotas, p.contrato_id, p.id_transaccion,
+           k.folio, k.estado AS estado_contrato, k.datos_formulario, k.cliente_id
+      FROM pagos p JOIN contratos k ON k.id = p.contrato_id
+     WHERE p.id_transaccion = $1
+       FOR UPDATE OF p`, [idTransaccion]);
+  return r.rows[0] || null;
+}
+
+async function aprobarPago(db, id, respuesta) {
+  const r = await db.query(`
+    UPDATE pagos SET estado = 'pagado', fecha_pago = now(), conciliado_en = now(),
+                     codigo_autorizacion = $2, ultimos_4 = $3, respuesta_pasarela = $4
+     WHERE id = $1 AND estado = 'pendiente' RETURNING id`,
+  [id, respuesta.codigo_autorizacion || null, respuesta.ultimos_4 || null, JSON.stringify(respuesta)]);
+  return r.rowCount > 0;
+}
+
+async function rechazarPago(db, id, respuesta) {
+  await db.query("UPDATE pagos SET estado = 'rechazado', respuesta_pasarela = $2 WHERE id = $1 AND estado = 'pendiente'", [id, JSON.stringify(respuesta)]);
+}
+
+// Nuevo intento de la misma cuota después de un rechazo
+async function nuevoIntento(db, p) {
+  const r = await db.query(`
+    INSERT INTO pagos (contrato_id, monto, estado, pasarela, cuota, total_cuotas)
+    VALUES ($1, $2, 'pendiente', $3, $4, $5) RETURNING id`, [p.contrato_id, p.monto, p.pasarela, p.cuota, p.total_cuotas]);
+  return r.rows[0].id;
+}
+
+async function activarContrato(db, id) {
+  await db.query("UPDATE contratos SET estado = 'activo' WHERE id = $1 AND estado = 'pendiente'", [id]);
+}
+
+// Compra de la tienda: contrato, cliente y lo que se ingresó en el formulario
+async function compra(db, contratoId) {
+  const r = await db.query(`
+    SELECT k.id, k.folio, k.datos_formulario, k.cliente_id, cl.rut AS cliente_rut, cl.tipo_persona
+      FROM contratos k JOIN clientes cl ON cl.id = k.cliente_id WHERE k.id = $1`, [contratoId]);
+  return r.rows[0] || null;
+}
+
+// Resultado de la entrega (documentos y cuenta) para mostrarlo al volver de la pasarela
+async function guardarEntrega(db, contratoId, entrega) {
+  await db.query(`UPDATE contratos SET datos_formulario = jsonb_set(COALESCE(datos_formulario, '{}'), '{entrega}', $2::jsonb)
+                   WHERE id = $1`, [contratoId, JSON.stringify(entrega)]);
+}
+
+module.exports = {
+  servicioDePlan, crearServicioDePlan, clientePorRut, representante, crearCliente, comunas, puntoDeVenta, crearContrato,
+  asignarTransaccion, pagoPorTransaccion, aprobarPago, rechazarPago, nuevoIntento, activarContrato, compra, guardarEntrega
+};

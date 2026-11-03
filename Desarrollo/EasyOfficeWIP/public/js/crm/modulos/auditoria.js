@@ -1,6 +1,6 @@
 /* CRM · Auditoría (registros_actividad) — solo administradores */
-import { get } from '../api.js';
-import { esc, fechaHora, filaVacia } from '../util.js';
+import { get, exportar } from '../api.js';
+import { esc, fechaHora, filaVacia, toast } from '../util.js';
 
 const ACC = { INSERT: ['grn', 'Creó'], UPDATE: ['amb', 'Modificó'], DELETE: ['red', 'Eliminó'], LOGIN: ['blu', 'Ingresó'], LOGOUT: ['gry', 'Salió'] };
 let contenedor = null;
@@ -34,6 +34,7 @@ export default {
         <input class="search" id="qAud" placeholder="Buscar por usuario, tabla o id de registro…">
         <select class="fl" id="fAudAccion"><option value="">Todas las acciones</option><option>INSERT</option><option>UPDATE</option><option>DELETE</option><option>LOGIN</option><option>LOGOUT</option></select>
         <select class="fl" id="fAudDias"><option value="7">Últimos 7 días</option><option value="30">Últimos 30 días</option></select>
+        <button class="btn btn-o" data-exportar title="Descargar este listado como CSV para Excel">Exportar a Excel</button>
       </div>
       <div class="panel tbl-panel tbl-wrap"><table>
         <thead><tr><th>Fecha / hora</th><th>Usuario</th><th>Rol</th><th>Acción</th><th>Tabla</th><th>Registro</th></tr></thead>
@@ -43,6 +44,8 @@ export default {
     el.querySelector('#qAud').addEventListener('input', () => { clearTimeout(t); t = setTimeout(cargar, 300); });
     el.querySelector('#fAudAccion').addEventListener('change', cargar);
     el.querySelector('#fAudDias').addEventListener('change', cargar);
+    el.querySelector('[data-exportar]').addEventListener('click', () => exportar('auditoria', { q: el.querySelector('#qAud').value, accion: el.querySelector('#fAudAccion').value, dias: el.querySelector('#fAudDias').value })
+      .catch((err) => { if (err.message !== 'sesion') toast(err.message, true); }));
     await cargar();
   }
 };

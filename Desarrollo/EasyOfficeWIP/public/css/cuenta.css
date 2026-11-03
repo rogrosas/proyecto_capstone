@@ -104,3 +104,9 @@ body.con-revision{overflow:hidden;}
 .tk-d{white-space:pre-wrap;font-size:13.5px;margin-top:8px;color:var(--text);}
 .tk-r{white-space:pre-wrap;font-size:13.5px;margin-top:10px;border-left:3px solid var(--green);padding-left:12px;}
 @media(max-width:640px){.revision{padding:0;}.rv{height:100vh;max-width:none;}.rv-acc .btn{flex:1;}}
+
+/* ===== Saldo de firmas ===== */
+.saldo-f{display:flex;gap:28px;margin-top:12px;flex-wrap:wrap;}
+.saldo-f div{display:flex;flex-direction:column;}
+.saldo-f b{font-family:'Lora',serif;font-size:26px;color:var(--ink);line-height:1;}
+.saldo-f span{font-size:12px;color:var(--muted);margin-top:4px;}

@@ -19,8 +19,15 @@ const v = require('../validacion');
 const ESTADOS = ['pendiente', 'activo', 'vencido', 'cancelado'];
 const LIMITE = 500;
 
-async function listar(usuario, { q, estado }) {
-  const filtros = { texto: String(q || '').trim().slice(0, 80), estado: ESTADOS.includes(estado) ? estado : '' };
+async function listar(usuario, { q, estado, mes, ejecutivo, desde, hasta }) {
+  const filtros = {
+    texto: String(q || '').trim().slice(0, 80), estado: ESTADOS.includes(estado) ? estado : '',
+    mes: /^\d{4}-\d{2}$/.test(String(mes || '')) ? mes : '',
+    ejecutivo: v.id(ejecutivo, 'Ejecutivo', { opcional: true }),
+    // Creados en un período (ventas del tablero)
+    desde: v.fecha(desde, 'Desde', { opcional: true }),
+    hasta: v.fecha(hasta, 'Hasta', { opcional: true })
+  };
   return { contratos: await conUsuario(usuario, (db) => contratosRepo.listar(db, filtros, LIMITE)) };
 }
 

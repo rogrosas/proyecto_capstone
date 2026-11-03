@@ -6,6 +6,7 @@ import { esc, clp, CICLO } from './util.js';
 
 const id = new URLSearchParams(location.search).get('id');
 const raiz = document.getElementById('contrato');
+document.getElementById('btnImprimir')?.addEventListener('click', () => window.print());
 const v = (x) => esc(x ?? '—');
 const persona = (nombre, rut, nac, ec, prof) =>
   `<b>${v(nombre)}</b>${nac ? `, ${esc(nac)}` : ''}${ec ? `, ${esc(ec)}` : ''}${prof ? `, ${esc(prof)}` : ''}, cédula de identidad N° ${v(rut)}`;

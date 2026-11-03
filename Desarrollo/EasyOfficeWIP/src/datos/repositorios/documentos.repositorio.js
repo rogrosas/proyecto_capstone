@@ -3,6 +3,7 @@
    (documentos + clientes, contratos, plantillas_documento y usuarios).
    ========================================================= */
 const { num } = require('../conversion');
+const { POR_REVISAR } = require('../sql/fragmentos');
 
 async function contarPorEstado(db) {
   const r = await db.query('SELECT estado, count(*) AS n FROM documentos GROUP BY estado');
@@ -12,9 +13,10 @@ async function contarPorEstado(db) {
 /**
  * revision: null = todos, true = solo los que requieren revisión, false = solo automáticos
  */
-async function listar(db, { revision }, limite) {
+async function listar(db, { revision, porRevisar = false, estados = null }, limite) {
   const r = await db.query(`
     SELECT d.id, d.tipo, d.estado, d.requiere_revision, d.codigo_verificacion, d.estado_cliente,
+           ${POR_REVISAR('d')} AS por_revisar, d.url_archivo IS NOT NULL AND d.url_archivo !~* '^https?://' AS con_word,
            d.generado_en::date::text AS generado, d.firmado_en::date::text AS firmado,
            cl.razon_social AS cliente, k.folio, p.tipo_documento AS plantilla,
            ue.nombre AS ejecutivo, ur.nombre AS revisor
@@ -25,8 +27,10 @@ async function listar(db, { revision }, limite) {
       LEFT JOIN usuarios ue ON ue.id = d.ejecutivo_id
       LEFT JOIN usuarios ur ON ur.id = d.revisado_por
      WHERE ($1::boolean IS NULL OR d.requiere_revision = $1)
-     ORDER BY (d.estado = 'en_revision') DESC, d.generado_en DESC
-     LIMIT $2`, [revision, limite]);
+       AND (NOT $3::boolean OR ${POR_REVISAR('d')})
+       AND ($4::text[] IS NULL OR d.estado = ANY($4))
+     ORDER BY ${POR_REVISAR('d')} DESC, d.generado_en DESC
+     LIMIT $2`, [revision, limite, porRevisar, estados]);
   return r.rows;
 }
 
@@ -51,7 +55,8 @@ async function obtener(db, id) {
            d.generado_en::date::text AS generado,
            d.estado_cliente, to_char(d.publicado_en, 'YYYY-MM-DD HH24:MI') AS publicado_en,
            to_char(d.aceptado_en, 'YYYY-MM-DD HH24:MI') AS aceptado_en, d.aceptado_por, d.version_aceptada,
-           p.entrega
+           p.entrega, d.firma_proveedor, to_char(d.enviado_firma_en, 'YYYY-MM-DD HH24:MI') AS enviado_firma_en,
+           d.archivo_firmado IS NOT NULL AS con_firmado, d.hash_firmado
       FROM documentos d
       JOIN clientes cl ON cl.id = d.cliente_id
       LEFT JOIN contratos k ON k.id = d.contrato_id
@@ -84,7 +89,8 @@ async function porCliente(db, clienteId) {
   const r = await db.query(`
     SELECT d.id, d.tipo, d.estado, d.requiere_revision, k.folio, d.generado_en::date::text AS generado,
            d.firmado_en::date::text AS firmado, d.codigo_verificacion, d.url_archivo,
-           d.estado_cliente, d.publicado_en::date::text AS publicado, d.aceptado_en::date::text AS aceptado
+           d.estado_cliente, d.publicado_en::date::text AS publicado, d.aceptado_en::date::text AS aceptado,
+           ${POR_REVISAR('d')} AS por_revisar, d.archivo_firmado IS NOT NULL AS con_firmado
       FROM documentos d LEFT JOIN contratos k ON k.id = d.contrato_id
      WHERE d.cliente_id = $1 ORDER BY d.generado_en DESC`, [clienteId]);
   return r.rows;
@@ -138,7 +144,7 @@ module.exports = {
   contarPorEstado, listar, aprobar,
   obtener, partes, clausulas, porCliente, tipoDePlantilla, crear, agregarParte, agregarClausula, estadoActual, cambiarEstado,
   generadoVigente, guardarArchivo, archivoDe, registrarVersion, ultimaVersion,
-  entregaDe, fijarEntrega, aceptar, objetar
+  entregaDe, fijarEntrega, aprobarParaPublicar, aceptar, objetar
 };
 
 /* ---------- Archivos Word generados ---------- */
@@ -196,12 +202,21 @@ async function registrarVersion(db, id, version, urlArchivo, hash) {
 async function entregaDe(db, id, clienteId = null) {
   const r = await db.query(`
     SELECT d.id, d.cliente_id, d.contrato_id, d.tipo, d.estado, d.estado_cliente, d.url_archivo,
-           d.publicado_en, d.aceptado_en, d.aceptado_por, k.folio, cl.razon_social AS cliente, cl.email AS cliente_email
+           d.publicado_en, d.aceptado_en, d.aceptado_por, k.folio, cl.razon_social AS cliente, cl.email AS cliente_email,
+           cl.tipo_persona, d.archivo_firmado
       FROM documentos d
       JOIN clientes cl ON cl.id = d.cliente_id
       LEFT JOIN contratos k ON k.id = d.contrato_id
      WHERE d.id = $1 AND ($2::int IS NULL OR d.cliente_id = $2)`, [id, clienteId]);
   return r.rows[0] || null;
+}
+
+// Aprobación del personal al publicar un Word al cliente: queda quién lo aprobó y cuándo (como aprobar())
+async function aprobarParaPublicar(db, id) {
+  const r = await db.query(`
+    UPDATE documentos SET estado = 'aprobado', revisado_por = app_usuario(), revisado_en = now()
+     WHERE id = $1 AND estado IN ('borrador', 'en_revision') RETURNING id`, [id]);
+  return r.rowCount > 0;
 }
 
 // 'por_revisar' publica el borrador al cliente; null lo retira (por ejemplo, al regenerarlo para revisión interna)
@@ -224,7 +239,10 @@ async function aceptar(db, id, clienteId, { email, ip, version }) {
 
 async function objetar(db, id, clienteId) {
   const r = await db.query(`
-    UPDATE documentos SET estado_cliente = 'objetado'
+    UPDATE documentos
+       SET estado_cliente = 'objetado',
+           -- el cliente lo rechaza: vuelve a quedar regenerable (rechazado → borrador al generar otra versión)
+           estado = CASE WHEN estado IN ('aprobado', 'en_revision') THEN 'rechazado' ELSE estado END
      WHERE id = $1 AND cliente_id = $2 AND estado_cliente = 'por_revisar' RETURNING id`, [id, clienteId]);
   return r.rowCount > 0;
 }
