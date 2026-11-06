@@ -75,7 +75,8 @@ router.get('/plantillas/:id/preguntas', a(entrega.preguntasGeneracion));   // da
 router.get('/documentos/:id/borrador', a(entrega.borradorPersonal));
 router.post('/documentos/:id/publicar', a(entrega.publicar));
 router.get('/tickets', a(entrega.listarTickets));
-router.patch('/tickets/:id', a(entrega.atenderTicket));
+router.get('/tickets/:id', a(entrega.detalleTicket));               // conversación del ticket
+router.patch('/tickets/:id', a(entrega.atenderTicket));            // responder y/o cambiar el estado
 
 // Documentos de la tienda (solo administradores): planes, entrega y datos de cada marca del Word
 router.get('/admin/documentos-tienda', a(entrega.documentosTienda));

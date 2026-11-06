@@ -312,12 +312,31 @@
         <div><h2 style="font-size:18px;">Mis tickets</h2><p>Reclamos sobre documentos y consultas a la administración.</p></div>
         <button class="btn btn-o" data-ticket-nuevo>Enviar una consulta</button>
       </div>
-      ${tickets.length ? tickets.map((t) => `
-        <div class="panel tk">
-          <div class="tk-h"><b>#${t.id} · ${esc(motivos[t.motivo] || t.motivo)}</b> ${badge(TICKET, t.estado)}<span class="sb">${fecha(t.creado_en)}${t.documento ? ` · ${esc(t.documento)}` : ''}</span></div>
-          <div class="tk-d">${esc(t.detalle)}</div>
-          ${t.respuesta ? `<div class="tk-r"><b>Respuesta de Easy Office:</b>\n${esc(t.respuesta)}</div>` : ''}
-        </div>`).join('') : '<div class="panel"><div class="empty">No ha enviado tickets.</div></div>'}`;
+      ${tickets.length ? tickets.map((t) => {
+        // Abierto por defecto si Easy Office le escribió y espera su lectura o respuesta
+        const nuevo = t.ultimo_autor === 'personal' && !['cerrado'].includes(t.estado);
+        return `<details class="panel tk" ${nuevo ? 'open' : ''}>
+          <summary class="tk-h"><b>#${t.id} · ${esc(motivos[t.motivo] || t.motivo)}</b> ${badge(TICKET, t.estado)}
+            ${nuevo ? '<span class="bg grn">Nueva respuesta</span>' : ''}
+            <span class="sb">${fecha(t.creado_en)}${t.documento ? ` · ${esc(t.documento)}` : ''} · ${t.mensajes || 1} mensaje(s)</span></summary>
+          ${conversacion(t.conversacion || [])}
+          ${t.estado === 'cerrado' ? '<p class="sb" style="margin:10px 0 0;">Este ticket está cerrado. Si necesita algo más, envíe una nueva consulta.</p>' : `
+          <div class="chat-resp">
+            <textarea rows="2" maxlength="4000" placeholder="Escriba su respuesta…" data-tk-texto="${t.id}"></textarea>
+            <div class="chat-acc"><button class="btn btn-g" data-tk-responder="${t.id}">Enviar</button></div>
+          </div>`}
+        </details>`;
+      }).join('') : '<div class="panel"><div class="empty">No ha enviado tickets.</div></div>'}`;
+  }
+
+  // Conversación de un ticket: usted a la derecha, Easy Office a la izquierda, los cambios de estado al centro
+  const horaCorta = (s) => (s ? `${fecha(s)} ${s.slice(11, 16)}` : '');
+  function conversacion(mensajes) {
+    return `<div class="chat">${mensajes.map((m) => m.autor_tipo === 'sistema'
+      ? `<div class="msg sistema">${esc(m.texto)} · ${horaCorta(m.fecha)}</div>`
+      : `<div class="msg ${m.autor_tipo === 'cliente' ? 'mio' : 'otro'}">
+          <div class="quien">${m.autor_tipo === 'cliente' ? 'Usted' : `${esc(m.autor)} · Easy Office`}</div>
+          <div class="txt">${esc(m.texto)}</div><div class="cuando">${horaCorta(m.fecha)}</div></div>`).join('')}</div>`;
   }
 
   // Formulario de ticket (sobre un documento o una consulta general)
@@ -413,13 +432,17 @@
 
   function pagos(p) {
     $('v-pagos').innerHTML = `
-      <div class="sh"><h2>Pagos</h2><p>Historial de pagos registrados en su cuenta.</p></div>
+      <div class="sh"><h2>Pagos</h2><p>Historial de pagos registrados en su cuenta. Las cuotas pendientes las puede pagar aquí en línea.</p></div>
+      ${p.pagos.filter((x) => x.estado === 'pendiente' && x.contrato).map((x) => `<div class="alert"><div class="ai">$</div><div>
+        <div class="at">Cuota ${x.cuota} de ${x.total_cuotas} pendiente: ${clp(x.monto)}</div><div class="ad">Contrato ${esc(x.referencia)}.</div></div>
+        <div class="aa"><button class="btn btn-g" data-pagar-cuota="${x.id}">Pagar ahora</button></div></div>`).join('')}
       <div class="panel tbl-wrap" style="padding:10px 22px;"><table>
-        <thead><tr><th>Fecha</th><th>Contrato</th><th>Monto</th><th>Medio</th><th>Cuota</th><th>Estado</th></tr></thead>
+        <thead><tr><th>Fecha</th><th>Contrato</th><th>Monto</th><th>Medio</th><th>Cuota</th><th>Estado</th><th></th></tr></thead>
         <tbody>${p.pagos.length ? p.pagos.map((x) => `<tr>
           <td>${fecha(x.fecha)}</td><td class="mono">${esc(x.referencia)}</td><td class="money">${clp(x.monto)}</td>
-          <td>${esc(PASARELA[x.pasarela] || x.pasarela || '—')}</td><td>${x.cuota} de ${x.total_cuotas}</td><td>${badge(PAGO, x.estado)}</td></tr>`).join('')
-          : '<tr><td colspan="6" class="empty">Aún no hay pagos registrados.</td></tr>'}</tbody>
+          <td>${esc(PASARELA[x.pasarela] || x.pasarela || '—')}</td><td>${x.cuota} de ${x.total_cuotas}</td><td>${badge(PAGO, x.estado)}</td>
+          <td class="right">${x.estado === 'pendiente' && x.contrato ? `<button class="btn btn-o btn-row" data-pagar-cuota="${x.id}">Pagar</button>` : ''}</td></tr>`).join('')
+          : '<tr><td colspan="7" class="empty">Aún no hay pagos registrados.</td></tr>'}</tbody>
       </table></div>
       <h3 class="sub-t">Detalle por contrato</h3>
       <div class="g2e">${p.contratos.map((k) => `
@@ -481,9 +504,28 @@
   }
 
   document.addEventListener('click', async (e) => {
-    const t = e.target.closest('[data-tab],[data-action="logout"],[data-revisar],[data-cerrar-rev],[data-ticket-nuevo]');
+    const t = e.target.closest('[data-tab],[data-action="logout"],[data-revisar],[data-cerrar-rev],[data-ticket-nuevo],[data-pagar-cuota],[data-tk-responder]');
     if (!t) return;
+    // Responder en la conversación de un ticket
+    if (t.dataset.tkResponder) {
+      const caja = document.querySelector(`[data-tk-texto="${t.dataset.tkResponder}"]`);
+      if (!caja.value.trim()) return caja.focus();
+      t.disabled = true;
+      try {
+        await api(`/tickets/${t.dataset.tkResponder}/mensajes`, { texto: caja.value.trim() });
+        await recargarPanel();
+        setTab('documentos');
+        document.querySelector(`[data-tk-texto="${t.dataset.tkResponder}"]`)?.closest('details')?.setAttribute('open', '');
+      } catch (err) { t.disabled = false; alert(err.message); }
+      return;
+    }
     if (t.dataset.revisar) return abrirRevision(t.dataset.revisar);
+    // Cuota pendiente: a la pasarela de pago, que vuelve a Mi cuenta
+    if (t.dataset.pagarCuota) {
+      t.disabled = true;
+      try { location.assign((await api(`/pagos/${t.dataset.pagarCuota}/pagar`, {})).pago.url); } catch (err) { t.disabled = false; alert(err.message); }
+      return;
+    }
     if ('cerrarRev' in t.dataset) return cerrarRevision();
     if ('ticketNuevo' in t.dataset) return consultaGeneral();
     if (t.dataset.tab) return setTab(t.dataset.tab);

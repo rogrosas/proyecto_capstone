@@ -118,7 +118,15 @@ async function registrarEvento(e) {
   });
 
   if (r.completo) await avisarFirmado(r.documento, r.completo.codigo);
-  if (r.ticket) console.log(`[firma] ${r.documento.nombre} rechazó la firma del documento ${r.documento.documento_id}: ticket #${r.ticket}`);
+  if (r.ticket) {
+    console.log(`[firma] ${r.documento.nombre} rechazó la firma del documento ${r.documento.documento_id}: ticket #${r.ticket}`);
+    await require('./personal.servicio').avisar(r.documento.cliente_id, {
+      asunto: `Firma rechazada: ${tituloDe(r.documento)}`,
+      titulo: 'Un firmante rechazó la firma',
+      lineas: [`${r.documento.nombre} rechazó firmar "${tituloDe(r.documento)}". Motivo: ${motivo}`, `Se abrió el ticket #${r.ticket}: respóndalo, corrija el documento y vuelva a publicarlo.`],
+      seccion: 'tickets'
+    });
+  }
   return { ok: true, evento, completo: !!r.completo, codigo: r.completo?.codigo || null, faltan: r.faltan || 0 };
 }
 

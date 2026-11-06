@@ -15,7 +15,9 @@
   });
 
   function error(msg) { $('error').textContent = msg; $('error').hidden = false; }
-  const volver = () => location.assign(`/contratar?pago=${encodeURIComponent(token)}`);
+  // Vuelve a la tienda con el resultado, o a Mi cuenta si era una cuota posterior
+  let retorno = null;
+  const volver = () => location.assign(retorno || `/contratar?pago=${encodeURIComponent(token)}`);
 
   function rechazado() {
     $('panel').querySelector('.gate-body').innerHTML = `<div class="resultado mal"><div class="ic">✕</div><h2>Pago rechazado</h2>
@@ -32,6 +34,7 @@
     if (!token) return error('Falta el enlace de pago. Vuelva a la tienda.');
     let d;
     try { d = await api(''); } catch (e) { return error(e.message); }
+    retorno = d.retorno || null;
     if (d.estado === 'pagado') return volver();
     $('panel').hidden = false;
     $('titulo').textContent = `Pagar ${clp(d.monto)}`;
@@ -48,6 +51,7 @@
     boton.textContent = 'Procesando…';
     try {
       const r = await api('', 'POST', { accion });
+      retorno = r.retorno || retorno;
       if (r.estado === 'pagado') volver(); else rechazado();
     } catch (err) {
       error(err.message);

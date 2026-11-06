@@ -36,6 +36,7 @@ module.exports = {
   publicar: responder((req) => entrega.publicar(req.usuario, req.params.id)),
   listarTickets: responder((req) => entrega.listarTickets(req.usuario, { estado: req.query.estado, documento: req.query.documento })),
   atenderTicket: responder((req) => entrega.atenderTicket(req.usuario, req.params.id, req.body)),
+  detalleTicket: responder((req) => entrega.detalleTicket(req.usuario, req.params.id)),
   preguntasGeneracion: responder((req) => archivosServicio.preguntasGeneracion(req.usuario, req.params.id, req.query.contrato)),
   documentosTienda: responder((req) => archivosServicio.documentosTienda(req.usuario)),
   camposPlantilla: responder((req) => archivosServicio.camposPlantilla(req.usuario, req.params.id)),
@@ -48,6 +49,7 @@ module.exports = {
   ticket: responder((req) => entrega.enviarTicket(req.cliente, null, req.body)),
   archivoFinal: async (req, res) => enviarDocx(res, await entrega.archivoFinal(req.cliente, req.params.id)),
   ticketsCliente: responder((req) => entrega.ticketsCliente(req.cliente)),
+  responderTicket: responder((req) => entrega.responderTicket(req.cliente, req.params.id, req.body)),
 
   // Tienda
   preguntasPlan: responder((req) => tienda.preguntas(req.params.codigo)),
@@ -56,5 +58,6 @@ module.exports = {
   // Pasarela de pago: estado, resultado (aprobado / rechazado) y nuevo intento
   estadoPago: responder((req) => tienda.estadoPago(req.params.token)),
   confirmarPago: responder((req) => tienda.confirmarPago(req.params.token, req.body, req.ip)),
-  reintentarPago: responder((req) => tienda.reintentarPago(req.params.token))
+  reintentarPago: responder((req) => tienda.reintentarPago(req.params.token)),
+  pagarCuota: responder((req) => tienda.pagarCuota(req.cliente, req.params.id))
 };

@@ -80,6 +80,17 @@ async function actualizar(db, id, cambios) {
   return r.rowCount > 0;
 }
 
+// Quién atiende a un cliente: los ejecutivos activos de sus contratos; si no tiene, los administradores
+async function equipoDeCliente(clienteId, rolesAdmin) {
+  const r = await consultaSistema(`
+    SELECT DISTINCT u.email FROM contratos k JOIN usuarios u ON u.id = k.ejecutivo_id
+     WHERE k.cliente_id = $1 AND u.activo AND k.estado <> 'cancelado'`, [clienteId]);
+  if (r.rows.length) return r.rows.map((x) => x.email);
+  const a = await consultaSistema(`SELECT u.email FROM usuarios u JOIN roles ro ON ro.id = u.rol_id
+                                    WHERE u.activo AND ro.rol = ANY($1) ORDER BY u.id`, [rolesAdmin]);
+  return a.rows.map((x) => x.email);
+}
+
 module.exports = {
-  buscarPorEmail, porId, registrarFallo, ingresoExitoso, guardarTotp, cambiarClave, registrarAcceso, permisosDe, listar, crear, actualizar
+  equipoDeCliente, buscarPorEmail, porId, registrarFallo, ingresoExitoso, guardarTotp, cambiarClave, registrarAcceso, permisosDe, listar, crear, actualizar
 };

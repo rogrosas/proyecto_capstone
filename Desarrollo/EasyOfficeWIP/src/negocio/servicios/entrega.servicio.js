@@ -164,16 +164,39 @@ async function listarTickets(usuario, { estado, documento }) {
   }));
 }
 
+const ETIQUETA_TICKET = { abierto: 'abierto', en_proceso: 'en proceso', resuelto: 'resuelto', cerrado: 'cerrado' };
+
+// Conversación de un ticket (CRM)
+async function detalleTicket(usuario, id) {
+  id = v.id(id, 'Ticket');
+  return conUsuario(usuario, async (db) => {
+    const ticket = await ticketsRepo.obtener(db, id);
+    if (!ticket) throw errores.noEncontrado('Ticket no encontrado o fuera de su cartera.');
+    return { ticket, mensajes: await ticketsRepo.mensajes(db, id), motivos: MOTIVOS };
+  });
+}
+
+/*
+ * El personal responde (mensaje) y/o cambia el estado. Cada mensaje queda con su autor y hora; un cambio
+ * de estado queda como mensaje del sistema. Responder un ticket abierto lo deja "en proceso".
+ */
 async function atenderTicket(usuario, id, d = {}) {
   id = v.id(id, 'Ticket');
-  const estado = v.opcion(d.estado, ESTADOS_TICKET, 'Estado');
   const respuesta = v.texto(d.respuesta, 'Respuesta', { opcional: true, max: 4000 });
-  if (['resuelto', 'cerrado'].includes(estado) && !respuesta) {
-    const actual = await conUsuario(usuario, (db) => ticketsRepo.obtener(db, id));
-    if (!actual?.respuesta) throw errores.solicitudInvalida('Escriba una respuesta para el cliente antes de resolver o cerrar el ticket.');
-  }
+  const pedido = v.opcion(d.estado, ESTADOS_TICKET, 'Estado', { opcional: true });
+  if (!respuesta && !pedido) throw errores.solicitudInvalida('Escriba un mensaje o elija un estado.');
   const t = await conUsuario(usuario, async (db) => {
-    if (!(await ticketsRepo.atender(db, id, { estado, respuesta }))) throw errores.noEncontrado('Ticket no encontrado o fuera de su cartera.');
+    const actual = await ticketsRepo.obtener(db, id);
+    if (!actual) throw errores.noEncontrado('Ticket no encontrado o fuera de su cartera.');
+    const estado = pedido || (respuesta && actual.estado === 'abierto' ? 'en_proceso' : actual.estado);
+    if (['resuelto', 'cerrado'].includes(estado) && !respuesta && !actual.respuesta) {
+      throw errores.solicitudInvalida('Escriba una respuesta para el cliente antes de resolver o cerrar el ticket.');
+    }
+    if (respuesta) await ticketsRepo.agregarMensaje(db, { ticket_id: id, autor_tipo: 'personal', texto: respuesta });
+    if (estado !== actual.estado) {
+      await ticketsRepo.agregarMensaje(db, { ticket_id: id, autor_tipo: 'sistema', texto: `${usuario.nombre} cambió el estado a "${ETIQUETA_TICKET[estado]}".` });
+    }
+    await ticketsRepo.atender(db, id, { estado, respuesta });
     return ticketsRepo.obtener(db, id);
   });
   if (respuesta) {
@@ -233,6 +256,12 @@ async function enviarTicket(sesion, id, d = {}) {
     return ticketsRepo.crear(db, { cliente_id: sesion.id, documento_id: documentoId, email: sesion.email, motivo, detalle });
   });
   console.log(`[tickets] Nuevo ticket #${ticketId} de ${sesion.razon_social} (${sesion.email}): ${MOTIVOS[motivo]}`);
+  await require('./personal.servicio').avisar(sesion.id, {
+    asunto: `Nuevo ticket #${ticketId} de ${sesion.razon_social}`,
+    titulo: 'Un cliente envió un ticket',
+    lineas: [`${sesion.razon_social} (${sesion.email}) · ${MOTIVOS[motivo]}${id ? ' · sobre un documento' : ''}:`, detalle],
+    seccion: 'tickets'
+  });
   return { ok: true, id: ticketId, mensaje: `Recibimos su ticket #${ticketId}. Le responderemos por correo y en esta misma sección.` };
 }
 
@@ -244,12 +273,40 @@ async function archivoFinal(sesion, id) {
   return { nombre: doc.url_archivo.split('/').pop(), contenido: await archivos.leer(doc.url_archivo) };
 }
 
+// Mi cuenta: los tickets del cliente, cada uno con su conversación
 async function ticketsCliente(sesion) {
-  return conSistema(async (db) => ({ tickets: await ticketsRepo.porCliente(db, sesion.id), motivos: MOTIVOS }));
+  return conSistema(async (db) => {
+    const tickets = await ticketsRepo.porCliente(db, sesion.id);
+    for (const t of tickets) t.conversacion = await ticketsRepo.mensajes(db, t.id);
+    return { tickets, motivos: MOTIVOS };
+  });
+}
+
+// El cliente responde en la conversación. Si el ticket estaba resuelto, se reabre; uno cerrado ya no admite mensajes.
+async function responderTicket(sesion, id, d = {}) {
+  id = v.id(id, 'Ticket');
+  const texto = v.texto(d.texto, 'Mensaje', { max: 4000 });
+  const t = await conSistema(async (db) => {
+    const x = await ticketsRepo.obtener(db, id);
+    if (!x || x.cliente_id !== sesion.id) throw errores.noEncontrado('Ticket no encontrado.');
+    if (x.estado === 'cerrado') throw errores.conflicto('Este ticket está cerrado. Si necesita algo más, envíe una nueva consulta.');
+    await ticketsRepo.agregarMensaje(db, { ticket_id: id, autor_tipo: 'cliente', email: sesion.email, texto });
+    if (await ticketsRepo.reabrir(db, id)) {
+      await ticketsRepo.agregarMensaje(db, { ticket_id: id, autor_tipo: 'sistema', texto: 'El cliente respondió: el ticket se reabrió.' });
+    } else await ticketsRepo.tocar(db, id);
+    return x;
+  });
+  await require('./personal.servicio').avisar(sesion.id, {
+    asunto: `Respuesta del cliente en el ticket #${id} · ${sesion.razon_social}`,
+    titulo: `El cliente respondió el ticket #${id}`,
+    lineas: [`${sesion.razon_social} (${sesion.email}) escribió${t.documento ? ` sobre ${t.documento}` : ''}:`, texto],
+    seccion: 'tickets'
+  });
+  return { ok: true };
 }
 
 module.exports = {
   MOTIVOS, borradorHtml, avisarPublicado,
-  borradorPersonal, publicar, listarTickets, atenderTicket,
-  borradorCliente, aceptar, enviarTicket, archivoFinal, ticketsCliente
+  borradorPersonal, publicar, listarTickets, detalleTicket, atenderTicket,
+  borradorCliente, aceptar, enviarTicket, archivoFinal, ticketsCliente, responderTicket
 };

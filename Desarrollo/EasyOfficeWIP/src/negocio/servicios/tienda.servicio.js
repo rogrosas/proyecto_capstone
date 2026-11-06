@@ -31,6 +31,9 @@ const archivosServicio = require('./archivos.servicio');
 const entregaServicio = require('./entrega.servicio');
 const portalServicio = require('./portal.servicio');
 const pasarela = require('../../datos/pago');
+const correo = require('../../datos/correo');
+const personal = require('./personal.servicio');
+const { esc, boton, cuerpo, titulo, pie } = require('../../comun/correos');
 const campos = require('../camposDocumento');
 const v = require('../validacion');
 
@@ -153,6 +156,8 @@ async function comprar(datos, ip) {
     const punto = await tiendaRepo.puntoDeVenta(db, REGION[c.region]);
     if (!punto) throw errores.sinBaseDatos('La tienda no está configurada: falta una empresa emisora con sucursal activa.');
     const contrato = await tiendaRepo.crearContrato(db, {
+      // La venta queda en la cartera de un ejecutivo: el que ya atiende al cliente, o el con menos contratos
+      ejecutivo_id: await tiendaRepo.ejecutivoParaVenta(db, cliente.id),
       empresa_id: punto.empresa_id, cliente_id: cliente.id, sucursal_id: punto.sucursal_id,
       cuenta_recaudacion_id: punto.cuenta_id, link_pago: punto.cuenta_id ? null : 'Pago en línea (tienda)',
       duracion_meses: DURACION[plan.recur] || 12,
@@ -193,7 +198,9 @@ async function completarCompra(contratoId, ip) {
     const t = k.datos_formulario?.tienda || {};
     const documentos = [];
     for (const p of await plantillasRepo.porPlan(db, t.plan)) {
-      const g = await archivosServicio.generarEnTransaccion(db, { plantilla: { ...p, activo: true }, contratoId, respuestas: k.datos_formulario?.respuestas || {} });
+      const g = await archivosServicio.generarEnTransaccion(db, {
+        plantilla: { ...p, activo: true }, contratoId, respuestas: k.datos_formulario?.respuestas || {}, ejecutivoId: k.ejecutivo_id
+      });
       documentos.push({ id: g.documento_id, tipo: p.tipo_documento, publicado: g.publicado });
     }
     return { k, t, documentos };
@@ -229,6 +236,21 @@ async function completarCompra(contratoId, ip) {
   }
   const entrega = { cuenta, documentos: r.documentos.map(({ tipo, publicado }) => ({ tipo, publicado })) };
   await conSistema((db) => tiendaRepo.guardarEntrega(db, contratoId, entrega));
+
+  // Aviso al ejecutivo de la venta (o a los administradores): qué se vendió y qué espera su revisión
+  const plan = catalogoRepo.plan(t.plan);
+  const porRevisar = r.documentos.filter((x) => !x.publicado);
+  await personal.avisar(k.cliente_id, {
+    asunto: `Nueva venta en la tienda: ${k.folio} · ${k.cliente}`,
+    titulo: 'Nueva venta en la tienda',
+    lineas: [
+      `${k.cliente} contrató ${plan ? `${plan.fam} · ${plan.name}` : t.plan} (contrato ${k.folio}).`,
+      porRevisar.length
+        ? `Espera su revisión: ${porRevisar.map((x) => x.tipo).join(', ')}. Apruébelo y publíquelo al cliente desde Documentos.`
+        : 'Los documentos se enviaron solos al cliente; no requiere acción.'
+    ],
+    seccion: porRevisar.length ? 'documentos' : 'contratos'
+  });
   return entrega;
 }
 
@@ -247,10 +269,15 @@ async function estadoPago(token) {
   const id = pasarela.proveedor().leerToken(token);
   const p = await conSistema((db) => tiendaRepo.pagoPorTransaccion(db, id));
   if (!p) throw errores.noEncontrado('Pago no encontrado.');
+  // Una cuota posterior se paga desde Mi cuenta y la pasarela vuelve allá
+  if (p.cuota > 1) return { ...resumenDe(p), estado: p.estado, cuota: p.cuota, total_cuotas: p.total_cuotas, retorno: '/mi-cuenta' };
   return { ...resumenDe(p), estado: p.estado, ...(p.estado === 'pagado' ? p.datos_formulario?.entrega || {} : {}) };
 }
 
-// Resultado de la pasarela: aprobado → contrato activo, documentos y entrega; rechazado → se puede reintentar
+/*
+ * Resultado de la pasarela: aprobado → contrato activo, documentos y entrega (solo la primera vez);
+ * rechazado → se puede reintentar. Con pago en cuotas, al pagar una queda pendiente la siguiente.
+ */
 async function confirmarPago(token, d = {}, ip) {
   const prov = pasarela.proveedor();
   const id = prov.leerToken(token);
@@ -265,10 +292,46 @@ async function confirmarPago(token, d = {}, ip) {
     }
     if (!(await tiendaRepo.aprobarPago(db, p.id, prov.respuestaAprobada(id)))) throw errores.conflicto('El pago cambió mientras tanto.');
     await tiendaRepo.activarContrato(db, p.contrato_id);
-    return { p, aprobado: true };
+    return { p, aprobado: true, siguiente: await pagosRepo.crearSiguienteCuota(db, p.id) };
   });
-  if (!r.aprobado) return { ...resumenDe(r.p), estado: 'rechazado' };
+  if (!r.aprobado) return { ...resumenDe(r.p), estado: 'rechazado', ...(r.p.cuota > 1 ? { retorno: '/mi-cuenta' } : {}) };
+  if (r.siguiente) await avisarCuota(r.p.contrato_id, r.siguiente);
+  // Una cuota posterior no vuelve a generar documentos: la compra ya se entregó con la primera
+  if (r.p.estado_contrato !== 'pendiente') return { ...resumenDe(r.p), estado: 'pagado', cuota: r.p.cuota, retorno: '/mi-cuenta' };
   return { ...resumenDe(r.p), estado: 'pagado', ...(await completarCompra(r.p.contrato_id, ip)) };
+}
+
+// La cuota siguiente de un pago 50/50 queda pendiente: se le avisa al cliente para que la pague en Mi cuenta
+async function avisarCuota(contratoId, cuota) {
+  try {
+    const k = await conSistema((db) => tiendaRepo.compra(db, contratoId));
+    const monto = `$${Number(cuota.monto).toLocaleString('es-CL')}`;
+    for (const para of await portalRepo.contactos(k.cliente_id)) {
+      await correo.enviar({
+        para, asunto: `Cuota ${cuota.cuota} de ${cuota.total_cuotas} de su contrato ${k.folio}`,
+        texto: `Recibimos su pago. Le queda pendiente la cuota ${cuota.cuota} de ${cuota.total_cuotas} por ${monto}: puede pagarla en Mi cuenta (${config.appUrl}/mi-cuenta).`,
+        html: cuerpo(`${titulo('Recibimos su pago')}
+          <p>Gracias. Su contrato <b>${esc(k.folio)}</b> quedó activo.</p>
+          <p>Le queda pendiente la <b>cuota ${cuota.cuota} de ${cuota.total_cuotas}</b> por <b>${esc(monto)}</b>. Puede pagarla en línea desde Mi cuenta, en la sección Pagos.</p>
+          ${boton(`${config.appUrl}/mi-cuenta`, 'Pagar en Mi cuenta')}${pie}`)
+      });
+    }
+  } catch (err) { console.warn('[tienda] no se pudo avisar la cuota siguiente:', err.message); }
+}
+
+// Mi cuenta: pagar en línea una cuota pendiente de un contrato del cliente
+async function pagarCuota(sesion, pagoId) {
+  pagoId = v.id(pagoId, 'Pago');
+  if (!pasarela.activo()) throw errores.conflicto('El pago en línea no está disponible: transfiera a la cuenta indicada en su contrato.');
+  const prov = pasarela.proveedor();
+  return conSistema(async (db) => {
+    const p = await tiendaRepo.pagoDelCliente(db, pagoId, sesion.id);
+    if (!p) throw errores.noEncontrado('Pago no encontrado.');
+    if (p.estado !== 'pendiente') throw errores.conflicto('Este pago no está pendiente.');
+    const cobro = await prov.crearCobro({ pagoId: p.id, monto: p.monto, pasarela: p.pasarela || 'transbank' });
+    await tiendaRepo.asignarTransaccion(db, p.id, cobro.idTransaccion);
+    return { pago: { url: cobro.url } };
+  });
 }
 
 // Después de un rechazo: nuevo intento de la misma cuota, con un enlace nuevo a la pasarela
@@ -291,4 +354,4 @@ async function comunas() {
   return { comunas: await conSistema((db) => tiendaRepo.comunas(db)) };
 }
 
-module.exports = { preguntas, comprar, comunas, estadoPago, confirmarPago, reintentarPago };
+module.exports = { preguntas, comprar, comunas, estadoPago, confirmarPago, reintentarPago, pagarCuota, avisarCuota };

@@ -126,7 +126,7 @@ describe('Administración · documentos de la tienda', () => {
 
   describe('ejecutivo', () => {
     paso('login', () => X('POST', '/api/crm/login', { email: ctx.cred.ejec[0], password: ctx.cred.ejec[1] }));
-    paso('no ve tickets de clientes web sin ejecutivo', () => X('GET', '/api/crm/tickets'), (r) => r.status === 200 && r.tickets.length === 0);
+    paso('ve los tickets de los clientes web que se le asignaron', () => X('GET', '/api/crm/tickets'), (r) => r.status === 200 && r.tickets.length > 0);
     paso('documentos de la tienda → 403', () => X('GET', '/api/crm/admin/documentos-tienda'), (r) => r.status === 403);
     paso('publicar documento ajeno → 404', () => X('POST', '/api/crm/documentos/1/publicar'), (r) => r.status === 404);
   });

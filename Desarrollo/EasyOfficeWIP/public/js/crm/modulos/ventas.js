@@ -69,11 +69,11 @@ export async function cambiarEstadoPago(id, actual, alGuardar) {
   const op = await opciones();
   abrirModal({
     titulo: 'Cambiar estado del pago', ancho: 'sm',
-    contenido: formularioHTML([{ nombre: 'estado', etiqueta: 'Estado', tipo: 'select', requerido: true, valor: actual, ancho: 'full', opciones: op.estadosPago.map((p) => ({ valor: p, texto: p })), ayuda: 'Al marcar "pagado" sin fecha se registra la fecha de hoy.' }]),
+    contenido: formularioHTML([{ nombre: 'estado', etiqueta: 'Estado', tipo: 'select', requerido: true, valor: actual, ancho: 'full', opciones: op.estadosPago.map((p) => ({ valor: p, texto: p })), ayuda: 'Al marcar "pagado" sin fecha se registra la fecha de hoy, y si el contrato estaba pendiente queda activo.' }]),
     acciones: [{ texto: 'Cancelar', alHacer: alGuardar }, {
       texto: 'Guardar', clase: 'btn-g', alHacer: async (c) => {
-        await patch('/pagos/' + id, leerFormulario(c));
-        toast('Estado del pago actualizado.');
+        const r = await patch('/pagos/' + id, leerFormulario(c));
+        toast(r.contrato_activado ? `Pago confirmado: el contrato ${r.contrato_activado} quedó activo.` : 'Estado del pago actualizado.');
         recargarLista();
         if (alGuardar) alGuardar();
       }

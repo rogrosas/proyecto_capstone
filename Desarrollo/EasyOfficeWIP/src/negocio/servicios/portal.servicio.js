@@ -257,7 +257,7 @@ async function panel(sesion) {
       })),
       // Bolsas y planes con firmas incluidas: saldo vigente y últimos movimientos
       firmas: saldoFirmas && { ...saldoFirmas, movimientos: await firmaRepo.movimientos(db, sesion.id, 10) },
-      pagos: pagos.map((p) => ({ fecha: p.fecha, referencia: p.referencia, monto: p.monto, pasarela: p.pasarela, estado: p.estado, cuota: p.cuota, total_cuotas: p.total_cuotas }))
+      pagos: pagos.map((p) => ({ id: p.id, fecha: p.fecha, referencia: p.referencia, monto: p.monto, pasarela: p.pasarela, estado: p.estado, cuota: p.cuota, total_cuotas: p.total_cuotas, contrato: !!p.contrato_id }))
     };
   });
 }

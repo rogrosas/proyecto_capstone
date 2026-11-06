@@ -117,7 +117,11 @@ async function quitarServicio(usuario, id, csId) {
 
 async function renovar(usuario, id) {
   id = v.id(id, 'Contrato');
-  const k = await conUsuario(usuario, (db) => contratosRepo.renovar(db, id));
+  const k = await conUsuario(usuario, async (db) => {
+    const previo = await contratosRepo.yaRenovado(db, id);
+    if (previo) throw errores.conflicto(`Este contrato ya se renovó: el folio siguiente es ${previo}.`);
+    return contratosRepo.renovar(db, id);
+  });
   if (!k) throw errores.noEncontrado('Contrato no encontrado o fuera de su cartera.');
   return k;
 }

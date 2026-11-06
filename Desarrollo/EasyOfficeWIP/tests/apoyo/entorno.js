@@ -3,7 +3,7 @@
 
    Cada archivo de pruebas arma su propio ambiente aislado:
    - una base NUEVA (eo_prueba_<proceso>_<hora>) creada con los scripts de
-     "base de datos" (easyoffice_v2.sql + datos de muestra): nunca toca EO_ER;
+     "base de datos/scripts" (easyoffice_v2.sql + datos de muestra): nunca toca EO_ER;
    - la aplicación en un puerto libre, con carpetas temporales para los
      contratos Word y los correos;
    - usuarios de prueba con contraseñas aleatorias.
@@ -38,7 +38,7 @@ async function crearBase() {
   await db.connect();
   // Silencia los NOTICE de los scripts
   db.on('notice', () => {});
-  for (const s of SCRIPTS) await db.query(fs.readFileSync(path.join(BD_DIR, s), 'utf8'));
+  for (const s of SCRIPTS) await db.query(fs.readFileSync(path.join(BD_DIR, 'scripts', s), 'utf8'));
 
   const cred = { admin: ['diego.munoz@easyoffice.cl', clave()], ejec: ['ejecutiva.prueba@easyoffice.test', clave()] };
   await db.query('UPDATE usuarios SET password_hash = $1 WHERE email = $2', [bcrypt.hashSync(cred.admin[1], 4), cred.admin[0]]);

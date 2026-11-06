@@ -25,7 +25,9 @@ router.post('/documentos/:id/aceptar', a(entrega.aceptar));
 router.post('/documentos/:id/ticket', a(entrega.ticketDocumento));
 router.get('/documentos/:id/archivo', a(entrega.archivoFinal));
 router.get('/tickets', a(entrega.ticketsCliente));
+router.post('/pagos/:id/pagar', a(entrega.pagarCuota));      // cuota pendiente (50/50): va a la pasarela y vuelve a Mi cuenta
 router.post('/tickets', a(entrega.ticket));
+router.post('/tickets/:id/mensajes', a(entrega.responderTicket));   // responder en la conversación
 
 // Correspondencia recibida en su domicilio tributario (abrir el escaneo la marca como leída)
 router.get('/correspondencia', a(correspondencia.delCliente));

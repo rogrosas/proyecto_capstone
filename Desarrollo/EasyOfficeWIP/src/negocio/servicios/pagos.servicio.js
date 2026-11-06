@@ -37,7 +37,13 @@ async function registrar(usuario, d = {}) {
   if (p.cuota > p.total_cuotas) throw errores.solicitudInvalida('La cuota no puede ser mayor que el total de cuotas.');
   if (p.estado === 'pagado' && !p.fecha_pago) p.fecha_pago = new Date().toISOString().slice(0, 10);
   try {
-    return { id: await conUsuario(usuario, (db) => pagosRepo.crear(db, p)) };
+    const r = await conUsuario(usuario, async (db) => {
+      const id = await pagosRepo.crear(db, p);
+      if (p.estado !== 'pagado') return { id, contrato_activado: null };
+      return { id, contrato_activado: await pagosRepo.activarContratoPagado(db, id), siguiente: await pagosRepo.crearSiguienteCuota(db, id) };
+    });
+    if (r.siguiente) await require('./tienda.servicio').avisarCuota(p.contrato_id, r.siguiente);
+    return { id: r.id, contrato_activado: r.contrato_activado, cuota_siguiente: r.siguiente || null };
   } catch (err) {
     if (err.status === 409) throw errores.conflicto(`Ya existe una cuota ${p.cuota} vigente (pendiente o pagada) para ese contrato o documento.`);
     throw err;
@@ -46,9 +52,17 @@ async function registrar(usuario, d = {}) {
 
 async function cambiarEstado(usuario, id, d = {}) {
   const estado = v.opcion(d.estado, ESTADOS, 'Estado');
-  const ok = await conUsuario(usuario, (db) => pagosRepo.cambiarEstado(db, v.id(id, 'Pago'), estado));
-  if (!ok) throw errores.noEncontrado('Pago no encontrado o fuera de su cartera.');
-  return { ok: true };
+  id = v.id(id, 'Pago');
+  // Confirmar el pago de una compra pendiente activa su contrato (igual que cuando lo aprueba la pasarela)
+  const r = await conUsuario(usuario, async (db) => {
+    if (!(await pagosRepo.cambiarEstado(db, id, estado))) return null;
+    if (estado !== 'pagado') return { activado: null };
+    return { activado: await pagosRepo.activarContratoPagado(db, id), siguiente: await pagosRepo.crearSiguienteCuota(db, id), contrato: await pagosRepo.contratoDe(db, id) };
+  });
+  if (!r) throw errores.noEncontrado('Pago no encontrado o fuera de su cartera.');
+  // Pago 50/50: queda pendiente la cuota siguiente y se le avisa al cliente
+  if (r.siguiente) await require('./tienda.servicio').avisarCuota(r.contrato, r.siguiente);   // require diferido: evita la dependencia circular
+  return { ok: true, contrato_activado: r.activado, cuota_siguiente: r.siguiente || null };
 }
 
 module.exports = { resumen, registrar, cambiarEstado };

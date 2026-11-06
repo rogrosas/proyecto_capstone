@@ -7,7 +7,7 @@ module.exports = function aplicarV2(D) {
   D.grupos.find((g) => g.id === 'documentos').tablas.push('documento_versiones', 'documento_firmantes', 'plantilla_planes');
   D.grupos.find((g) => g.id === 'pagos').tablas.push('ejecuciones_avisos');
   D.grupos.push(
-    { id: 'portal', t: '10. Portal de clientes', tablas: ['cuentas_portal', 'tickets'] },
+    { id: 'portal', t: '10. Portal de clientes', tablas: ['cuentas_portal', 'tickets', 'ticket_mensajes'] },
     { id: 'operacion', t: '11. Operación diaria', tablas: ['movimientos_firmas', 'correspondencia', 'gestiones', 'prospectos', 'carros', 'solicitudes_titular'] }
   );
 
@@ -103,6 +103,12 @@ module.exports = function aplicarV2(D) {
     estado: 'conectado', usa: ['cliente_id', 'documento_id', 'email', 'motivo', 'detalle', 'estado', 'respuesta', 'atendido_por', 'creado_en', 'actualizado_en'],
     app: 'Mi cuenta (enviar y ver respuestas), CRM → Tickets (responder y cerrar) y detalle del documento. Un rechazo en la plataforma de firma abre uno automáticamente.',
     cols: { id: 'Identificador.', cliente_id: 'Cliente.', documento_id: 'Documento objetado (si aplica).', email: 'Quién lo envió.', motivo: 'datos_incorrectos, condiciones, falta_informacion u otro.', detalle: 'Mensaje del cliente.', estado: 'abierto, en_proceso, resuelto o cerrado.', respuesta: 'Respuesta del personal.', atendido_por: 'Quién respondió.', creado_en: 'Fecha.', actualizado_en: 'Última actualización.' }
+  });
+  tabla('ticket_mensajes', {
+    desc: 'Conversación de cada ticket: mensajes del cliente y del personal, con su autor y hora, y los cambios de estado.',
+    estado: 'conectado', usa: ['ticket_id', 'autor_tipo', 'usuario_id', 'email', 'texto', 'creado_en'],
+    app: 'CRM → Tickets (conversación, responder y cambiar el estado) y Mi cuenta → Mis tickets (ver y responder). Responder un ticket resuelto lo reabre; uno cerrado no admite mensajes.',
+    cols: { id: 'Identificador.', ticket_id: 'Ticket.', autor_tipo: 'cliente, personal o sistema (cambio de estado).', usuario_id: 'Quién del personal escribió o cambió el estado.', email: 'Quién del cliente escribió.', texto: 'Mensaje.', creado_en: 'Fecha y hora.' }
   });
   tabla('movimientos_firmas', {
     desc: 'Compras y consumos de firmas electrónicas de cada cliente (bolsas y planes con firmas incluidas).',

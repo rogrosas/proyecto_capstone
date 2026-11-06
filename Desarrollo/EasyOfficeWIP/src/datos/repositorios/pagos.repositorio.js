@@ -74,4 +74,40 @@ async function cambiarEstado(db, id, estado) {
   return r.rowCount > 0;
 }
 
-module.exports = { resumenPorPasarela, listarRecientes, porContrato, porCliente, crear, cambiarEstado };
+// Un contrato "pendiente" (compra de la tienda esperando el pago) queda activo cuando se confirma un pago suyo
+async function activarContratoPagado(db, pagoId) {
+  const r = await db.query(`
+    UPDATE contratos k SET estado = 'activo'
+      FROM pagos p
+     WHERE p.id = $1 AND p.estado = 'pagado' AND k.id = p.contrato_id AND k.estado = 'pendiente'
+    RETURNING k.folio`, [pagoId]);
+  return r.rows[0]?.folio || null;
+}
+
+/*
+ * Pago en cuotas (50/50): pagada una cuota, queda pendiente la siguiente por lo que falta del total del
+ * contrato (si no existe ya). Devuelve { id, cuota, total_cuotas, monto } o null.
+ */
+async function crearSiguienteCuota(db, pagoId) {
+  const r = await db.query(`
+    WITH p AS (
+      SELECT p.*, (SELECT COALESCE(sum(cs.precio), 0) FROM contrato_servicios cs WHERE cs.contrato_id = p.contrato_id)
+                - (SELECT COALESCE(sum(x.monto), 0) FROM pagos x WHERE x.contrato_id = p.contrato_id AND x.estado = 'pagado') AS falta
+        FROM pagos p WHERE p.id = $1 AND p.estado = 'pagado' AND p.contrato_id IS NOT NULL AND p.cuota < p.total_cuotas
+    )
+    INSERT INTO pagos (contrato_id, monto, estado, pasarela, cuota, total_cuotas)
+    SELECT p.contrato_id, CASE WHEN p.falta > 0 THEN p.falta ELSE p.monto END, 'pendiente', p.pasarela, p.cuota + 1, p.total_cuotas
+      FROM p
+     WHERE NOT EXISTS (SELECT 1 FROM pagos y WHERE y.contrato_id = p.contrato_id AND y.cuota = p.cuota + 1 AND y.estado IN ('pendiente', 'pagado'))
+    RETURNING id, cuota, total_cuotas, monto`, [pagoId]);
+  return r.rows[0] ? numeros(r.rows[0], ['monto']) : null;
+}
+
+async function contratoDe(db, pagoId) {
+  const r = await db.query('SELECT contrato_id FROM pagos WHERE id = $1', [pagoId]);
+  return r.rows[0]?.contrato_id || null;
+}
+
+module.exports = {
+  resumenPorPasarela, listarRecientes, porContrato, porCliente, crear, cambiarEstado, activarContratoPagado, crearSiguienteCuota, contratoDe
+};

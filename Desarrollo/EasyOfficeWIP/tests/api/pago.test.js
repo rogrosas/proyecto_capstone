@@ -67,6 +67,24 @@ describe('Compra con pago en línea', () => {
   });
 });
 
+describe('Pago confirmado a mano en el CRM', () => {
+  const A = perezosa(), sinPagar = {};
+  it('una compra que no se pagó en línea queda pendiente', async () => {
+    const r = await T('POST', '/api/tienda/compras', { plan: 'dom-bod', tipo: 'persona', direccion: DIR, titular: { nombre: 'Rosa Demo Lagos', rut: '15.432.109-8', email: 'rosa.demo@ejemplo.test' } });
+    assert.equal(r.status, 201, r.error);
+    Object.assign(sinPagar, r);
+  });
+  paso('login administrador', () => A('POST', '/api/crm/login', { email: ctx.cred.admin[0], password: ctx.cred.admin[1] }));
+  paso('al marcar el pago "pagado" el contrato pendiente queda activo', async () => {
+    const [p] = await sql('SELECT p.id FROM pagos p JOIN contratos k ON k.id = p.contrato_id WHERE k.folio = $1', [sinPagar.orden]);
+    return A('PATCH', `/api/crm/pagos/${p.id}`, { estado: 'pagado' });
+  }, (r) => r.status === 200 && r.contrato_activado === sinPagar.orden);
+  it('el contrato está activo', async () => {
+    const [k] = await sql('SELECT estado FROM contratos WHERE folio = $1', [sinPagar.orden]);
+    assert.equal(k.estado, 'activo');
+  });
+});
+
 describe('Cabeceras de seguridad', () => {
   it('las páginas y la API traen la política de seguridad', async () => {
     const pagina = await T('GET', '/contratar', undefined, { crudo: true });

@@ -15,7 +15,7 @@ Abrir <http://localhost:3000>. Otro puerto: `PORT=8080 npm start`.
 ## Base de datos (CRM)
 
 El CRM (`/crm`) lee y escribe en la base **EO_ER** de PostgreSQL (la de pgAdmin 4), creada con
-`Desarrollo/base de datos/easyoffice_v2.sql`. Datos de ejemplo: `easyoffice_v2_datos_muestra.sql` (clientes y contratos
+`Desarrollo/base de datos/scripts/easyoffice_v2.sql`. Datos de ejemplo: `easyoffice_v2_datos_muestra.sql` (clientes y contratos
 reales de la muestra, más correos ficticios `.test` para probar el portal). `easyoffice_datos_muestra.sql` es solo para el
 esquema anterior (`easyoffice_er.sql`).
 
@@ -57,7 +57,7 @@ El código está en `src/datos/archivos.js` (carpeta, sin permitir rutas fuera d
 ## Documentos de la tienda (Word → borrador con marca de agua → aceptación)
 
 Base de datos: `easyoffice_v2.sql` ya lo trae; una base anterior necesita
-`Desarrollo/base de datos/easyoffice_v2_documentos_tienda.sql` (tablas `plantilla_planes` y `tickets`,
+`Desarrollo/base de datos/scripts/easyoffice_v2_documentos_tienda.sql` (tablas `plantilla_planes` y `tickets`,
 columnas `entrega`/`mapa_campos` en plantillas y `estado_cliente`/`aceptado_*` en documentos).
 
 1. **CRM → Administración → Documentos de la tienda** (solo admin): se sube el `.docx` (queda en
@@ -103,7 +103,7 @@ Al entrar se elige **Empresa** o **Persona**:
 
 Las contraseñas están en la tabla **`cuentas_portal`** (bcrypt, una por persona y por cliente: quien representa a
 varias empresas tiene una contraseña en cada una). Una base creada con una versión anterior de `easyoffice_v2.sql`
-necesita el script `Desarrollo/base de datos/easyoffice_v2_cuentas_portal.sql` (en pgAdmin: Query Tool sobre EO_ER → F5).
+necesita el script `Desarrollo/base de datos/scripts/easyoffice_v2_cuentas_portal.sql` (en pgAdmin: Query Tool sobre EO_ER → F5).
 
 1. **Crear o recuperar contraseña**: la persona indica tipo, (RUT) y correo. Si está vinculada, recibe un enlace
    por cada cliente. La respuesta es siempre la misma, exista o no la cuenta.

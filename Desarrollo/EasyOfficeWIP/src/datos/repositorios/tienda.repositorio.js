@@ -77,11 +77,27 @@ async function puntoDeVenta(db, regionBuscada) {
 async function crearContrato(db, c) {
   const r = await db.query(`
     INSERT INTO contratos (empresa_id, cliente_id, sucursal_id, cuenta_recaudacion_id, link_pago, fecha_inicio,
-                           duracion_meses, estado, origen, datos_formulario)
-    VALUES ($1, $2, $3, $4, $5, CURRENT_DATE, $6, 'pendiente', 'web', $7)
+                           duracion_meses, estado, origen, datos_formulario, ejecutivo_id)
+    VALUES ($1, $2, $3, $4, $5, CURRENT_DATE, $6, 'pendiente', 'web', $7, $8)
     RETURNING id, folio`,
-    [c.empresa_id, c.cliente_id, c.sucursal_id, c.cuenta_recaudacion_id, c.link_pago, c.duracion_meses, c.datos_formulario]);
+    [c.empresa_id, c.cliente_id, c.sucursal_id, c.cuenta_recaudacion_id, c.link_pago, c.duracion_meses, c.datos_formulario, c.ejecutivo_id || null]);
   return r.rows[0];
+}
+
+/*
+ * Ejecutivo de una venta de la tienda: el que ya atiende al cliente; si es nuevo, el ejecutivo activo
+ * con menos contratos vigentes (reparto parejo). Sin ejecutivos, queda para los administradores.
+ */
+async function ejecutivoParaVenta(db, clienteId) {
+  const r = await db.query(`
+    SELECT COALESCE(
+      (SELECT k.ejecutivo_id FROM contratos k JOIN usuarios u ON u.id = k.ejecutivo_id
+        WHERE k.cliente_id = $1 AND u.activo ORDER BY k.creado_en DESC LIMIT 1),
+      (SELECT u.id FROM usuarios u JOIN roles r ON r.id = u.rol_id
+        WHERE u.activo AND r.rol = 'ejecutivo'
+        ORDER BY (SELECT count(*) FROM contratos k WHERE k.ejecutivo_id = u.id AND k.estado IN ('activo', 'pendiente')), u.id
+        LIMIT 1)) AS id`, [clienteId]);
+  return r.rows[0].id;
 }
 
 /* ---------- Pago en línea: la compra sigue solo con el pago aprobado ---------- */
@@ -98,6 +114,13 @@ async function pagoPorTransaccion(db, idTransaccion) {
       FROM pagos p JOIN contratos k ON k.id = p.contrato_id
      WHERE p.id_transaccion = $1
        FOR UPDATE OF p`, [idTransaccion]);
+  return r.rows[0] || null;
+}
+
+// Pago de un contrato del cliente de la sesión (Mi cuenta)
+async function pagoDelCliente(db, id, clienteId) {
+  const r = await db.query(`SELECT p.id, p.estado, p.monto, p.pasarela FROM pagos p JOIN contratos k ON k.id = p.contrato_id
+                             WHERE p.id = $1 AND k.cliente_id = $2 FOR UPDATE OF p`, [id, clienteId]);
   return r.rows[0] || null;
 }
 
@@ -129,7 +152,7 @@ async function activarContrato(db, id) {
 // Compra de la tienda: contrato, cliente y lo que se ingresó en el formulario
 async function compra(db, contratoId) {
   const r = await db.query(`
-    SELECT k.id, k.folio, k.datos_formulario, k.cliente_id, cl.rut AS cliente_rut, cl.tipo_persona
+    SELECT k.id, k.folio, k.datos_formulario, k.cliente_id, k.ejecutivo_id, cl.rut AS cliente_rut, cl.razon_social AS cliente, cl.tipo_persona
       FROM contratos k JOIN clientes cl ON cl.id = k.cliente_id WHERE k.id = $1`, [contratoId]);
   return r.rows[0] || null;
 }
@@ -142,5 +165,5 @@ async function guardarEntrega(db, contratoId, entrega) {
 
 module.exports = {
   servicioDePlan, crearServicioDePlan, clientePorRut, representante, crearCliente, comunas, puntoDeVenta, crearContrato,
-  asignarTransaccion, pagoPorTransaccion, aprobarPago, rechazarPago, nuevoIntento, activarContrato, compra, guardarEntrega
+  ejecutivoParaVenta, asignarTransaccion, pagoPorTransaccion, pagoDelCliente, aprobarPago, rechazarPago, nuevoIntento, activarContrato, compra, guardarEntrega
 };

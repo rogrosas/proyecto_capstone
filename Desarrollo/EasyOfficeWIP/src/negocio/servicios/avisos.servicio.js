@@ -16,6 +16,7 @@ const { errores } = require('../../comun/errores');
 const correo = require('../../datos/correo');
 const portalRepo = require('../../datos/repositorios/portal.repositorio');
 const avisosRepo = require('../../datos/repositorios/avisos.repositorio');
+const tareas = require('./tareas.servicio');
 const { esc, boton, cuerpo, titulo, pie, fechaCl } = require('../../comun/correos');
 
 const REVISAR_CADA_MS = 15 * 60 * 1000;
@@ -117,8 +118,9 @@ async function ejecutar({ origen = 'automatico', usuarioId = null } = {}) {
 /* ---------- Casos de uso del CRM (solo administradores) ---------- */
 async function enviarAhora(usuario) {
   if (!usuario.admin) throw errores.sinPermiso('Solo un administrador puede enviar los avisos.');
+  const t = await tareas.ejecutar();   // renovaciones automáticas y vencidos antes de avisar
   const r = await ejecutar({ origen: 'manual', usuarioId: usuario.id });
-  return { contratos: r.contratos, correos: r.correos, sin_correo: r.sinCorreo, errores: r.errores, detalle: r.detalle };
+  return { contratos: r.contratos, correos: r.correos, sin_correo: r.sinCorreo, errores: r.errores, detalle: r.detalle, renovados: t.renovados, vencidos: t.vencidos };
 }
 
 async function historial(usuario) {
@@ -136,6 +138,7 @@ const horaChile = () => Number(new Intl.DateTimeFormat('es-CL', { timeZone: conf
 async function revisar() {
   try {
     if (horaChile() < config.avisos.hora) return;
+    await tareas.ejecutar();   // idempotente: se puede correr en cada revisión del día
     if (await conSistema((db) => avisosRepo.ejecutadoHoy(db, config.bd.zonaHoraria))) return;
     await ejecutar({ origen: 'automatico' });
   } catch (err) {

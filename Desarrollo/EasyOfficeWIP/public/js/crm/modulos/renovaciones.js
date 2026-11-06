@@ -93,9 +93,11 @@ export default {
         b.disabled = true;
         try {
           const r = await post('/avisos/enviar');
-          toast(r.contratos || r.sin_correo
-            ? `Avisos enviados: ${r.contratos} contrato(s)${r.sin_correo ? `, ${r.sin_correo} sin correo (llamar)` : ''}.`
-            : 'No había avisos pendientes.');
+          const partes = [];
+          if (r.contratos || r.sin_correo) partes.push(`avisos a ${r.contratos} contrato(s)${r.sin_correo ? ` (${r.sin_correo} sin correo: llamar)` : ''}`);
+          if (r.renovados?.length) partes.push(`${r.renovados.length} renovado(s): ${r.renovados.map((x) => `${x.folio} → ${x.nuevo}`).join(', ')}`);
+          if (r.vencidos?.length) partes.push(`${r.vencidos.length} marcado(s) como vencido(s)`);
+          toast(partes.length ? `Listo: ${partes.join(' · ')}.` : 'Todo al día: no había avisos, renovaciones ni vencimientos pendientes.');
           await Promise.all([cargarAvisos(), cargar()]);
         } catch (err) {
           if (err.message !== 'sesion') toast(err.message, true);
@@ -116,8 +118,8 @@ async function cargarAvisos() {
     const u = d.ejecuciones[0];
     p.innerHTML = `
       <div class="ph-row"><h3>Avisos de vencimiento por correo</h3>
-        <button class="btn btn-g btn-row" data-enviar-avisos ${d.pendientes ? '' : 'disabled'}>${d.pendientes ? `Enviar ${d.pendientes} aviso(s) pendiente(s) ahora` : 'No hay avisos pendientes'}</button></div>
-      <div class="ph">${d.automatico ? `Automático: todos los días desde las ${d.hora}:00 se avisa por correo a cada cliente cuyo contrato llega a su fecha de alerta, y cada ejecutivo recibe un resumen con los clientes sin correo para llamarlos.`
+        <button class="btn btn-g btn-row" data-enviar-avisos>${d.pendientes ? `Enviar ${d.pendientes} aviso(s) pendiente(s) ahora` : 'Revisar vencimientos ahora'}</button></div>
+      <div class="ph">${d.automatico ? `Automático: todos los días desde las ${d.hora}:00 se avisa por correo a cada cliente cuyo contrato llega a su fecha de alerta, y cada ejecutivo recibe un resumen con los clientes sin correo para llamarlos. También se renuevan solos los contratos con renovación automática que vencen (hasta 7 días después) y los demás vencidos quedan como "vencido".`
         : 'El envío automático está apagado (AVISOS_AUTOMATICOS=no). Puede enviarlos con el botón.'}</div>
       <div class="sb">${u ? `Último envío: ${fechaHora(u.iniciado)} · ${u.origen === 'manual' ? `manual (${esc(u.usuario || '')})` : 'automático'} · ${u.contratos} avisado(s)${u.sin_correo ? ` · <span class="rojo">${u.sin_correo} sin correo</span>` : ''}${u.errores ? ` · <span class="rojo">${u.errores} con error</span>` : ''}`
         : 'Todavía no se ha enviado ningún aviso.'}

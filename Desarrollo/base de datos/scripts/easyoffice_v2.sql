@@ -820,6 +820,20 @@ CREATE INDEX ix_tickets_cliente   ON tickets (cliente_id);
 CREATE INDEX ix_tickets_documento ON tickets (documento_id);
 CREATE INDEX ix_tickets_estado    ON tickets (estado, creado_en DESC);
 
+-- Conversación de cada ticket: mensajes del cliente y del personal, y cambios de estado (sistema)
+CREATE TABLE ticket_mensajes (
+    id          int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    ticket_id   int    NOT NULL REFERENCES tickets (id) ON DELETE CASCADE,
+    autor_tipo  text   NOT NULL CHECK (autor_tipo IN ('cliente', 'personal', 'sistema')),
+    usuario_id  int    REFERENCES usuarios (id),            -- quién del personal escribió (o cambió el estado)
+    email       citext,                                  -- quién del cliente escribió
+    texto       text   NOT NULL CHECK (length(texto) BETWEEN 1 AND 4000),
+    creado_en   timestamptz NOT NULL DEFAULT now(),
+    CHECK (autor_tipo <> 'personal' OR usuario_id IS NOT NULL),
+    CHECK (autor_tipo <> 'cliente' OR email IS NOT NULL)
+);
+CREATE INDEX ix_ticket_mensajes_ticket ON ticket_mensajes (ticket_id, id);
+
 
 -- =====================================================================
 -- 11. AUTOMATIZACIONES
@@ -1201,7 +1215,7 @@ BEGIN
         'documentos', 'documento_versiones', 'documento_firmantes', 'documento_partes', 'documento_clausulas', 'pagos',
         'roles', 'permisos', 'roles_permisos', 'config_alertas',
         'movimientos_firmas', 'correspondencia', 'gestiones', 'prospectos', 'carros', 'solicitudes_titular',
-        'plantilla_planes', 'tickets'
+        'plantilla_planes', 'tickets', 'ticket_mensajes'
     ] LOOP
         EXECUTE format(
             'CREATE TRIGGER trg_auditoria_%1$s
@@ -1250,6 +1264,7 @@ ALTER TABLE prospectos             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE solicitudes_titular    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cuentas_portal         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tickets                ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ticket_mensajes        ENABLE ROW LEVEL SECURITY;
 
 -- ---- Personal (mismas reglas de easyoffice_er.sql) ----
 CREATE POLICY p_contratos ON contratos
@@ -1312,6 +1327,8 @@ CREATE POLICY p_cuentas_portal ON cuentas_portal
     USING (app_es_admin() OR EXISTS (SELECT 1 FROM clientes c WHERE c.id = cuentas_portal.cliente_id));
 CREATE POLICY p_tickets ON tickets
     USING (app_es_admin() OR EXISTS (SELECT 1 FROM clientes c WHERE c.id = tickets.cliente_id));
+CREATE POLICY p_ticket_mensajes ON ticket_mensajes
+    USING (EXISTS (SELECT 1 FROM tickets t WHERE t.id = ticket_mensajes.ticket_id));
 
 -- Recepción (oficina de partes): ve a todos los clientes (solo lectura) y toda la correspondencia
 CREATE POLICY p_clientes_recepcion ON clientes FOR SELECT
@@ -1352,6 +1369,8 @@ CREATE POLICY p_portal_solicitudes_ver ON solicitudes_titular FOR SELECT TO rol_
 CREATE POLICY p_portal_solicitudes_crear ON solicitudes_titular FOR INSERT TO rol_portal
     WITH CHECK (cliente_id = app_cliente() AND estado = 'recibida');
 CREATE POLICY p_portal_tickets ON tickets FOR SELECT TO rol_portal USING (cliente_id = app_cliente());
+CREATE POLICY p_portal_ticket_mensajes ON ticket_mensajes FOR SELECT TO rol_portal
+    USING (EXISTS (SELECT 1 FROM tickets t WHERE t.id = ticket_mensajes.ticket_id AND t.cliente_id = app_cliente()));
 -- contrato_servicios, alertas, pagos, documento_partes/clausulas/versiones y representantes
 -- ya heredan la visibilidad desde contratos, documentos y clientes.
 
@@ -1379,6 +1398,7 @@ GRANT UPDATE (nombre, autorizado, activo) ON cuentas_portal TO rol_ejecutivo;
 GRANT SELECT ON plantilla_planes TO rol_ejecutivo;
 GRANT SELECT ON tickets TO rol_ejecutivo;
 GRANT UPDATE (estado, respuesta, atendido_por, actualizado_en) ON tickets TO rol_ejecutivo;
+GRANT SELECT, INSERT ON ticket_mensajes TO rol_ejecutivo;
 
 -- ---- Administrador ----
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO rol_admin;
@@ -1390,7 +1410,7 @@ GRANT SELECT ON
     contratos, contrato_servicios, alertas, pagos,
     documentos, documento_versiones, documento_firmantes, documento_partes, documento_clausulas,
     plantillas_documento, clausulas_documento,
-    movimientos_firmas, correspondencia, solicitudes_titular, tickets,
+    movimientos_firmas, correspondencia, solicitudes_titular, tickets, ticket_mensajes,
     v_datos_contrato, v_datos_contrato_servicios, v_saldo_contrato, v_estado_renovacion, v_saldo_firmas
     TO rol_portal;
 GRANT UPDATE (leida_en) ON correspondencia TO rol_portal;

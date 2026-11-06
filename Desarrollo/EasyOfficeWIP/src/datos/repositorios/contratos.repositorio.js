@@ -146,12 +146,12 @@ async function actualizar(db, id, cambios) {
 async function renovar(db, id) {
   const r = await db.query(`
     INSERT INTO contratos (empresa_id, cliente_id, sucursal_id, cuenta_recaudacion_id, link_pago, lugar_celebracion,
-                           fecha_inicio, duracion_meses, renovacion_automatica, estado, ejecutivo_id, observaciones)
+                           fecha_inicio, duracion_meses, renovacion_automatica, estado, ejecutivo_id, observaciones, contrato_anterior_id)
     SELECT empresa_id, cliente_id, sucursal_id, cuenta_recaudacion_id, link_pago, lugar_celebracion,
            fecha_vencimiento + 1, duracion_meses, renovacion_automatica, 'activo', ejecutivo_id,
-           'Renovación del folio ' || folio
+           'Renovación del folio ' || folio, id
       FROM contratos WHERE id = $1
-    RETURNING id, folio`, [id]);
+    RETURNING id, folio, fecha_vencimiento::text AS vence`, [id]);
   if (!r.rows[0]) return null;
   await db.query(`
     INSERT INTO contrato_servicios (contrato_id, orden, servicio_id, precio, ciclo_pago, descripcion)
@@ -159,6 +159,31 @@ async function renovar(db, id) {
       FROM contrato_servicios cs JOIN servicios sv ON sv.id = cs.servicio_id
      WHERE cs.contrato_id = $1`, [id, r.rows[0].id]);
   return r.rows[0];
+}
+
+/* ---------- Tarea diaria: renovación automática y contratos vencidos ---------- */
+
+// Activos con renovación automática que vencieron hace a lo más `dias` días (o vencen hoy) y no se han renovado
+async function porRenovarAutomatico(db, dias) {
+  const r = await db.query(`
+    SELECT k.id, k.folio, k.cliente_id, cl.razon_social AS cliente, k.fecha_vencimiento::text AS vence
+      FROM contratos k JOIN clientes cl ON cl.id = k.cliente_id
+     WHERE k.estado = 'activo' AND k.renovacion_automatica
+       AND k.fecha_vencimiento BETWEEN CURRENT_DATE - $1::int AND CURRENT_DATE
+       AND NOT EXISTS (SELECT 1 FROM contratos k2 WHERE k2.contrato_anterior_id = k.id)
+       AND ${SIN_RENOVAR}
+     ORDER BY k.fecha_vencimiento`, [dias]);
+  return r.rows;
+}
+
+async function marcarVencidos(db) {
+  const r = await db.query("UPDATE contratos SET estado = 'vencido' WHERE estado = 'activo' AND fecha_vencimiento < CURRENT_DATE RETURNING folio");
+  return r.rows.map((x) => x.folio);
+}
+
+async function yaRenovado(db, id) {
+  const r = await db.query('SELECT folio FROM contratos WHERE contrato_anterior_id = $1', [id]);
+  return r.rows[0]?.folio || null;
 }
 
 // Datos para imprimir el contrato (vistas que reemplazan la combinación Excel → Word)
@@ -173,5 +198,6 @@ async function impresion(db, id) {
 
 module.exports = {
   etapasRenovacion, listarPorVencer,
-  listar, porCliente, obtener, servicios, crear, agregarServicio, quitarServicio, actualizar, renovar, impresion
+  listar, porCliente, obtener, servicios, crear, agregarServicio, quitarServicio, actualizar, renovar, impresion,
+  porRenovarAutomatico, marcarVencidos, yaRenovado
 };
