@@ -13,6 +13,7 @@ module.exports = {
   bd: {
     maxConexiones: 10,
     inactividadMs: 30000,
+    tiempoMaxConsultaMs: 15000,   // PostgreSQL corta una consulta que tarde más (limita consultas abusivas o trabadas)
     zonaHoraria: 'America/Santiago'
   },
 

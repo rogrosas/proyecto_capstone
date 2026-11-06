@@ -18,6 +18,7 @@ router.post('/salir', a(portal.salir));
 router.use(requiereSesionCliente);
 router.get('/yo', portal.yo);
 router.get('/panel', a(portal.panel));
+router.get('/datos-compra', a(portal.datosCompra));      // rellena el formulario de /contratar (editable)
 
 // Documentos: borrador con marca de agua → aceptar (y descargar el final) o enviar un ticket
 router.get('/documentos/:id/borrador', a(entrega.borradorCliente));

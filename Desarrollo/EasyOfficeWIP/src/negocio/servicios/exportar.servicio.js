@@ -66,7 +66,7 @@ function celda(v) {
 }
 
 async function exportar(usuario, lista, query = {}) {
-  const def = LISTAS[lista];
+  const def = Object.hasOwn(LISTAS, lista) ? LISTAS[lista] : null;   // no "__proto__" ni "constructor"
   if (!def) throw errores.noEncontrado('Listado no disponible para exportar.');
   const filas = await def.datos(usuario, query);
   const lineas = [def.columnas.map(([t]) => celda(t)).join(';'), ...filas.map((f) => def.columnas.map(([, fn]) => celda(fn(f))).join(';'))];

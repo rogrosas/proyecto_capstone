@@ -16,7 +16,7 @@ function exigirAdmin(usuario) {
 }
 
 function definicion(nombre) {
-  const def = DEFINICIONES[nombre];
+  const def = Object.hasOwn(DEFINICIONES, nombre) ? DEFINICIONES[nombre] : null;   // no "__proto__" ni "constructor"
   if (!def) throw errores.noEncontrado('Catálogo inexistente.');
   return def;
 }

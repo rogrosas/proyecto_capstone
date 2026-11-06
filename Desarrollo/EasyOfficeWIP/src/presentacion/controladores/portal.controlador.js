@@ -28,5 +28,7 @@ module.exports = {
 
   yo: (req, res) => res.json({ cliente: req.cliente }),
 
-  panel: async (req, res) => res.json(await portalServicio.panel(req.cliente))
+  panel: async (req, res) => res.json(await portalServicio.panel(req.cliente)),
+
+  datosCompra: async (req, res) => res.json(await portalServicio.datosCompra(req.cliente))
 };

@@ -3,6 +3,8 @@
    (oficina de partes). Urgencia, plazo de aviso y fechas de cada estado
    los completa la base (fn_defaults_correspondencia).
    ========================================================= */
+const { textoLike } = require('../sql/fragmentos');
+
 const COLUMNAS = `
   c.id, c.cliente_id, cl.razon_social AS cliente, c.sucursal_id, s.nombre AS sucursal, c.remitente, c.tipo, c.descripcion,
   c.urgente, c.estado, c.url_archivo IS NOT NULL AS con_archivo,
@@ -24,7 +26,7 @@ async function listar(db, { filtro, texto }, zona, limite) {
                    ELSE c.estado = $2 END
        AND ($3 = '' OR cl.razon_social ILIKE '%' || $3 || '%' OR c.remitente ILIKE '%' || $3 || '%')
      ORDER BY (c.estado IN ('recibida', 'digitalizada')) DESC, c.urgente DESC, c.recibida_en DESC
-     LIMIT $4`, [zona, filtro, texto, limite]);
+     LIMIT $4`, [zona, filtro, textoLike(texto), limite]);
   return r.rows;
 }
 

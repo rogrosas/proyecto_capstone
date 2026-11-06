@@ -69,7 +69,7 @@ function sumarFallo(...claves) {
 /* ---------- datos de acceso ---------- */
 // { tipo: 'empresa' | 'persona', rut (empresa), email } → { tipo de cliente, rut normalizado, email }
 function leerAcceso(datos) {
-  const tipo = TIPOS[datos?.tipo];
+  const tipo = Object.hasOwn(TIPOS, datos?.tipo ?? '') ? TIPOS[datos.tipo] : null;   // no "__proto__" ni "constructor"
   if (!tipo) throw errores.solicitudInvalida('Indique si ingresa como empresa o como persona.');
   const rut = tipo === 'juridica' ? v.rut(datos.rut, 'RUT de la empresa') : null;
   const email = v.email(datos.email, 'Correo', { opcional: false });
@@ -262,4 +262,40 @@ async function panel(sesion) {
   });
 }
 
-module.exports = { iniciarSesion, solicitarClave, definirClave, enlaceClave, validarSesion, cerrarSesion, panel };
+/*
+ * Datos para rellenar la compra en /contratar con la sesión iniciada (el comprador los puede editar).
+ * Persona: sus propios datos y domicilio. Empresa: la empresa y, si quien ingresó es el representante
+ * legal, también su nombre, RUT y domicilio; otra persona autorizada completa los suyos.
+ * El correo es siempre el de la sesión: es el que la tienda reconoce como vinculado al cliente.
+ */
+async function datosCompra(sesion) {
+  return conCliente(async (db) => {
+    const cliente = await clientesRepo.obtener(db, sesion.id);
+    if (!cliente) throw errores.noAutenticado('Su cuenta ya no está disponible.');
+    const direccionDe = async (id) => {
+      const d = await direccionesRepo.obtener(db, id);
+      return d && { calle: d.calle, numero: d.numero, complemento: d.complemento || '', comuna_id: d.comuna_id };
+    };
+    if (cliente.tipo_persona === 'natural') {
+      return {
+        tipo: 'persona',
+        titular: { nombre: cliente.razon_social, rut: cliente.rut_fmt, email: sesion.email, celular: cliente.celular || '' },
+        empresa: null,
+        direccion: await direccionDe(cliente.direccion_id)
+      };
+    }
+    const rep = await representantesRepo.obtener(db, cliente.representante_legal_id);
+    const esRepresentante = !!rep?.email && rep.email.toLowerCase() === String(sesion.email).toLowerCase();
+    return {
+      tipo: 'empresa',
+      titular: {
+        nombre: esRepresentante ? rep.nombre_completo : '', rut: esRepresentante ? rep.rut_fmt : '',
+        email: sesion.email, celular: cliente.celular || ''
+      },
+      empresa: { rut: cliente.rut_fmt, razon_social: cliente.razon_social, giro: cliente.giro_principal || '' },
+      direccion: esRepresentante ? await direccionDe(rep.direccion_id) : null
+    };
+  });
+}
+
+module.exports = { iniciarSesion, solicitarClave, definirClave, enlaceClave, validarSesion, cerrarSesion, panel, datosCompra };

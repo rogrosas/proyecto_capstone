@@ -6,7 +6,7 @@
 /**
  * filtros = { texto, rut, estado }  (ya normalizados por la capa de negocio)
  */
-const { POR_REVISAR } = require('../sql/fragmentos');
+const { POR_REVISAR, textoLike } = require('../sql/fragmentos');
 
 async function listar(db, { texto, rut, estado, porRevisar }, limite) {
   const r = await db.query(`
@@ -37,7 +37,7 @@ async function listar(db, { texto, rut, estado, porRevisar }, limite) {
               OR EXISTS (SELECT 1 FROM contratos k WHERE k.cliente_id = cl.id AND k.folio ILIKE '%' || $1 || '%'))
     )
     SELECT * FROM base WHERE ($3 = '' OR estado = $3) AND (NOT $5::boolean OR docs_por_revisar > 0)
-    ORDER BY docs_por_revisar > 0 DESC, razon_social LIMIT $4`, [texto, rut, estado, limite, !!porRevisar]);
+    ORDER BY docs_por_revisar > 0 DESC, razon_social LIMIT $4`, [textoLike(texto), rut, estado, limite, !!porRevisar]);
   return r.rows;
 }
 
@@ -50,7 +50,7 @@ async function eliminar(db, id) {
 async function obtener(db, id) {
   const r = await db.query(
     `SELECT cl.id, cl.rut, fn_rut_formato(cl.rut) AS rut_fmt, cl.tipo_persona, cl.razon_social, cl.nombre_fantasia, cl.giro_principal,
-            cl.email, cl.celular, cl.representante_legal_id, cl.fecha_escritura::text AS fecha_escritura, cl.sitio_notaria,
+            cl.email, cl.celular, cl.representante_legal_id, cl.direccion_id, cl.fecha_escritura::text AS fecha_escritura, cl.sitio_notaria,
             cl.creado_en::date::text AS creado_en, u.nombre AS registrado_por
        FROM clientes cl LEFT JOIN usuarios u ON u.id = cl.registrado_por
       WHERE cl.id = $1`, [id]);

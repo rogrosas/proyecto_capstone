@@ -46,6 +46,20 @@ describe('A · sin cuenta, entrega automática: el documento llega al correo', (
   paso('panel: documento por revisar', () => P('GET', '/api/cliente/panel'), (r) => r.documentos?.some((d) => d.estado_cliente === 'por_revisar'));
 });
 
+describe('Datos de la compra con la sesión iniciada (rellenan /contratar)', () => {
+  const datos = {};
+  paso('sin sesión → 401', () => T('GET', '/api/cliente/datos-compra'), (r) => r.status === 401);
+  paso('persona: sus datos y su domicilio', () => P('GET', '/api/cliente/datos-compra'), (r) => {
+    Object.assign(datos, r.cuerpo);
+    return r.status === 200 && r.tipo === 'persona' && r.titular.nombre === CAMI.nombre && r.titular.rut === CAMI.rut
+      && r.titular.email === CAMI.email && r.titular.celular === '976543210' && r.empresa === null
+      && r.direccion?.calle === 'El Fogonero' && r.direccion.numero === '311' && r.direccion.comuna_id === DIR.comuna_id;
+  });
+  // Desde otra IP, para no sumar al límite de compras por IP del resto del archivo
+  paso('los datos rellenados sirven tal cual para comprar', () => entorno.comprarYPagar(ctx.sesion({ ip: '10.8.0.1' }), { plan: 'cont-bas', ...datos }),
+    (r) => r.status === 201);
+});
+
 describe('B y C · con cuenta', () => {
   let antes;
   paso('compra como empresa nueva → vinculada a su cuenta', () => {
@@ -54,6 +68,9 @@ describe('B y C · con cuenta', () => {
   }, (r) => r.status === 201 && r.cuenta === 'vinculada');
   paso('entra como empresa con la misma contraseña', () => E('POST', '/api/cliente/ingresar', { tipo: 'empresa', rut: '76.543.210-3', email: CAMI.email, password: 'Camila-Prueba-1' }));
   paso('panel de la empresa con su contrato', () => E('GET', '/api/cliente/panel'), (r) => r.cliente?.razon_social === 'Díaz Diseño SpA' && r.contratos?.length === 1);
+  paso('datos de compra de la empresa: la empresa y su representante (quien ingresó)', () => E('GET', '/api/cliente/datos-compra'),
+    (r) => r.tipo === 'empresa' && r.empresa?.rut === '76.543.210-3' && r.empresa.razon_social === 'Díaz Diseño SpA' && r.empresa.giro === 'Diseño'
+      && r.titular.nombre === CAMI.nombre && r.titular.rut === CAMI.rut && r.titular.email === CAMI.email && r.direccion?.calle === 'El Fogonero');
   it('no recibió correos con enlace (ya tiene cuenta)', async () => { await espera(); assert.equal(nuevos(CAMI.email, antes).length, 0); });
   paso('vuelve a comprar como persona → con_clave', () => { antes = cantidad(CAMI.email); return comprar({ plan: 'dom-bod', tipo: 'persona', titular: CAMI }); },
     (r) => r.status === 201 && r.cuenta === 'con_clave');

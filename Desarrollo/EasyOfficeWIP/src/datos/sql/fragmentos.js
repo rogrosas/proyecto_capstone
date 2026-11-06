@@ -33,4 +33,9 @@ const SERVICIOS_CONTRATO = `
 const POR_REVISAR = (d = 'd') =>
   `(${d}.estado = 'en_revision' OR (${d}.estado = 'borrador' AND ${d}.url_archivo IS NOT NULL AND ${d}.estado_cliente IS NULL))`;
 
-module.exports = { MENSUALIZADO, SIN_RENOVAR, TOTAL_CONTRATO, SERVICIOS_CONTRATO, POR_REVISAR };
+// Texto de búsqueda para "col ILIKE '%' || $n || '%'": escapa los comodines de LIKE (\ % _) para que
+// el texto se busque tal cual. Sin esto, buscar "%" o "_" coincide con todo (no es inyección, pero
+// permite listar todo o armar patrones costosos). PostgreSQL usa \ como escape de LIKE por defecto.
+const textoLike = (s) => String(s ?? '').replace(/[\\%_]/g, '\\$&');
+
+module.exports = { MENSUALIZADO, SIN_RENOVAR, TOTAL_CONTRATO, SERVICIOS_CONTRATO, POR_REVISAR, textoLike };

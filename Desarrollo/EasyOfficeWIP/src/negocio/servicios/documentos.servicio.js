@@ -16,9 +16,10 @@ const TIPOS = { revision: true, automatico: false };   // 'pendientes' = esperan
 const POR_ESTADO = { tramite: ['borrador', 'en_revision', 'aprobado'], firma: ['enviado_firma'], firmados: ['firmado'] };
 
 async function listar(usuario, { tipo }) {
-  const revision = tipo in TIPOS ? TIPOS[tipo] : null;
+  // Object.hasOwn: "constructor" o "__proto__" no son filtros (vendrían del prototipo del objeto)
+  const revision = Object.hasOwn(TIPOS, tipo) ? TIPOS[tipo] : null;
   const porRevisar = tipo === 'pendientes';
-  const estados = POR_ESTADO[tipo] || null;
+  const estados = Object.hasOwn(POR_ESTADO, tipo) ? POR_ESTADO[tipo] : null;
   return conUsuario(usuario, async (db) => ({
     etapas: await documentosRepo.contarPorEstado(db),
     documentos: await documentosRepo.listar(db, { revision, porRevisar, estados }, LIMITE)

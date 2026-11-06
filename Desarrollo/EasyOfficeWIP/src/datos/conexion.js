@@ -16,7 +16,11 @@ types.setTypeParser(1082, (v) => v);
 const config = require('../config');
 const { AppError, errores } = require('../comun/errores');
 
-const pool = new Pool({ max: config.bd.maxConexiones, idleTimeoutMillis: config.bd.inactividadMs });
+const pool = new Pool({
+  max: config.bd.maxConexiones,
+  idleTimeoutMillis: config.bd.inactividadMs,
+  statement_timeout: config.bd.tiempoMaxConsultaMs
+});
 pool.on('error', (err) => console.error('[bd] error en conexión inactiva:', err.message));
 
 // Traduce los códigos de error de PostgreSQL a errores de la aplicación
@@ -41,6 +45,7 @@ function traducir(err) {
     case '23514': return errores.solicitudInvalida('Los datos no cumplen las reglas de la base de datos (por ejemplo, RUT inválido).');
     case '22P02':
     case '22023': return errores.solicitudInvalida();
+    case '57014': return new AppError(503, 'La consulta tardó demasiado. Intente de nuevo o acote la búsqueda.');   // statement_timeout
     case '28P01':
     case '3D000':
     case 'ECONNREFUSED': return errores.sinBaseDatos();

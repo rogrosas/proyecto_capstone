@@ -293,16 +293,47 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // Si ya ingresó a Mi cuenta, se muestra y se usa su correo
-  async function sesionPortal() {
+  // Escribe un valor solo si el campo está vacío: no pisa lo que el comprador ya escribió
+  function rellenar(id, valor) {
+    const x = $(id);
+    if (x && !x.value && valor) x.value = valor;
+  }
+
+  // Si ya ingresó a Mi cuenta, se muestra y se rellenan sus datos (los puede editar antes de pagar)
+  async function sesionPortal(comunasListas) {
     $('sess').innerHTML = '<a class="nav-btn" href="/mi-cuenta">Mi cuenta</a>';
+    let cliente;
     try {
-      const { cliente } = await api('GET', '/api/cliente/yo');
-      $('sesionCli').hidden = false;
-      $('sesionT').textContent = `Sesión iniciada · ${cliente.razon_social}`;
-      if (!$('dMail').value) $('dMail').value = cliente.email;
-      $('sess').innerHTML = `<span style="color:var(--ink);font-weight:600">${esc(cliente.razon_social)}</span> · <a class="link" href="/mi-cuenta">Mi cuenta</a>`;
-    } catch { /* sin sesión de cliente */ }
+      ({ cliente } = await api('GET', '/api/cliente/yo'));
+    } catch { return; /* sin sesión de cliente */ }
+    $('sesionCli').hidden = false;
+    $('sesionT').textContent = `Sesión iniciada · ${cliente.razon_social}`;
+    $('sess').innerHTML = `<span style="color:var(--ink);font-weight:600">${esc(cliente.razon_social)}</span> · <a class="link" href="/mi-cuenta">Mi cuenta</a>`;
+    rellenar('dMail', cliente.email);
+    try {
+      const d = await api('GET', '/api/cliente/datos-compra');
+      $('tipo').value = d.tipo;
+      tipoChange();
+      rellenar('dNombre', d.titular.nombre);
+      rellenar('dRut', d.titular.rut);
+      rellenar('dMail', d.titular.email);
+      rellenar('dCel', d.titular.celular);
+      if (d.empresa) {
+        rellenar('eRut', d.empresa.rut);
+        rellenar('eRazon', d.empresa.razon_social);
+        rellenar('eGiro', d.empresa.giro);
+      }
+      if (d.direccion) {
+        rellenar('dCalle', d.direccion.calle);
+        rellenar('dNum', d.direccion.numero);
+        rellenar('dDepto', d.direccion.complemento);
+        await comunasListas;   // la comuna se elige cuando la lista ya está cargada
+        rellenar('dComuna', String(d.direccion.comuna_id));
+      }
+      $('sesionS').textContent = d.titular.nombre
+        ? 'Completamos el formulario con los datos de su cuenta. Revíselos y corríjalos si algo cambió.'
+        : 'Completamos los datos de la empresa. Escriba su nombre, RUT y domicilio como titular.';
+    } catch { /* se queda con el correo: el comprador completa el resto */ }
   }
 
   /* ---------- Eventos (delegación) ---------- */
@@ -344,8 +375,7 @@
   }
   renderStepper(1);
   tipoChange();
-  cargarComunas();
-  sesionPortal();
+  sesionPortal(cargarComunas());
 
   // Vuelta desde la pasarela de pago: /contratar?pago=<token>
   const tokenPago = new URLSearchParams(location.search).get('pago');

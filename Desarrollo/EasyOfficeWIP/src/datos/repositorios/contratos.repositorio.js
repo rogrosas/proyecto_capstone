@@ -4,7 +4,7 @@
    ========================================================= */
 const config = require('../../config');
 const { numeros } = require('../conversion');
-const { SIN_RENOVAR, SERVICIOS_CONTRATO } = require('../sql/fragmentos');
+const { SIN_RENOVAR, SERVICIOS_CONTRATO, textoLike } = require('../sql/fragmentos');
 
 // Cantidad de contratos en cada etapa del ciclo de renovación (días hasta/desde el vencimiento)
 async function etapasRenovacion(db) {
@@ -76,7 +76,7 @@ async function listar(db, { texto, estado, mes = '', ejecutivo = null, desde = n
        AND ($6::date IS NULL OR (k.creado_en AT TIME ZONE $8)::date >= $6)
        AND ($7::date IS NULL OR (k.creado_en AT TIME ZONE $8)::date <= $7)
        AND ($6::date IS NULL OR k.estado <> 'cancelado')
-     ORDER BY k.creado_en DESC LIMIT $3`, [texto, estado, limite, mes, ejecutivo, desde, hasta, config.bd.zonaHoraria]);
+     ORDER BY k.creado_en DESC LIMIT $3`, [textoLike(texto), estado, limite, mes, ejecutivo, desde, hasta, config.bd.zonaHoraria]);
   return r.rows.map(tipar);
 }
 

@@ -3,6 +3,7 @@
    Solo lectura: la tabla es inmutable por trigger.
    ========================================================= */
 const config = require('../../config');
+const { textoLike } = require('../sql/fragmentos');
 
 async function listar(db, { dias, accion, texto }, limite) {
   const r = await db.query(`
@@ -17,9 +18,9 @@ async function listar(db, { dias, accion, texto }, limite) {
       LEFT JOIN roles ro   ON ro.id = u.rol_id
      WHERE ra.fecha >= now() - make_interval(days => $1)
        AND ($2 = '' OR ra.accion = $2)
-       AND ($3 = '' OR u.nombre ILIKE '%' || $3 || '%' OR ra.tabla_afectada ILIKE '%' || $3 || '%' OR ra.registro_id = $3)
+       AND ($3 = '' OR u.nombre ILIKE '%' || $6 || '%' OR ra.tabla_afectada ILIKE '%' || $6 || '%' OR ra.registro_id = $3)
      ORDER BY ra.fecha DESC
-     LIMIT $4`, [dias, accion, texto, limite, config.bd.zonaHoraria]);
+     LIMIT $4`, [dias, accion, texto, limite, config.bd.zonaHoraria, textoLike(texto)]);
   return r.rows;
 }
 
