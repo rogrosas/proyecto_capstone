@@ -12,6 +12,8 @@ npm run dev      # se reinicia solo al guardar
 
 Abrir <http://localhost:3000>. Otro puerto: `PORT=8080 npm start`.
 
+Publicarlo en internet (Render + PostgreSQL en Neon): ver [DESPLIEGUE.md](DESPLIEGUE.md).
+
 ## Base de datos (CRM)
 
 El CRM (`/crm`) lee y escribe en la base **EO_ER** de PostgreSQL (la de pgAdmin 4), creada con

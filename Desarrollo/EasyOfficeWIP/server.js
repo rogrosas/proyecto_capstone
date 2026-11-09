@@ -5,6 +5,6 @@ const avisos = require('./src/negocio/servicios/avisos.servicio');
 
 app.listen(config.puerto, () => {
   console.log(`Easy Office corriendo en http://localhost:${config.puerto}`);
-  if (!process.env.PGPASSWORD) console.warn('Aviso: falta PGPASSWORD en .env; el CRM no podrá conectarse a PostgreSQL.');
+  if (!process.env.PGPASSWORD && !config.bd.url) console.warn('Aviso: falta DATABASE_URL o PGPASSWORD en .env; el CRM no podrá conectarse a PostgreSQL.');
   avisos.iniciar();
 });

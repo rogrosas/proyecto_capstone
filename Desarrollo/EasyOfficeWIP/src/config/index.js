@@ -1,17 +1,23 @@
 /* =========================================================
    Configuración (transversal a todas las capas).
    Los valores salen del archivo .env; aquí solo hay valores por defecto.
-   La conexión a PostgreSQL usa PGHOST, PGPORT, PGDATABASE, PGUSER y
-   PGPASSWORD, que la librería pg lee directamente del entorno.
+   La conexión a PostgreSQL usa DATABASE_URL (base en la nube: Neon, Supabase…)
+   o, si falta, PGHOST, PGPORT, PGDATABASE, PGUSER y PGPASSWORD, que la
+   librería pg lee directamente del entorno (PGSSLMODE=require activa SSL).
    ========================================================= */
 const path = require('path');
 
 module.exports = {
   puerto: Number(process.env.PORT) || 3000,
   produccion: process.env.NODE_ENV === 'production',
+  // Detrás de un proxy (Render, Railway…): cuántos saltos confiar para leer la IP real del visitante
+  // en X-Forwarded-For (límite de intentos y auditoría). Sin valor: solo el proxy local.
+  proxy: process.env.TRUST_PROXY ? (Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY) : 'loopback',
 
   bd: {
-    maxConexiones: 10,
+    // postgresql://usuario:clave@host/base?sslmode=require (la entrega Neon/Supabase). Tiene prioridad sobre PG*.
+    url: process.env.DATABASE_URL || null,
+    maxConexiones: Number(process.env.PG_MAX_CONEXIONES) || 10,
     inactividadMs: 30000,
     tiempoMaxConsultaMs: 15000,   // PostgreSQL corta una consulta que tarde más (limita consultas abusivas o trabadas)
     zonaHoraria: 'America/Santiago'

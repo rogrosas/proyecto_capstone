@@ -23,6 +23,9 @@ const BD_DIR = path.resolve(__dirname, '..', '..', '..', 'base de datos');
 const SCRIPTS = ['easyoffice_v2.sql', 'easyoffice_v2_datos_muestra.sql'];
 const PREFIJO = 'eo_prueba_';
 
+// Las pruebas crean bases propias con PGHOST/PGUSER/PGPASSWORD: nunca usan la base en la nube
+delete process.env.DATABASE_URL;
+
 let estado = null;
 
 const clave = () => crypto.randomBytes(9).toString('base64url') + 'a1';

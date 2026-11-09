@@ -16,7 +16,7 @@ const PUBLIC = path.join(__dirname, '..', 'public');
 const app = express();
 
 app.disable('x-powered-by');
-app.set('trust proxy', 'loopback');
+app.set('trust proxy', require('./config').proxy);
 app.use(cabecerasSeguras);
 app.use(express.json({ limit: '100kb' }));
 

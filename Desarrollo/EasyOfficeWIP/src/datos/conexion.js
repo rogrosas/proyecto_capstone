@@ -17,6 +17,7 @@ const config = require('../config');
 const { AppError, errores } = require('../comun/errores');
 
 const pool = new Pool({
+  ...(config.bd.url ? { connectionString: config.bd.url } : {}),
   max: config.bd.maxConexiones,
   idleTimeoutMillis: config.bd.inactividadMs,
   statement_timeout: config.bd.tiempoMaxConsultaMs

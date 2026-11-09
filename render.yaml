@@ -1,0 +1,50 @@
+# Despliegue de Easy Office en Render (https://render.com) — "Blueprint".
+# La base de datos PostgreSQL vive en Neon; ver Desarrollo/EasyOfficeWIP/DESPLIEGUE.md.
+services:
+  - type: web
+    name: easyoffice
+    runtime: node
+    plan: free                      # se duerme tras 15 min sin visitas; "starter" (de pago) no
+    region: virginia                # misma zona que la base en Neon (AWS us-east-1): cada consulta es rápida
+    rootDir: Desarrollo/EasyOfficeWIP
+    buildCommand: npm ci --omit=dev
+    # El disco del plan gratis se borra en cada reinicio: antes de arrancar se vuelven a
+    # crear los contratos Word que la base menciona (generados/ no va en git).
+    startCommand: npm run regenerar-archivos; npm start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: "1"
+      - key: TZ
+        value: America/Santiago
+      # Se completan en el panel de Render (sync: false = no se guardan en este archivo)
+      - key: DATABASE_URL
+        sync: false
+      - key: APP_URL
+        sync: false
+      # Claves de firma: Render genera un valor aleatorio la primera vez
+      - key: CLIENTE_SECRETO
+        generateValue: true
+      - key: FIRMA_SECRETO
+        generateValue: true
+      - key: PAGO_SECRETO
+        generateValue: true
+      # 64 caracteres hexadecimales; generar con: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+      - key: TOTP_CLAVE
+        sync: false
+      # Correo saliente (opcional). Sin SMTP_HOST los enlaces quedan en los Logs de Render.
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "465"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: CORREO_REMITENTE
+        sync: false

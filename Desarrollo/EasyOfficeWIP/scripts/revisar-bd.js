@@ -10,9 +10,12 @@ const mal = (t) => console.log('  ✘ ' + t);
 const info = (t) => console.log('    ' + t);
 
 (async () => {
-  console.log(`\nBase: ${process.env.PGDATABASE || '(sin PGDATABASE)'} en ${process.env.PGHOST || 'localhost'}:${process.env.PGPORT || 5432} como ${process.env.PGUSER || '(sin PGUSER)'}\n`);
-  if (!process.env.PGPASSWORD) {
-    mal('No hay contraseña: copie .env.example como .env y complete PGPASSWORD.');
+  if (process.env.DATABASE_URL) {
+    const u = new URL(process.env.DATABASE_URL);
+    console.log(`\nBase: ${u.pathname.slice(1)} en ${u.host} como ${decodeURIComponent(u.username)} (DATABASE_URL)\n`);
+  } else console.log(`\nBase: ${process.env.PGDATABASE || '(sin PGDATABASE)'} en ${process.env.PGHOST || 'localhost'}:${process.env.PGPORT || 5432} como ${process.env.PGUSER || '(sin PGUSER)'}\n`);
+  if (!process.env.PGPASSWORD && !process.env.DATABASE_URL) {
+    mal('No hay contraseña: copie .env.example como .env y complete DATABASE_URL o PGPASSWORD.');
     process.exit(1);
   }
 
