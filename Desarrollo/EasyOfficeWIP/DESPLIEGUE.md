@@ -46,12 +46,12 @@ Por eso:
    | Variable | Valor |
    |---|---|
    | `DATABASE_URL` | La cadena de Neon del paso 1.3 |
-   | `APP_URL` | `https://easyoffice.onrender.com` (o el dominio propio del paso 3) |
+   | `APP_URL` | `https://easyoffice-rou6.onrender.com` (o el dominio propio del paso 3) |
    | `TOTP_CLAVE` | Opcional (segundo factor del CRM). `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
    | `SMTP_*`, `CORREO_REMITENTE` | Opcional, ver "Correos" |
 
    `CLIENTE_SECRETO`, `FIRMA_SECRETO` y `PAGO_SECRETO` los genera Render solo.
-4. **Apply**. El primer despliegue tarda unos minutos; queda en `https://easyoffice.onrender.com`
+4. **Apply**. El primer despliegue tarda unos minutos; queda en `https://easyoffice-rou6.onrender.com`
    (el nombre exacto aparece en el panel).
 
 Cada `git push` a `main` vuelve a desplegar solo.
@@ -60,7 +60,7 @@ Cada `git push` a `main` vuelve a desplegar solo.
 
 1. En Render: servicio → **Settings → Custom Domains → Add** → `app.f5soluciones.cl`.
 2. En cPanel: **Dominios → Zone Editor** → `f5soluciones.cl` → **+ CNAME Record**:
-   nombre `app`, registro `easyoffice.onrender.com` (lo que indique Render).
+   nombre `app`, registro `easyoffice-rou6.onrender.com` (lo que indique Render).
 3. Esperar unos minutos: Render verifica el dominio y emite el certificado HTTPS.
 4. Cambiar `APP_URL` en Render a `https://app.f5soluciones.cl`.
 
