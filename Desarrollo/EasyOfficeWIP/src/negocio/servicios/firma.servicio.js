@@ -186,7 +186,11 @@ async function firmaParaCliente(db, documento, email) {
   const firmantes = await firmaRepo.firmantes(db, documento.id);
   const yo = firmantes.find((f) => f.estado === 'pendiente' && f.email.toLowerCase() === String(email).toLowerCase());
   let enlace = null;
-  if (yo && documento.estado === 'enviado_firma' && plataforma.activo() && plataforma.proveedor().enlace) enlace = plataforma.proveedor().enlace(yo.id_externo);
+  if (yo && documento.estado === 'enviado_firma' && plataforma.activo() && plataforma.proveedor().enlace) {
+    enlace = plataforma.proveedor().enlace(yo.id_externo);
+    // Enlace al propio sitio: relativo, para que abra en el dominio donde está el cliente (no depende de APP_URL)
+    if (enlace.startsWith(config.appUrl + '/')) enlace = enlace.slice(config.appUrl.length);
+  }
   return { firmantes: firmantes.map((f) => ({ nombre: f.nombre, estado: f.estado, firmado: f.firmado })), enlace };
 }
 
