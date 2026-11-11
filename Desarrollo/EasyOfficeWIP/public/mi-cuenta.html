@@ -40,7 +40,8 @@
         </button>
       </div>
       <div class="gate-foot">
-        ¿Aún no es cliente? <a class="link" href="/contratar">Contrate en línea</a> o <a class="link" data-agenda>agende 30 minutos</a> con un ejecutivo.
+        ¿Aún no tiene cuenta? Regístrese como <a class="link" data-registro="persona">persona</a> o como <a class="link" data-registro="empresa">empresa</a>.<br>
+        También puede <a class="link" href="/contratar">contratar en línea</a> o <a class="link" data-agenda>agendar 30 minutos</a> con un ejecutivo.
       </div>
     </div>
   </div>
@@ -73,6 +74,101 @@
       <div class="aviso-error" id="accesoError" hidden></div>
       <button class="btn btn-g btn-w" type="submit" id="btnAcceso">Ingresar</button>
       <div class="gate-foot" id="accesoPie"></div>
+    </div>
+  </form>
+
+  <!-- 2b. Registrarse (aún no es cliente): se confirma con un enlace al correo -->
+  <form class="gate-card gate-ancha" id="registroForm" novalidate hidden>
+    <div class="gate-head">
+      <button type="button" class="btn-link" data-volver>← Cambiar tipo de cuenta</button>
+      <h2 id="registroTitulo" style="margin-top:10px;">Registro persona</h2>
+      <p id="registroTexto"></p>
+    </div>
+    <div class="gate-body">
+      <fieldset class="rg-grupo" id="rgEmpresa">
+        <legend>Datos de la empresa</legend>
+        <div class="rg-fila">
+          <div class="gf">
+            <label for="rEmpRut">RUT de la empresa</label>
+            <input type="text" id="rEmpRut" data-rut placeholder="77.496.835-0" autocomplete="off" maxlength="12">
+            <span class="err-campo" data-err="rEmpRut"></span>
+          </div>
+          <div class="gf">
+            <label for="rGiro">Giro <span class="opc">(opcional)</span></label>
+            <input type="text" id="rGiro" maxlength="200" autocomplete="off">
+            <span class="err-campo" data-err="rGiro"></span>
+          </div>
+        </div>
+        <div class="gf">
+          <label for="rRazon">Razón social</label>
+          <input type="text" id="rRazon" maxlength="200" placeholder="Ej.: Comercial Andes SpA" autocomplete="organization">
+          <span class="err-campo" data-err="rRazon"></span>
+        </div>
+      </fieldset>
+
+      <fieldset class="rg-grupo">
+        <legend id="rgPersonaLeyenda">Sus datos</legend>
+        <div class="gf">
+          <label for="rNombre">Nombre completo</label>
+          <input type="text" id="rNombre" maxlength="150" placeholder="Nombre y apellidos" autocomplete="name">
+          <span class="err-campo" data-err="rNombre"></span>
+        </div>
+        <div class="rg-fila">
+          <div class="gf">
+            <label for="rRut" id="rRutLbl">RUT</label>
+            <input type="text" id="rRut" data-rut placeholder="18.765.432-7" autocomplete="off" maxlength="12">
+            <span class="err-campo" data-err="rRut"></span>
+          </div>
+          <div class="gf">
+            <label for="rCel">Celular</label>
+            <input type="tel" id="rCel" placeholder="+56 9 1234 5678" autocomplete="tel" maxlength="16">
+            <span class="err-campo" data-err="rCel"></span>
+          </div>
+        </div>
+        <div class="gf">
+          <label for="rMail">Correo electrónico</label>
+          <input type="email" id="rMail" placeholder="nombre@correo.cl" autocomplete="email" maxlength="200">
+          <span class="hint" id="rMailHint">Le enviaremos un enlace para confirmarlo. Con este correo ingresará a su cuenta.</span>
+          <span class="err-campo" data-err="rMail"></span>
+        </div>
+        <div class="gf">
+          <label for="rMail2">Repita el correo</label>
+          <input type="email" id="rMail2" autocomplete="off" maxlength="200">
+          <span class="err-campo" data-err="rMail2"></span>
+        </div>
+      </fieldset>
+
+      <fieldset class="rg-grupo">
+        <legend>Contraseña</legend>
+        <div class="rg-fila">
+          <div class="gf">
+            <label for="rPw">Contraseña</label>
+            <div class="pw-wrap">
+              <input type="password" id="rPw" autocomplete="new-password" maxlength="72">
+              <button type="button" class="pw-toggle" data-pw="rPw">Mostrar</button>
+            </div>
+            <div class="pw-nivel" aria-hidden="true"><i id="rPwNivel"></i></div>
+            <span class="hint">Al menos 8 caracteres, con letras y números.</span>
+            <span class="err-campo" data-err="rPw"></span>
+          </div>
+          <div class="gf">
+            <label for="rPw2">Repita la contraseña</label>
+            <input type="password" id="rPw2" autocomplete="new-password" maxlength="72">
+            <span class="err-campo" data-err="rPw2"></span>
+          </div>
+        </div>
+      </fieldset>
+
+      <label class="rg-check" id="rgRep"><input type="checkbox" id="rRep"> Declaro que soy el representante legal de la empresa y que estoy facultado para contratar a su nombre.</label>
+      <span class="err-campo" data-err="rRep"></span>
+      <label class="rg-check"><input type="checkbox" id="rAcepta"> Acepto las condiciones del servicio y el tratamiento de mis datos personales para gestionar mi cuenta. Declaro que los datos ingresados son correctos y de mi titularidad.</label>
+      <span class="err-campo" data-err="rAcepta"></span>
+      <label class="rg-check"><input type="checkbox" id="rCom"> Quiero recibir novedades y ofertas de Easy Office por correo (opcional).</label>
+
+      <div class="aviso-ok" id="registroOk" hidden></div>
+      <div class="aviso-error" id="registroError" hidden></div>
+      <button class="btn btn-g btn-w" type="submit" id="btnRegistro">Crear mi cuenta</button>
+      <div class="gate-foot">¿Ya tiene cuenta? <a class="link" data-modo="ingresar">Ingresar</a>.</div>
     </div>
   </form>
 

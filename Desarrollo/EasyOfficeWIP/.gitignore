@@ -3,3 +3,4 @@ npm-debug.log*
 .env
 __pycache__/
 correos-dev/
+credenciales-demo.txt

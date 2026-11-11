@@ -20,6 +20,14 @@ module.exports = {
     res.json({ cliente });
   },
 
+  registrar: async (req, res) => res.status(202).json(await portalServicio.registrar(req.body, req.ip)),
+
+  confirmarRegistro: async (req, res) => {
+    const { token, cliente } = await portalServicio.confirmarRegistro(req.body?.token);
+    escribirSesionCliente(res, token, config.cliente.duracionMs);
+    res.status(201).json({ cliente });
+  },
+
   salir: async (req, res) => {
     await portalServicio.cerrarSesion(leerSesionCliente(req));
     borrarSesionCliente(res);

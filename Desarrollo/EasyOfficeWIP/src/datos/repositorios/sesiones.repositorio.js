@@ -10,6 +10,7 @@
 const personal = new Map();      // token -> { usuario, expira }
 const clientes = new Map();      // token -> { cliente, expira }
 const enlacesUsados = new Map(); // id del enlace de acceso -> vencimiento (uso único)
+const registros = new Map();     // token del correo de confirmación -> { datos, expira } (registro en el portal)
 
 function guardar(token, usuario, expira) { personal.set(token, { usuario, expira }); }
 function obtener(token) { return personal.get(token) || null; }
@@ -28,4 +29,18 @@ function consumirEnlace(id, vence) {
   return true;
 }
 
-module.exports = { guardar, obtener, eliminar, guardarCliente, obtenerCliente, eliminarCliente, consumirEnlace };
+// Registro pendiente de confirmar por correo: se guarda hasta que vence y se usa una sola vez
+function guardarRegistro(token, datos, expira) {
+  const ahora = Date.now();
+  for (const [k, v] of registros) if (v.expira < ahora) registros.delete(k);
+  registros.set(token, { datos, expira });
+}
+function tomarRegistro(token) {
+  const r = registros.get(token);
+  registros.delete(token);
+  return r && r.expira >= Date.now() ? r.datos : null;
+}
+
+module.exports = {
+  guardar, obtener, eliminar, guardarCliente, obtenerCliente, eliminarCliente, consumirEnlace, guardarRegistro, tomarRegistro
+};

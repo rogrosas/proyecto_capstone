@@ -113,7 +113,15 @@ necesita el script `Desarrollo/base de datos/scripts/easyoffice_v2_cuentas_porta
    servir si la persona ya no está vinculada. Al abrirlo define su contraseña y queda con la sesión iniciada.
 3. **Ingresar**: tipo, (RUT), correo y contraseña. El mensaje de error no dice qué dato falló. Máximo 10 intentos
    cada 15 minutos por IP y por correo.
-4. La sesión de cliente usa la cookie `eo_cli`, separada de la del personal. El panel muestra servicios vigentes,
+4. **Registrarse** (quien aún no es cliente), como persona o como empresa. Se valida en el navegador y otra vez en
+   el servidor: RUT con dígito verificador (persona bajo 50.000.000, empresa desde 50.000.000, distintos entre sí),
+   nombre y apellido, correo (repetido), celular chileno, contraseña de 8 a 72 caracteres con letras y números
+   (repetida), aceptación de las condiciones y, en empresa, razón social y la declaración de ser representante legal.
+   Si el RUT ya es cliente, o el RUT del representante está registrado con otro correo, se rechaza (409).
+   El registro queda pendiente 15 minutos y llega un enlace al correo (`/mi-cuenta?registro=…`, sirve una vez):
+   recién al abrirlo se crea el cliente (`origen = 'web'`, con su consentimiento de comunicaciones si lo marcó),
+   su cuenta del portal, y queda con la sesión iniciada. Máximo 5 solicitudes cada 15 minutos por IP y por correo.
+5. La sesión de cliente usa la cookie `eo_cli`, separada de la del personal. El panel muestra servicios vigentes,
    documentos, pagos y datos con consultas de **solo lectura** filtradas por el `cliente_id` de la sesión.
    Los ingresos y salidas quedan en `registros_actividad`.
 
@@ -125,6 +133,7 @@ Configuración en `.env`: `APP_URL` (para armar el enlace), `CLIENTE_SECRETO` y 
 del servidor; con un servidor SMTP (Gmail/Workspace, Brevo, etc.) se envían de verdad.
 
 API: `POST /api/cliente/ingresar`, `POST /api/cliente/clave` (pide el enlace), `POST /api/cliente/clave/definir`,
+`POST /api/cliente/registro`, `POST /api/cliente/registro/confirmar`,
 `POST /api/cliente/salir`, `GET /api/cliente/yo`, `GET /api/cliente/panel`.
 
 ### Módulos del CRM y tablas que usan

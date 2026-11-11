@@ -6,6 +6,9 @@
    2. Sin contraseña (o si la olvidó): POST /api/cliente/clave envía un enlace al correo.
       El enlace abre /mi-cuenta?clave=<token> → se define la contraseña con
       POST /api/cliente/clave/definir (inicia la sesión) y se quita el token de la URL.
+   2b. Sin cuenta: se registra como persona o empresa (POST /api/cliente/registro, con
+      validaciones aquí y en el servidor). Le llega un enlace /mi-cuenta?registro=<token>;
+      al abrirlo, POST /api/cliente/registro/confirmar crea el cliente e inicia la sesión.
    3. Con sesión: GET /api/cliente/panel y se dibujan las pestañas.
    4. Documentos: el cliente revisa un borrador con marca de agua (iframe de
       /api/cliente/documentos/<id>/borrador), marca "estoy de acuerdo" y lo acepta
@@ -63,7 +66,7 @@
     $('panelWrap').hidden = true;
     $('userbox').hidden = true;
     $('userboxOut').hidden = false;
-    ['pasoTipo', 'accesoForm', 'claveForm'].forEach((p) => { $(p).hidden = p !== id; });
+    ['pasoTipo', 'accesoForm', 'registroForm', 'claveForm'].forEach((p) => { $(p).hidden = p !== id; });
   }
 
   function mostrarAcceso({ ok, error } = {}) {
@@ -85,6 +88,7 @@
     $('accesoPie').innerHTML = clave
       ? '¿Ya tiene contraseña? <a class="link" data-modo="ingresar">Ingresar</a>.'
       : '¿Olvidó su contraseña o aún no la tiene? <a class="link" data-modo="clave">Crear o recuperar contraseña</a>.'
+        + `<br>¿Aún no tiene cuenta? <a class="link" data-registro="${tipo}">Regístrese</a>.`
         + (tipo === 'empresa' ? '<br>Si su correo no está vinculado a la empresa, pida a su ejecutivo que lo autorice.' : '')
         + '<br>Si cambió de correo, escríbanos a info@easyoffice.cl.';
     aviso('accesoOk', ok); aviso('accesoError', error);
@@ -121,6 +125,161 @@
     }
   });
 
+  /* ---------- registro ---------- */
+  const RUT_EMPRESA = 50000000;   // las personas jurídicas tienen RUT desde 50.000.000
+  const LETRAS = 'A-Za-zÁÉÍÓÚÜÑáéíóúüñ';
+
+  // "187654327" -> { normal: '18765432-7', fmt: '18.765.432-7', valido }
+  function leerRut(valor) {
+    const v = String(valor || '').toUpperCase().replace(/[^0-9K]/g, '');
+    if (v.length < 2) return { normal: '', fmt: v, valido: false, cuerpo: 0 };
+    const cuerpo = v.slice(0, -1), dv = v.slice(-1);
+    let suma = 0, mult = 2;
+    for (let i = cuerpo.length - 1; i >= 0; i--) { suma += Number(cuerpo[i]) * mult; mult = mult === 7 ? 2 : mult + 1; }
+    const r = 11 - (suma % 11);
+    const esperado = r === 11 ? '0' : r === 10 ? 'K' : String(r);
+    return {
+      normal: `${cuerpo}-${dv}`, fmt: `${Number(cuerpo).toLocaleString('es-CL')}-${dv}`, cuerpo: Number(cuerpo),
+      valido: /^[0-9]{7,8}$/.test(cuerpo) && dv === esperado
+    };
+  }
+  const celular = (v) => { let d = String(v || '').replace(/\D/g, ''); if (d.length === 11 && d.startsWith('56')) d = d.slice(2); return d; };
+  const emailOk = (v) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
+
+  // 0 a 3 según largo y variedad (solo orienta; el mínimo lo exige la validación)
+  function nivelClave(p) {
+    if (!p) return 0;
+    let n = 0;
+    if (p.length >= 8) n++;
+    if (new RegExp(`[${LETRAS}]`).test(p) && /[0-9]/.test(p)) n++;
+    if (p.length >= 12 || (/[A-ZÁÉÍÓÚÑ]/.test(p) && /[a-záéíóúñ]/.test(p) && /[^A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ]/.test(p))) n++;
+    return Math.max(1, n);
+  }
+
+  const registro = { tipo: 'persona' };
+
+  function mostrarRegistro(tipo) {
+    registro.tipo = tipo; acceso.tipo = tipo;
+    const empresa = tipo === 'empresa';
+    verPaso('registroForm');
+    $('registroTitulo').textContent = empresa ? 'Registro empresa' : 'Registro persona';
+    $('registroTexto').textContent = empresa
+      ? 'Registre su empresa en Easy Office. Los datos personales son los del representante legal, que será quien ingrese a la cuenta.'
+      : 'Cree su cuenta de Easy Office para contratar y revisar sus servicios, contratos, documentos y pagos.';
+    $('rgEmpresa').hidden = !empresa;
+    $('rgRep').hidden = !empresa;
+    $('rgPersonaLeyenda').textContent = empresa ? 'Representante legal' : 'Sus datos';
+    $('rRutLbl').textContent = empresa ? 'RUT del representante legal' : 'RUT';
+    limpiarErrores();
+    aviso('registroOk'); aviso('registroError');
+    $('btnRegistro').disabled = false;
+    (empresa ? $('rEmpRut') : $('rNombre')).focus();
+  }
+
+  function errorCampo(id, texto) {
+    const span = document.querySelector(`[data-err="${id}"]`);
+    if (span) span.textContent = texto || '';
+    $(id).classList?.toggle('mal', !!texto);
+    if (texto) $(id).setAttribute('aria-invalid', 'true'); else $(id).removeAttribute('aria-invalid');
+  }
+  function limpiarErrores() {
+    document.querySelectorAll('#registroForm [data-err]').forEach((s) => errorCampo(s.dataset.err));
+  }
+
+  // Devuelve { campo: mensaje } con lo que falta o está mal
+  function validarRegistro() {
+    const empresa = registro.tipo === 'empresa';
+    const val = (id) => $(id).value.trim();
+    const e = {};
+    if (empresa) {
+      const r = leerRut(val('rEmpRut'));
+      if (!val('rEmpRut')) e.rEmpRut = 'Ingrese el RUT de la empresa.';
+      else if (!r.valido) e.rEmpRut = 'El RUT no es válido (revise el dígito verificador).';
+      else if (r.cuerpo < RUT_EMPRESA) e.rEmpRut = 'No es el RUT de una persona jurídica (debe ser desde 50.000.000).';
+      const razon = val('rRazon').replace(/\s+/g, ' ');
+      if (!razon) e.rRazon = 'Ingrese la razón social.';
+      else if (razon.length < 3) e.rRazon = 'La razón social es demasiado corta.';
+      if (!$('rRep').checked) e.rRep = 'Debe declarar que es el representante legal.';
+    }
+    const nombre = val('rNombre').replace(/\s+/g, ' ');
+    if (!nombre) e.rNombre = 'Ingrese su nombre completo.';
+    else if (!new RegExp(`^[${LETRAS}' .-]+$`).test(nombre)) e.rNombre = 'Use solo letras, espacios, apóstrofos y guiones.';
+    else if (nombre.split(' ').filter((p) => p.replace(new RegExp(`[^${LETRAS}]`, 'g'), '').length >= 2).length < 2) e.rNombre = 'Ingrese su nombre y al menos un apellido.';
+
+    const rut = leerRut(val('rRut'));
+    if (!val('rRut')) e.rRut = 'Ingrese el RUT.';
+    else if (!rut.valido) e.rRut = 'El RUT no es válido (revise el dígito verificador).';
+    else if (rut.cuerpo >= RUT_EMPRESA) e.rRut = empresa ? 'Debe ser el RUT de una persona, no de una empresa.' : 'Ese RUT es de una empresa: regístrese como empresa.';
+    else if (empresa && !e.rEmpRut && rut.normal === leerRut(val('rEmpRut')).normal) e.rRut = 'Debe ser distinto del RUT de la empresa.';
+
+    const cel = celular(val('rCel'));
+    if (!cel) e.rCel = 'Ingrese su celular.';
+    else if (!/^9[0-9]{8}$/.test(cel)) e.rCel = 'Debe tener 9 dígitos y empezar con 9.';
+
+    const mail = val('rMail').toLowerCase();
+    if (!mail) e.rMail = 'Ingrese su correo.';
+    else if (!emailOk(mail)) e.rMail = 'El correo no es válido.';
+    if (mail && !e.rMail && val('rMail2').toLowerCase() !== mail) e.rMail2 = 'Los correos no coinciden.';
+
+    const pw = $('rPw').value;
+    if (pw.length < 8) e.rPw = 'Debe tener al menos 8 caracteres.';
+    else if (new TextEncoder().encode(pw).length > 72) e.rPw = 'Es demasiado larga (máximo 72 caracteres).';
+    else if (!new RegExp(`[${LETRAS}]`).test(pw) || !/[0-9]/.test(pw)) e.rPw = 'Debe combinar letras y números.';
+    if (!e.rPw && $('rPw2').value !== pw) e.rPw2 = 'Las contraseñas no coinciden.';
+    if (!$('rAcepta').checked) e.rAcepta = 'Debe aceptar las condiciones para crear la cuenta.';
+    return e;
+  }
+
+  // RUT con puntos y guion al salir del campo; error del campo se borra al corregirlo
+  document.querySelectorAll('#registroForm [data-rut]').forEach((el) => el.addEventListener('blur', () => {
+    const r = leerRut(el.value);
+    if (r.valido) el.value = r.fmt;
+  }));
+  $('registroForm').addEventListener('input', (e) => {
+    if (e.target.id === 'rPw') {
+      const n = nivelClave(e.target.value);
+      $('rPwNivel').style.width = `${n * 33.4}%`;
+      $('rPwNivel').className = n ? 'n' + n : '';
+    }
+    if (e.target.id && document.querySelector(`[data-err="${e.target.id}"]`)?.textContent) errorCampo(e.target.id);
+  });
+
+  $('registroForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    aviso('registroOk'); aviso('registroError');
+    limpiarErrores();
+    const errores = validarRegistro();
+    const ids = Object.keys(errores);
+    if (ids.length) {
+      ids.forEach((id) => errorCampo(id, errores[id]));
+      aviso('registroError', ids.length === 1 ? 'Revise el campo marcado.' : `Revise los ${ids.length} campos marcados.`);
+      return $(ids[0]).focus();
+    }
+    const empresa = registro.tipo === 'empresa';
+    const datos = {
+      tipo: registro.tipo,
+      nombre: $('rNombre').value.trim(), rut: leerRut($('rRut').value).normal, email: $('rMail').value.trim().toLowerCase(),
+      celular: celular($('rCel').value), password: $('rPw').value,
+      acepta: $('rAcepta').checked, comunicaciones: $('rCom').checked,
+      ...(empresa ? {
+        representante: $('rRep').checked,
+        empresa: { rut: leerRut($('rEmpRut').value).normal, razon_social: $('rRazon').value.trim(), giro: $('rGiro').value.trim() }
+      } : {})
+    };
+    const btn = $('btnRegistro');
+    btn.disabled = true; btn.textContent = 'Enviando…';
+    try {
+      const r = await api('/registro', datos);
+      aviso('registroOk', r.mensaje);
+      $('rPw').value = ''; $('rPw2').value = ''; $('rPwNivel').style.width = '0';
+      btn.textContent = 'Correo enviado';
+      setTimeout(() => { btn.disabled = false; btn.textContent = 'Reenviar el correo'; }, 30000);
+    } catch (err) {
+      aviso('registroError', err.message);
+      btn.disabled = false; btn.textContent = 'Crear mi cuenta';
+    }
+  });
+
   // Enlace del correo: /mi-cuenta?clave=<token>
   let tokenClave = null;
   $('claveForm').addEventListener('submit', async (e) => {
@@ -144,13 +303,14 @@
   });
 
   document.addEventListener('click', (e) => {
-    const t = e.target.closest('[data-tipo],[data-modo],[data-volver],[data-pw]');
+    const t = e.target.closest('[data-tipo],[data-modo],[data-registro],[data-volver],[data-pw]');
     if (!t) return;
     if (t.dataset.pw) {
       const el = $(t.dataset.pw);
       el.type = el.type === 'password' ? 'text' : 'password';
       t.textContent = el.type === 'password' ? 'Mostrar' : 'Ocultar';
     } else if (t.dataset.tipo) mostrarFormulario(t.dataset.tipo, 'ingresar');
+    else if (t.dataset.registro) mostrarRegistro(t.dataset.registro);
     else if (t.dataset.modo) mostrarFormulario(acceso.tipo, t.dataset.modo);
     else mostrarAcceso();
   });
@@ -535,6 +695,16 @@
 
   /* ---------- inicio ---------- */
   (async () => {
+    const registroToken = new URLSearchParams(location.search).get('registro');
+    if (registroToken) {
+      history.replaceState(null, '', '/mi-cuenta'); // el token no queda en el historial
+      try {
+        const { cliente } = await api('/registro/confirmar', { token: registroToken });
+        return mostrarPanel(cliente);
+      } catch (err) {
+        return mostrarAcceso({ error: err.message });
+      }
+    }
     const token = new URLSearchParams(location.search).get('clave');
     if (token) {
       history.replaceState(null, '', '/mi-cuenta'); // el token no queda en el historial

@@ -12,6 +12,8 @@ const correspondencia = require('../controladores/correspondencia.controlador');
 router.post('/ingresar', a(portal.ingresar));             // empresa (RUT + correo) o persona (correo) + contraseña
 router.post('/clave', a(portal.solicitarClave));          // envía el enlace para crear o recuperar la contraseña
 router.post('/clave/definir', a(portal.definirClave));    // define la contraseña con ese enlace e inicia sesión
+router.post('/registro', a(portal.registrar));           // quien aún no es cliente: valida y envía el enlace de confirmación
+router.post('/registro/confirmar', a(portal.confirmarRegistro)); // con ese enlace crea el cliente y su cuenta e inicia sesión
 router.post('/salir', a(portal.salir));
 
 // Requieren sesión de cliente

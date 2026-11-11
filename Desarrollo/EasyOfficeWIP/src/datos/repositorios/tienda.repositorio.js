@@ -39,12 +39,23 @@ async function representante(db, r) {
   return x.rows[0].id;
 }
 
-/** c = { rut, tipo_persona, razon_social, giro_principal, email, celular, representante_legal_id, direccion_id } */
+// Correo del representante con ese RUT: undefined si no existe, null si no tiene correo
+async function correoRepresentante(db, rut) {
+  const r = await db.query('SELECT email FROM representantes_legales WHERE rut = $1', [rut]);
+  return r.rows[0] ? (r.rows[0].email || '').toLowerCase() || null : undefined;
+}
+
+/**
+ * c = { rut, tipo_persona, razon_social, giro_principal, email, celular, representante_legal_id, direccion_id,
+ *       acepta_comunicaciones? } (el consentimiento queda con su fecha, Ley 21.719)
+ */
 async function crearCliente(db, c) {
   const r = await db.query(`
-    INSERT INTO clientes (rut, tipo_persona, razon_social, giro_principal, email, celular, representante_legal_id, direccion_id, origen)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'web') RETURNING id`,
-    [c.rut, c.tipo_persona, c.razon_social, c.giro_principal, c.email, c.celular, c.representante_legal_id, c.direccion_id]);
+    INSERT INTO clientes (rut, tipo_persona, razon_social, giro_principal, email, celular, representante_legal_id, direccion_id, origen,
+                          acepta_comunicaciones, consentimiento_en)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'web', $9, CASE WHEN $9 THEN now() END) RETURNING id`,
+    [c.rut, c.tipo_persona, c.razon_social, c.giro_principal, c.email, c.celular, c.representante_legal_id, c.direccion_id,
+      c.acepta_comunicaciones === true]);
   return r.rows[0].id;
 }
 
@@ -164,6 +175,6 @@ async function guardarEntrega(db, contratoId, entrega) {
 }
 
 module.exports = {
-  servicioDePlan, crearServicioDePlan, clientePorRut, representante, crearCliente, comunas, puntoDeVenta, crearContrato,
+  servicioDePlan, crearServicioDePlan, clientePorRut, representante, correoRepresentante, crearCliente, comunas, puntoDeVenta, crearContrato,
   ejecutivoParaVenta, asignarTransaccion, pagoPorTransaccion, pagoDelCliente, aprobarPago, rechazarPago, nuevoIntento, activarContrato, compra, guardarEntrega
 };
