@@ -5,7 +5,7 @@
    ========================================================= */
 import { $, esc, iniciales, toast } from './util.js';
 import { api, post, onSesionExpirada } from './api.js';
-import { estado, nav } from './estado.js';
+import { estado, nav, tiene } from './estado.js';
 import { cerrarModal, cerrarTodo } from './modal.js';
 
 import dashboard from './modulos/dashboard.js';
@@ -23,8 +23,9 @@ import { abrirSeguridad } from './modulos/seguridad.js';
 const MODULOS = [dashboard, clientes, contratos, renovaciones, documentos, tickets, ventas, correspondencia, auditoria, administracion];
 let actual = 'dashboard';
 
+// Un módulo con permisos se muestra si el rol tiene al menos uno de ellos
 function visibles() {
-  return MODULOS.filter((m) => !m.soloAdmin || estado.usuario?.admin);
+  return MODULOS.filter((m) => !m.permisos || m.permisos.some(tiene));
 }
 
 function renderMenu() {
@@ -75,6 +76,14 @@ function mostrarLogin(msg) {
 }
 onSesionExpirada(mostrarLogin);
 
+function mostrarRol(u) {
+  const rol = String(u.rol || '');
+  $('rolBadge').textContent = u.admin ? 'Administrador' : rol.charAt(0).toUpperCase() + rol.slice(1);
+  $('rolBadge').className = 'bg ' + (u.admin ? 'grn' : 'gry');
+  $('rolBadge').title = u.admin ? 'Administrador: todos los permisos' : u.permisos?.length ? 'Permisos: ' + u.permisos.join(', ') : 'Sin permisos asignados';
+  $('sessName').textContent = `${u.nombre} · ${u.rol}`;
+}
+
 function entrar(u) {
   estado.usuario = u;
   $('gate').hidden = true;
@@ -82,10 +91,7 @@ function entrar(u) {
   $('whoAv').textContent = iniciales(u.nombre);
   $('whoName').textContent = u.nombre;
   $('whoMail').textContent = u.email;
-  $('rolBadge').textContent = u.admin ? 'Administrador' : 'Ejecutivo';
-  $('rolBadge').className = 'bg ' + (u.admin ? 'grn' : 'gry');
-  $('rolBadge').title = u.permisos?.length ? 'Permisos: ' + u.permisos.join(', ') : 'Sin permisos asignados';
-  $('sessName').textContent = `${u.nombre} · ${u.rol}`;
+  mostrarRol(u);
   $('gPw').value = '';
   ir(location.hash.slice(1) || 'dashboard');
 }
@@ -189,10 +195,27 @@ const CADA_MS = 30 * 1000;
 let ultimaActualizacion = Date.now();
 let actualizando = false;
 
+// Rol y permisos vigentes: si un administrador los cambió, el menú y la sección se ajustan solos
+const firma = (u) => JSON.stringify([u.rol, u.admin, [...(u.permisos || [])].sort()]);
+async function revisarPermisos() {
+  const r = await fetch('/api/crm/yo', { credentials: 'same-origin' });
+  if (!r.ok) return false;
+  const { usuario } = await r.json();
+  if (!estado.usuario || firma(usuario) === firma(estado.usuario)) return false;
+  estado.usuario = usuario;
+  mostrarRol(usuario);
+  toast('Sus permisos cambiaron: el menú se actualizó.');
+  return true;
+}
+
 async function actualizarVista() {
-  const m = visibles().find((x) => x.id === actual);
-  if (!estado.usuario || !m?.actualizar || actualizando || document.visibilityState !== 'visible') return;
+  if (!estado.usuario || actualizando || document.visibilityState !== 'visible') return;
   if (!$('modalRaiz').hidden) return;
+  try {
+    if (await revisarPermisos()) { await ir(actual); ultimaActualizacion = Date.now(); return; }
+  } catch { /* sin conexión: se reintenta en la próxima vuelta */ }
+  const m = visibles().find((x) => x.id === actual);
+  if (!m?.actualizar) return;
   const foco = document.activeElement;
   if (foco && $('vista').contains(foco) && foco.matches('input, select, textarea')) return;
   if (m.puedeActualizar && !m.puedeActualizar()) return;

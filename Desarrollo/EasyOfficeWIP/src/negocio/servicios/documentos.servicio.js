@@ -9,6 +9,7 @@ const documentosRepo = require('../../datos/repositorios/documentos.repositorio'
 const firmaRepo = require('../../datos/repositorios/firma.repositorio');
 const plataformaFirma = require('../../datos/firma');
 const { impedimento: impedimentoFirma } = require('./firma.servicio');
+const { tienePermiso, exigirPermiso } = require('../roles');
 
 const LIMITE = 300;
 const TIPOS = { revision: true, automatico: false };   // 'pendientes' = esperan la revisión del personal
@@ -27,6 +28,7 @@ async function listar(usuario, { tipo }) {
 }
 
 async function aprobar(usuario, id) {
+  await exigirPermiso(usuario, 'aprobar_documentos');
   id = Number(id);
   if (!Number.isInteger(id)) throw errores.solicitudInvalida('Documento inválido.');
   const ok = await conUsuario(usuario, (db) => documentosRepo.aprobar(db, id));
@@ -113,6 +115,7 @@ function validarParte(p, i) {
 }
 
 async function crear(usuario, d = {}) {
+  const puedeAsignar = await tienePermiso(usuario, 'asignar_clientes');
   const doc = {
     cliente_id: v.id(d.cliente_id, 'Cliente'),
     contrato_id: v.id(d.contrato_id, 'Contrato', { opcional: true }),
@@ -122,7 +125,7 @@ async function crear(usuario, d = {}) {
     lugar: v.texto(d.lugar, 'Lugar', { opcional: true, max: 100 }) || 'Santiago',
     fecha_documento: v.fecha(d.fecha_documento, 'Fecha del documento', { opcional: true }),
     datos: v.json(d.datos, 'Datos') || {},
-    ejecutivo_id: usuario.admin ? v.id(d.ejecutivo_id, 'Ejecutivo', { opcional: true }) ?? usuario.id : usuario.id
+    ejecutivo_id: puedeAsignar ? v.id(d.ejecutivo_id, 'Ejecutivo', { opcional: true }) ?? usuario.id : usuario.id
   };
   const partes = (Array.isArray(d.partes) ? d.partes : []).filter((p) => p && p.nombre).map(validarParte);
   const clausulas = (Array.isArray(d.clausulas) ? d.clausulas : []).map((c) => ({

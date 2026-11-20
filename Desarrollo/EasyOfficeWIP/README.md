@@ -31,6 +31,33 @@ Cada consulta corre con el rol del usuario (`rol_admin` o `rol_ejecutivo`) y con
 así PostgreSQL aplica la seguridad por fila (el ejecutivo ve solo su cartera) y registra la auditoría.
 Los usuarios cuyo rol se llama `admin` o `dueno` ven todo.
 
+### Roles y permisos
+
+Cada rol tiene los permisos marcados en **CRM → Administración → Roles y permisos** (tabla `roles_permisos`).
+El servidor los revisa en cada acción (`src/negocio/roles.js`, `exigirPermiso`) leyéndolos de la base, así
+un cambio rige de inmediato, también para las sesiones abiertas. Sin el permiso la API responde **403** y la
+acción queda como `DENEGADO` en la auditoría. El CRM vuelve a leer los permisos cada 30 s y muestra u oculta
+módulos y botones (es solo visual: la revisión real es la del servidor). `admin` y `dueno` tienen siempre todos.
+
+| Permiso | Qué habilita |
+|---|---|
+| `ver_todos_los_clientes` | Ver y operar todos los clientes (sin él, solo su cartera; también en el tablero) |
+| `asignar_clientes` | Elegir el ejecutivo a cargo de clientes, contratos y documentos |
+| `ver_todos_los_tickets` | Ver los tickets de todos los clientes |
+| `responder_tickets` | Responder un ticket y cambiar su estado |
+| `aprobar_documentos` | Aprobar un documento y publicarlo al cliente |
+| `registrar_pagos` | Registrar un pago o cambiar su estado |
+| `gestionar_renovaciones` | Renovar contratos, notificar alertas, enviar y ver los avisos de vencimiento |
+| `registrar_correspondencia` | Registrar, escanear, avisar y cerrar correspondencia |
+| `ver_reportes` | Exportar listados a Excel (CSV) |
+| `ver_auditoria` | Ver la auditoría |
+| `eliminar_registros` | Eliminar clientes y quitar servicios de un contrato |
+| `administrar_usuarios` | Usuarios, roles y permisos |
+| `administrar_catalogos` | Catálogos, plantillas y documentos de la tienda |
+
+Las acciones de administración (auditoría, usuarios, catálogos, eliminar) se ejecutan con `rol_admin` en la base
+solo después de revisar el permiso; la seguridad por fila sigue aplicando el rol real del usuario.
+
 Lo que el modelo aún no tiene (correspondencia, saldo de firmas) no se conectó:
 la sección Correspondencia del CRM y del portal lo indica.
 
@@ -62,7 +89,7 @@ Base de datos: `easyoffice_v2.sql` ya lo trae; una base anterior necesita
 `Desarrollo/base de datos/scripts/easyoffice_v2_documentos_tienda.sql` (tablas `plantilla_planes` y `tickets`,
 columnas `entrega`/`mapa_campos` en plantillas y `estado_cliente`/`aceptado_*` en documentos).
 
-1. **CRM → Administración → Documentos de la tienda** (solo admin): se sube el `.docx` (queda en
+1. **CRM → Administración → Documentos de la tienda** (permiso `administrar_catalogos`): se sube el `.docx` (queda en
    `base de datos/Contratos/plantillas/`), se vincula a uno o más **planes de la tienda** y se elige la **entrega**:
    - *Automática*: al comprar, el cliente recibe el borrador para revisarlo.
    - *Con revisión*: al comprar queda esperando que el personal lo revise y lo publique.
@@ -146,8 +173,8 @@ API: `POST /api/cliente/ingresar`, `POST /api/cliente/clave` (pide el enlace), `
 | Renovaciones | Etapas D-60 a D+30, avisos, saldo, renovar | contratos, alertas, v_saldo_contrato |
 | Documentos | Alta desde plantilla con partes y cláusulas; revisión, aprobación, firma con código de verificación | documentos, documento_partes, documento_clausulas, plantillas_documento, clausulas_documento |
 | Ventas y pagos | Pagos y cuotas por pasarela; cambio de estado | pagos |
-| Auditoría (admin) | Bitácora de cambios, ingresos y salidas | registros_actividad |
-| Administración (admin) | Usuarios, roles y permisos, y 13 catálogos (servicios, plantillas, cláusulas, emisoras, sucursales, cuentas, propietarios, representantes, regiones, comunas, permisos, plazos de alertas, correlativos de folio) | usuarios, roles, permisos, roles_permisos y las tablas de cada catálogo |
+| Auditoría (permiso `ver_auditoria`) | Bitácora de cambios, ingresos y salidas | registros_actividad |
+| Administración (`administrar_usuarios` / `administrar_catalogos`) | Usuarios, roles y permisos, y 13 catálogos (servicios, plantillas, cláusulas, emisoras, sucursales, cuentas, propietarios, representantes, regiones, comunas, permisos, plazos de alertas, correlativos de folio) | usuarios, roles, permisos, roles_permisos y las tablas de cada catálogo |
 
 El detalle por tabla y columna está en `Desarrollo/base de datos/diccionario_datos_easyoffice.html`
 (se regenera con `npm run db:diccionario`; el uso en la app se describe en `scripts/diccionario/uso-app.js`).
@@ -215,7 +242,7 @@ src/
 │   ├── controladores/ auth, crm, administracion, catalogo
 │   └── middleware/   sesion.js, cookies.js, errores.js
 ├── negocio/
-│   ├── roles.js                    # esAdmin (igual que app_es_admin() de la BD)
+│   ├── roles.js                    # esAdmin (igual que app_es_admin()), tienePermiso, exigirPermiso
 │   ├── validacion.js               # RUT, celular, fechas, montos (igual que los CHECK de la BD)
 │   ├── catalogos.definiciones.js   # lista blanca de catálogos editables en Administración
 │   └── servicios/    auth, dashboard, opciones, clientes, contratos, renovaciones, documentos, pagos, auditoria, administracion, catalogos, catalogo

@@ -26,7 +26,7 @@ export default {
   actualizar: () => cargar({ silencioso: true }),   // main.js la llama cada cierto tiempo para mostrar registros nuevos
   titulo: 'Auditoría',
   sub: () => 'Registro de acciones por usuario',
-  soloAdmin: true,
+  permisos: ['ver_auditoria'],
   async render(el) {
     contenedor = el;
     el.innerHTML = `

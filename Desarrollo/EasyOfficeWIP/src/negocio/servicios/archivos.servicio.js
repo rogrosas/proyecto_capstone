@@ -22,6 +22,7 @@ const catalogoRepo = require('../../datos/repositorios/catalogo.repositorio');
 const campos = require('../camposDocumento');
 const { archivos: cfg } = require('../../config');
 const v = require('../validacion');
+const { exigirPermiso } = require('../roles');
 
 const REGENERABLES = ['borrador', 'rechazado'];
 
@@ -157,14 +158,14 @@ async function plantillas(usuario) {
   return { plantillas: await conUsuario(usuario, (db) => plantillasRepo.conArchivo(db)) };
 }
 
-/* ---------- Administración de la carpeta (solo administradores) ---------- */
-function exigirAdmin(usuario) {
-  if (!usuario.admin) throw errores.sinPermiso('Solo los administradores gestionan las plantillas.');
-}
+/* ---------- Administración de la carpeta (permiso administrar_catalogos) ---------- */
+// Permiso administrar_catalogos; las transacciones de esta sección van con rol_admin
+const exigirAdmin = (usuario) => exigirPermiso(usuario, 'administrar_catalogos');
+const conAdmin = (usuario, fn) => conUsuario(usuario, fn, { elevado: true });
 
 async function listarArchivos(usuario) {
-  exigirAdmin(usuario);
-  const uso = await conUsuario(usuario, (db) => plantillasRepo.usoDeArchivos(db));
+  await exigirAdmin(usuario);
+  const uso = await conAdmin(usuario, (db) => plantillasRepo.usoDeArchivos(db));
   const lista = await archivos.listarPlantillas();
   for (const a of lista) {
     a.plantillas = uso[a.archivo] || null;
@@ -174,7 +175,7 @@ async function listarArchivos(usuario) {
 }
 
 async function subirArchivo(usuario, { nombre, reemplazar }, contenido) {
-  exigirAdmin(usuario);
+  await exigirAdmin(usuario);
   const n = nombreSeguro(String(nombre || '').split(/[\\/]/).pop());
   if (!/\.docx$/i.test(n) || n.startsWith('~$')) throw errores.solicitudInvalida('Solo se aceptan archivos .docx.');
   if (!Buffer.isBuffer(contenido) || !contenido.length) throw errores.solicitudInvalida('El archivo está vacío.');
@@ -184,12 +185,12 @@ async function subirArchivo(usuario, { nombre, reemplazar }, contenido) {
   return { archivo: rel, campos: marcas.length };
 }
 
-/* ---------- Documentos de la tienda (solo administradores) ---------- */
+/* ---------- Documentos de la tienda (permiso administrar_catalogos) ---------- */
 
 // Lista para Administración: cada plantilla con archivo, sus planes, su entrega y cuántas marcas quedan por definir
 async function documentosTienda(usuario) {
-  exigirAdmin(usuario);
-  const lista = await conUsuario(usuario, (db) => plantillasRepo.deTienda(db));
+  await exigirAdmin(usuario);
+  const lista = await conAdmin(usuario, (db) => plantillasRepo.deTienda(db));
   for (const p of lista) {
     try {
       const marcas = word.marcas(await archivos.leer(p.archivo_base));
@@ -211,9 +212,9 @@ const planesTienda = () => catalogoRepo.todos().map((f) => ({
 
 // Marcas detectadas en el Word con la fuente guardada o sugerida, para el formulario de configuración
 async function camposPlantilla(usuario, id) {
-  exigirAdmin(usuario);
+  await exigirAdmin(usuario);
   id = v.id(id, 'Plantilla');
-  const p = await conUsuario(usuario, (db) => plantillasRepo.obtener(db, id));
+  const p = await conAdmin(usuario, (db) => plantillasRepo.obtener(db, id));
   if (!p || !p.archivo_base) throw errores.noEncontrado('La plantilla no tiene archivo Word.');
   const marcas = word.marcas(await archivos.leer(p.archivo_base));
   return {
@@ -230,7 +231,7 @@ async function camposPlantilla(usuario, id) {
 
 /** d = { entrega: 'automatica'|'revision', planes: ['dom-anual'], mapa: { marca: { dato, etiqueta } } } */
 async function configurarTienda(usuario, id, d = {}) {
-  exigirAdmin(usuario);
+  await exigirAdmin(usuario);
   id = v.id(id, 'Plantilla');
   const entrega = v.opcion(d.entrega, ['automatica', 'revision'], 'Entrega');
   const codigos = new Set(catalogoRepo.todos().flatMap((f) => f.plans.map((p) => p.id)));
@@ -238,7 +239,7 @@ async function configurarTienda(usuario, id, d = {}) {
   const desconocido = planes.find((c) => !codigos.has(c));
   if (desconocido) throw errores.solicitudInvalida(`El plan "${desconocido}" no existe en la tienda.`);
 
-  return conUsuario(usuario, async (db) => {
+  return conAdmin(usuario, async (db) => {
     const p = await plantillasRepo.obtener(db, id);
     if (!p || !p.archivo_base) throw errores.noEncontrado('La plantilla no tiene archivo Word.');
     const marcas = word.marcas(await archivos.leer(p.archivo_base));

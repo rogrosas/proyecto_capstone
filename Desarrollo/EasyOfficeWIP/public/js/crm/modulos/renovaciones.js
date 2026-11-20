@@ -2,7 +2,7 @@
 import { get, post, exportar } from '../api.js';
 import { esc, clp, fecha, fechaHora, dias, filaVacia, toast } from '../util.js';
 import { abrirContrato } from './contratos.js';
-import { estado, tomarFiltros } from '../estado.js';
+import { estado, tiene, tomarFiltros } from '../estado.js';
 
 let contenedor = null;
 
@@ -53,7 +53,7 @@ export default {
     contenedor = el;
     el.innerHTML = `
       <div class="sh"><p>Las alertas a 60/30/15/7 días las genera la base de datos al crear el contrato o cambiar su vencimiento. "Renovar" crea el contrato siguiente con los mismos servicios a precio vigente.</p></div>
-      ${estado.usuario.admin ? '<div class="panel mb18 avisos" id="pnlAvisos"><div class="sb">Cargando avisos…</div></div>' : ''}
+      ${tiene('gestionar_renovaciones') ? '<div class="panel mb18 avisos" id="pnlAvisos"><div class="sb">Cargando avisos…</div></div>' : ''}
       <div class="pipe" id="pipeRenov"></div>
       <div class="toolbar">
         <select class="fl" id="fRenov">
@@ -87,7 +87,7 @@ export default {
         t.disabled = false;
       }
     });
-    if (estado.usuario.admin) {
+    if (tiene('gestionar_renovaciones')) {
       el.querySelector('#pnlAvisos').onclick = async (e) => {
         const b = e.target.closest('[data-enviar-avisos]');
         if (!b) return;

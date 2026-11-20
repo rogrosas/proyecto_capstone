@@ -46,6 +46,13 @@ async function registrarAcceso(usuarioId, accion) {
     [usuarioId, String(usuarioId), accion]);
 }
 
+// Acción rechazada por falta de un permiso del rol
+async function registrarDenegado(usuarioId, permiso) {
+  await consultaSistema(
+    "INSERT INTO registros_actividad (usuario_id, tabla_afectada, registro_id, accion, detalle) VALUES ($1, 'permisos', $2, 'DENEGADO', $3)",
+    [usuarioId, String(permiso), `Sin el permiso «${permiso}»`]);
+}
+
 // Permisos del rol del usuario (roles_permisos → permisos)
 async function permisosDe(rolNombre) {
   const r = await consultaSistema(
@@ -96,5 +103,5 @@ async function equipoDeCliente(clienteId, rolesAdmin) {
 }
 
 module.exports = {
-  equipoDeCliente, buscarPorEmail, porId, registrarFallo, ingresoExitoso, guardarTotp, cambiarClave, registrarAcceso, permisosDe, listar, crear, actualizar
+  equipoDeCliente, registrarDenegado, buscarPorEmail, porId, registrarFallo, ingresoExitoso, guardarTotp, cambiarClave, registrarAcceso, permisosDe, listar, crear, actualizar
 };

@@ -1,19 +1,20 @@
 /* =========================================================
    CAPA DE NEGOCIO · Usuarios del personal, roles y permisos
-   (solo administradores).
+   (permiso administrar_usuarios).
    ========================================================= */
 const bcrypt = require('bcryptjs');
 const { conUsuario } = require('../../datos/conexion');
 const { errores } = require('../../comun/errores');
+const { exigirPermiso } = require('../roles');
 const usuariosRepo = require('../../datos/repositorios/usuarios.repositorio');
 const rolesRepo = require('../../datos/repositorios/roles.repositorio');
 const v = require('../validacion');
 
 const MIN_CLAVE = 10;
 
-function exigirAdmin(usuario) {
-  if (!usuario.admin) throw errores.sinPermiso('Solo los administradores gestionan usuarios y roles.');
-}
+// Permiso del rol (Administración → Roles y permisos); las transacciones de este módulo van con rol_admin
+const exigirAdmin = (usuario) => exigirPermiso(usuario, 'administrar_usuarios');
+const conAdmin = (usuario, fn) => conUsuario(usuario, fn, { elevado: true });
 
 function clave(valor) {
   const c = String(valor || '');
@@ -23,23 +24,23 @@ function clave(valor) {
 
 /* ---------- Usuarios ---------- */
 async function listarUsuarios(usuario) {
-  exigirAdmin(usuario);
-  return conUsuario(usuario, async (db) => ({ usuarios: await usuariosRepo.listar(db), roles: await rolesRepo.listar(db) }));
+  await exigirAdmin(usuario);
+  return conAdmin(usuario, async (db) => ({ usuarios: await usuariosRepo.listar(db), roles: await rolesRepo.listar(db) }));
 }
 
 async function crearUsuario(usuario, d = {}) {
-  exigirAdmin(usuario);
+  await exigirAdmin(usuario);
   const u = {
     nombre: v.texto(d.nombre, 'Nombre'),
     email: v.email(d.email, 'Correo', { opcional: false }),
     rol_id: v.id(d.rol_id, 'Rol'),
     password_hash: await clave(d.password)
   };
-  return { id: await conUsuario(usuario, (db) => usuariosRepo.crear(db, u)) };
+  return { id: await conAdmin(usuario, (db) => usuariosRepo.crear(db, u)) };
 }
 
 async function actualizarUsuario(usuario, id, d = {}) {
-  exigirAdmin(usuario);
+  await exigirAdmin(usuario);
   id = v.id(id, 'Usuario');
   const cambios = {};
   if ('nombre' in d) cambios.nombre = v.texto(d.nombre, 'Nombre');
@@ -54,22 +55,22 @@ async function actualizarUsuario(usuario, id, d = {}) {
   if (id === usuario.id && (cambios.activo === false || 'rol_id' in cambios)) {
     throw errores.conflicto('No puede desactivarse ni cambiarse el rol a sí mismo.');
   }
-  const ok = await conUsuario(usuario, (db) => usuariosRepo.actualizar(db, id, cambios));
+  const ok = await conAdmin(usuario, (db) => usuariosRepo.actualizar(db, id, cambios));
   if (!ok) throw errores.noEncontrado('Usuario no encontrado.');
   return { ok: true };
 }
 
 /* ---------- Roles y permisos ---------- */
 async function listarRoles(usuario) {
-  exigirAdmin(usuario);
-  return conUsuario(usuario, async (db) => ({ roles: await rolesRepo.listar(db), permisos: await rolesRepo.listarPermisos(db) }));
+  await exigirAdmin(usuario);
+  return conAdmin(usuario, async (db) => ({ roles: await rolesRepo.listar(db), permisos: await rolesRepo.listarPermisos(db) }));
 }
 
 async function guardarRol(usuario, id, d = {}) {
-  exigirAdmin(usuario);
+  await exigirAdmin(usuario);
   const rol = v.texto(d.rol, 'Nombre del rol', { max: 50 }).toLowerCase();
   const permisos = (Array.isArray(d.permisos) ? d.permisos : []).map((p) => v.id(p, 'Permiso'));
-  return conUsuario(usuario, async (db) => {
+  return conAdmin(usuario, async (db) => {
     let rolId = id ? v.id(id, 'Rol') : null;
     if (rolId) { if (!(await rolesRepo.renombrar(db, rolId, rol))) throw errores.noEncontrado('Rol no encontrado.'); }
     else rolId = await rolesRepo.crear(db, rol);
@@ -79,8 +80,8 @@ async function guardarRol(usuario, id, d = {}) {
 }
 
 async function eliminarRol(usuario, id) {
-  exigirAdmin(usuario);
-  const ok = await conUsuario(usuario, (db) => rolesRepo.eliminar(db, v.id(id, 'Rol')));
+  await exigirAdmin(usuario);
+  const ok = await conAdmin(usuario, (db) => rolesRepo.eliminar(db, v.id(id, 'Rol')));
   if (!ok) throw errores.noEncontrado('Rol no encontrado.');
   return { ok: true };
 }

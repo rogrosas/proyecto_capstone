@@ -4,9 +4,8 @@
    - El folio, el vencimiento, los precios por defecto y las alertas
      los calcula la base de datos (triggers); aquí no se reprograman.
    - Debe indicarse cuenta de recaudación o link de pago.
-   - Un ejecutivo solo crea contratos a su nombre; el administrador
-     puede asignarlos a cualquier ejecutivo.
-   - Solo el administrador quita servicios (rol_ejecutivo no tiene DELETE).
+   - Los permisos del rol deciden: asignar_clientes (elegir el ejecutivo del contrato),
+     eliminar_registros (quitar servicios) y gestionar_renovaciones (renovar y notificar alertas).
    ========================================================= */
 const { conUsuario } = require('../../datos/conexion');
 const { errores } = require('../../comun/errores');
@@ -15,6 +14,7 @@ const alertasRepo = require('../../datos/repositorios/alertas.repositorio');
 const pagosRepo = require('../../datos/repositorios/pagos.repositorio');
 const documentosRepo = require('../../datos/repositorios/documentos.repositorio');
 const v = require('../validacion');
+const { tienePermiso, exigirPermiso } = require('../roles');
 
 const ESTADOS = ['pendiente', 'activo', 'vencido', 'cancelado'];
 const LIMITE = 500;
@@ -57,6 +57,7 @@ function validarServicio(s) {
 }
 
 async function crear(usuario, d = {}) {
+  const puedeAsignar = await tienePermiso(usuario, 'asignar_clientes');
   const contrato = {
     cliente_id: v.id(d.cliente_id, 'Cliente'),
     empresa_id: v.id(d.empresa_id, 'Empresa emisora'),
@@ -69,7 +70,7 @@ async function crear(usuario, d = {}) {
     duracion_meses: v.entero(d.duracion_meses, 'Duración en meses', { min: 1, max: 120 }),
     renovacion_automatica: v.booleano(d.renovacion_automatica, true),
     estado: v.opcion(d.estado || 'activo', ['pendiente', 'activo'], 'Estado'),
-    ejecutivo_id: usuario.admin ? v.id(d.ejecutivo_id, 'Ejecutivo', { opcional: true }) ?? usuario.id : usuario.id,
+    ejecutivo_id: puedeAsignar ? v.id(d.ejecutivo_id, 'Ejecutivo', { opcional: true }) ?? usuario.id : usuario.id,
     observaciones: v.texto(d.observaciones, 'Observaciones', { opcional: true, max: 4000 })
   };
   if (!contrato.cuenta_recaudacion_id && !contrato.link_pago) {
@@ -94,7 +95,7 @@ async function actualizar(usuario, id, d = {}) {
   if ('link_pago' in d) cambios.link_pago = v.texto(d.link_pago, 'Link de pago', { opcional: true, max: 500 });
   if ('fecha_vencimiento' in d) cambios.fecha_vencimiento = v.fecha(d.fecha_vencimiento, 'Fecha de vencimiento');
   if ('ejecutivo_id' in d) {
-    if (!usuario.admin) throw errores.sinPermiso('Solo un administrador puede reasignar el ejecutivo.');
+    await exigirPermiso(usuario, 'asignar_clientes');
     cambios.ejecutivo_id = v.id(d.ejecutivo_id, 'Ejecutivo');
   }
   const ok = await conUsuario(usuario, (db) => contratosRepo.actualizar(db, id, cambios));
@@ -109,13 +110,15 @@ async function agregarServicio(usuario, id, d) {
 }
 
 async function quitarServicio(usuario, id, csId) {
-  if (!usuario.admin) throw errores.sinPermiso('Solo un administrador puede quitar servicios de un contrato.');
-  const ok = await conUsuario(usuario, (db) => contratosRepo.quitarServicio(db, v.id(id), v.id(csId)));
+  await exigirPermiso(usuario, 'eliminar_registros');
+  // rol_ejecutivo no tiene DELETE: con el permiso, la transacción va con rol_admin (la cartera se sigue aplicando)
+  const ok = await conUsuario(usuario, (db) => contratosRepo.quitarServicio(db, v.id(id), v.id(csId)), { elevado: true });
   if (!ok) throw errores.noEncontrado();
   return { ok: true };
 }
 
 async function renovar(usuario, id) {
+  await exigirPermiso(usuario, 'gestionar_renovaciones');
   id = v.id(id, 'Contrato');
   const k = await conUsuario(usuario, async (db) => {
     const previo = await contratosRepo.yaRenovado(db, id);
@@ -135,12 +138,14 @@ async function impresion(usuario, id) {
 
 /* ---------- Alertas ---------- */
 async function notificarAlerta(usuario, alertaId) {
+  await exigirPermiso(usuario, 'gestionar_renovaciones');
   const ok = await conUsuario(usuario, (db) => alertasRepo.notificar(db, v.id(alertaId, 'Alerta')));
   if (!ok) throw errores.conflicto('La alerta ya estaba notificada o no pertenece a su cartera.');
   return { ok: true };
 }
 
 async function notificarVencidas(usuario, id) {
+  await exigirPermiso(usuario, 'gestionar_renovaciones');
   const n = await conUsuario(usuario, (db) => alertasRepo.notificarVencidas(db, v.id(id, 'Contrato')));
   return { notificadas: n };
 }

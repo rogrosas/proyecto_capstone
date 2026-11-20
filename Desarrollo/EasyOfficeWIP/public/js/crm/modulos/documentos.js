@@ -1,7 +1,7 @@
 /* CRM · Documentos (documentos, documento_partes, documento_clausulas, plantillas_documento, clausulas_documento) */
 import { get, post, exportar } from '../api.js';
 import { esc, fecha, fechaHora, filaVacia, badge, toast, hoyISO, enlaceArchivo } from '../util.js';
-import { estado, opciones, aOpciones, tomarFiltros } from '../estado.js';
+import { estado, tiene, opciones, aOpciones, tomarFiltros } from '../estado.js';
 import { abrirModal, cerrarModal, formularioHTML, leerFormulario, validar, confirmar } from '../modal.js';
 import { registrarPago } from './ventas.js';
 import { ticketHTML, responderTicket } from './tickets.js';
@@ -271,7 +271,7 @@ export async function nuevoDocumento(pre = {}) {
         { nombre: 'servicio_id', etiqueta: 'Servicio vendido (opcional)', tipo: 'select', opciones: aOpciones(op.servicios, { soloActivos: true }) },
         { nombre: 'lugar', etiqueta: 'Lugar', valor: 'Santiago' },
         { nombre: 'fecha_documento', etiqueta: 'Fecha del documento', tipo: 'fecha', valor: hoyISO() },
-        estado.usuario.admin ? { nombre: 'ejecutivo_id', etiqueta: 'Ejecutivo', tipo: 'select', valor: estado.usuario.id, opciones: aOpciones(op.usuarios, { soloActivos: true }) } : { nombre: '_x', tipo: 'html', html: '' }
+        tiene('asignar_clientes') ? { nombre: 'ejecutivo_id', etiqueta: 'Ejecutivo', tipo: 'select', valor: estado.usuario.id, opciones: aOpciones(op.usuarios, { soloActivos: true }) } : { nombre: '_x', tipo: 'html', html: '' }
       ])}
       <h4 class="sub-h">Datos de la plantilla</h4>
       <div id="camposPlantilla" class="grid2"><div class="empty full">Elija una plantilla.</div></div>

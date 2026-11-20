@@ -81,7 +81,11 @@ describe('Correspondencia', () => {
   });
   describe('ejecutivo', () => {
     paso('login', () => E('POST', '/api/crm/login', { email: ctx.cred.ejec[0], password: ctx.cred.ejec[1] }));
-    paso('no registra en clientes fuera de su cartera → 404', () => E('POST', '/api/crm/correspondencia', { cliente_id: cli.id, remitente: 'X', tipo: 'otra' }), (r) => r.status === 404);
+    paso('sin el permiso registrar_correspondencia no registra → 403', () => E('POST', '/api/crm/correspondencia', { cliente_id: cli.id, remitente: 'X', tipo: 'otra' }), (r) => r.status === 403);
+    paso('con el permiso, tampoco en clientes fuera de su cartera → 404', async () => {
+      await entorno.sql("INSERT INTO roles_permisos (rol_id, permisos_id) SELECT r.id, p.id FROM roles r, permisos p WHERE r.rol = 'ejecutivo' AND p.permiso = 'registrar_correspondencia' ON CONFLICT DO NOTHING");
+      return E('POST', '/api/crm/correspondencia', { cliente_id: cli.id, remitente: 'X', tipo: 'otra' });
+    }, (r) => r.status === 404);
     paso('no ve la de otros clientes', () => E('GET', '/api/crm/correspondencia?estado='), (r) => r.status === 200 && !r.correspondencia.some((x) => x.id === c1.id));
   });
 });

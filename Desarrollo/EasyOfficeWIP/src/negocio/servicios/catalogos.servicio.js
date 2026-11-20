@@ -1,19 +1,20 @@
 /* =========================================================
-   CAPA DE NEGOCIO · Administración de catálogos (solo administradores).
+   CAPA DE NEGOCIO · Administración de catálogos (permiso administrar_catalogos).
    Valida cada campo según su definición y resuelve las direcciones
    (busca o crea la fila en direcciones) dentro de la misma transacción.
    ========================================================= */
 const { conUsuario } = require('../../datos/conexion');
 const { errores } = require('../../comun/errores');
+const { exigirPermiso, tienePermiso } = require('../roles');
 const catalogosRepo = require('../../datos/repositorios/catalogos.repositorio');
 const direccionesRepo = require('../../datos/repositorios/direcciones.repositorio');
 const archivos = require('../../datos/archivos');
 const v = require('../validacion');
 const { DEFINICIONES } = require('../catalogos.definiciones');
 
-function exigirAdmin(usuario) {
-  if (!usuario.admin) throw errores.sinPermiso('La administración de catálogos es solo para administradores.');
-}
+// Permiso del rol (Administración → Roles y permisos); las transacciones de este módulo van con rol_admin
+const exigirAdmin = (usuario) => exigirPermiso(usuario, 'administrar_catalogos');
+const conAdmin = (usuario, fn) => conUsuario(usuario, fn, { elevado: true });
 
 function definicion(nombre) {
   const def = Object.hasOwn(DEFINICIONES, nombre) ? DEFINICIONES[nombre] : null;   // no "__proto__" ni "constructor"
@@ -21,9 +22,10 @@ function definicion(nombre) {
   return def;
 }
 
-// Definiciones públicas para que el navegador arme los formularios
-function definiciones(usuario) {
-  exigirAdmin(usuario);
+// Definiciones públicas para que el navegador arme los formularios. Las pide la pantalla de
+// Administración al abrirse: basta cualquiera de sus dos permisos.
+async function definiciones(usuario) {
+  if (!(await tienePermiso(usuario, 'administrar_usuarios'))) await exigirAdmin(usuario);
   return Object.fromEntries(Object.entries(DEFINICIONES).map(([k, d]) => [k, {
     titulo: d.titulo, grupo: d.grupo, clave: d.clave, claveEditable: !!d.claveEditable, lista: d.lista, nota: d.nota || null,
     campos: d.campos.map(({ columna, etiqueta, tipo, requerido, opciones, ref, porDefecto, min }) =>
@@ -82,17 +84,17 @@ function validar(def, datos, esNuevo) {
 }
 
 async function listar(usuario, nombre) {
-  exigirAdmin(usuario);
+  await exigirAdmin(usuario);
   const def = definicion(nombre);
-  return { registros: await conUsuario(usuario, (db) => catalogosRepo.listar(db, def)) };
+  return { registros: await conAdmin(usuario, (db) => catalogosRepo.listar(db, def)) };
 }
 
 async function guardar(usuario, nombre, clave, datos) {
-  exigirAdmin(usuario);
+  await exigirAdmin(usuario);
   const def = definicion(nombre);
   const esNuevo = clave === null || clave === undefined;
   const { valores, direcciones } = validar(def, datos || {}, esNuevo);
-  return conUsuario(usuario, async (db) => {
+  return conAdmin(usuario, async (db) => {
     for (const [col, d] of Object.entries(direcciones)) valores[col] = d ? await direccionesRepo.obtenerOCrear(db, d) : null;
     if (esNuevo) return { clave: await catalogosRepo.crear(db, def, valores) };
     if (!(await catalogosRepo.actualizar(db, def, clave, valores))) throw errores.noEncontrado();
@@ -101,9 +103,9 @@ async function guardar(usuario, nombre, clave, datos) {
 }
 
 async function eliminar(usuario, nombre, clave) {
-  exigirAdmin(usuario);
+  await exigirAdmin(usuario);
   const def = definicion(nombre);
-  const ok = await conUsuario(usuario, (db) => catalogosRepo.eliminar(db, def, clave));
+  const ok = await conAdmin(usuario, (db) => catalogosRepo.eliminar(db, def, clave));
   if (!ok) throw errores.noEncontrado();
   return { ok: true };
 }

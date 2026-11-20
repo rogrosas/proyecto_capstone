@@ -3,7 +3,7 @@
    el documento o la lista ya filtrada (nav.ir con filtros). */
 import { get } from '../api.js';
 import { esc, clp, dias, mesCorto, filaVacia, pasarela, toast, fecha } from '../util.js';
-import { estado, nav, opciones } from '../estado.js';
+import { estado, tiene, nav, opciones } from '../estado.js';
 import { abrirContrato } from './contratos.js';
 import { revisarDocumento } from './documentos.js';
 import { abrirFicha } from './clientes.js';
@@ -35,7 +35,7 @@ export default {
     if (!silencioso) el.innerHTML = '<div class="kpis"><div class="kpi"><div class="l">Cargando…</div></div></div>';
     if (per.preset !== 'otro') [per.desde, per.hasta] = rango(per.preset);
     const q = new URLSearchParams({ desde: per.desde, hasta: per.hasta, ...(per.ejecutivo ? { ejecutivo: per.ejecutivo } : {}) });
-    const [d, op] = await Promise.all([get('/dashboard?' + q), estado.usuario.admin ? opciones() : null]);
+    const [d, op] = await Promise.all([get('/dashboard?' + q), tiene('ver_todos_los_clientes') ? opciones() : null]);
     estado.conteos = d.conteos;
     refrescarMenu();
     const k = d.kpi;

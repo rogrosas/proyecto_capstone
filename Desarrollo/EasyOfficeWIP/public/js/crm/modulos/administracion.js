@@ -1,7 +1,7 @@
 /* CRM · Administración (usuarios, roles, permisos, roles_permisos y catálogos) — solo administradores */
 import { get, post, put, patch, del } from '../api.js';
 import { esc, clp, fecha, filaVacia, toast } from '../util.js';
-import { estado, opciones } from '../estado.js';
+import { estado, tiene, opciones } from '../estado.js';
 import { abrirModal, cerrarModal, formularioHTML, leerFormulario, validar, confirmar } from '../modal.js';
 import { direccionHTML, activarDirecciones, direccionLimpia } from '../direccion.js';
 import { verDocumentosTienda } from './documentosTienda.js';
@@ -78,6 +78,7 @@ async function verUsuarios(panel) {
 }
 
 /* ---------- Roles y permisos ---------- */
+const ADMINS = ['admin', 'dueno'];   // como app_es_admin() de la base
 async function verRoles(panel) {
   const { roles, permisos } = await get('/admin/roles');
   const nombrePermiso = Object.fromEntries(permisos.map((p) => [p.id, p.permiso]));
@@ -97,7 +98,8 @@ async function verRoles(panel) {
     titulo: r ? `Rol ${r.rol}` : 'Nuevo rol',
     contenido: `${formularioHTML([{ nombre: 'rol', etiqueta: 'Nombre del rol', requerido: true, valor: r?.rol, ancho: 'full', ayuda: '"admin" y "dueno" son administradores para la base de datos.' }])}
       <h4 class="sub-h">Permisos</h4>
-      <div class="checks">${permisos.map((p) => `<label class="chk"><input type="checkbox" data-permiso value="${p.id}" ${r?.permisos.includes(p.id) ? 'checked' : ''}> ${esc(p.permiso)}</label>`).join('') || '<div class="empty">No hay permisos definidos.</div>'}</div>`,
+      ${ADMINS.includes(r?.rol) ? '<div class="note">Este rol es administrador: siempre tiene todos los permisos, aunque no estén marcados.</div>' : ''}
+      <div class="checks">${permisos.map((p) => `<label class="chk"><input type="checkbox" data-permiso value="${p.id}" ${r?.permisos.includes(p.id) || ADMINS.includes(r?.rol) ? 'checked' : ''} ${ADMINS.includes(r?.rol) ? 'disabled' : ''}> ${esc(p.permiso)}</label>`).join('') || '<div class="empty">No hay permisos definidos.</div>'}</div>`,
     acciones: [{ texto: 'Cancelar' }, {
       texto: 'Guardar', clase: 'btn-g', alHacer: async (c) => {
         validar(c);
@@ -274,21 +276,24 @@ export default {
   id: 'administracion',
   titulo: 'Administración',
   sub: () => 'Usuarios, roles, permisos, documentos de la tienda y catálogos',
-  soloAdmin: true,
+  permisos: ['administrar_usuarios', 'administrar_catalogos'],
   async render(el) {
     contenedor = el;
     defs = await get('/admin/catalogos');
+    const usuarios = tiene('administrar_usuarios'), catalogos = tiene('administrar_catalogos');
+    const permitidas = [...(usuarios ? ['usuarios', 'roles'] : []), ...(catalogos ? ['tienda', ...Object.keys(defs)] : [])];
+    if (!permitidas.includes(seccion)) seccion = permitidas[0];
     const grupos = {};
     Object.entries(defs).forEach(([k, d]) => { (grupos[d.grupo] ||= []).push([k, d.titulo]); });
     el.innerHTML = `
       <div class="adm">
         <aside class="adm-menu">
-          <div class="adm-g">Acceso</div>
+          ${usuarios ? `<div class="adm-g">Acceso</div>
           <button data-sec="usuarios">Usuarios</button>
-          <button data-sec="roles">Roles y permisos</button>
-          <div class="adm-g">Tienda</div>
+          <button data-sec="roles">Roles y permisos</button>` : ''}
+          ${catalogos ? `<div class="adm-g">Tienda</div>
           <button data-sec="tienda">Documentos de la tienda</button>
-          ${Object.entries(grupos).map(([g, items]) => `<div class="adm-g">${esc(g)}</div>${items.map(([k, t]) => `<button data-sec="${k}">${esc(t)}</button>`).join('')}`).join('')}
+          ${Object.entries(grupos).map(([g, items]) => `<div class="adm-g">${esc(g)}</div>${items.map(([k, t]) => `<button data-sec="${k}">${esc(t)}</button>`).join('')}`).join('')}` : ''}
         </aside>
         <div class="panel" id="admPanel"></div>
       </div>`;

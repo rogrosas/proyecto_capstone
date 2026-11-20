@@ -10,6 +10,10 @@ export const estado = {
   filtros: {}      // filtros que un enlace deja para el módulo al que lleva (nav.ir(id, filtros))
 };
 
+// Permisos del rol del usuario (Administración → Roles y permisos); los administradores tienen todos.
+// Solo decide qué se muestra: el servidor vuelve a revisar cada permiso.
+export const tiene = (permiso) => !!estado.usuario && (estado.usuario.admin || (estado.usuario.permisos || []).includes(permiso));
+
 // Filtros que dejó un enlace para este módulo (se usan una sola vez)
 export function tomarFiltros(id) {
   const f = estado.filtros[id] || null;

@@ -59,8 +59,11 @@ function traducir(err) {
 /**
  * Ejecuta fn(db) en una transacción con la identidad del usuario.
  * usuario = { id, rol, admin }
+ * elevado: usa rol_admin aunque el usuario no sea administrador. Solo para acciones que la capa de
+ * negocio ya autorizó con un permiso del rol (exigirPermiso: auditoría, usuarios, catálogos, eliminar).
+ * La seguridad por fila sigue aplicándose: app.rol_actual es su rol real y app_es_admin() da false.
  */
-async function conUsuario(usuario, fn) {
+async function conUsuario(usuario, fn, { elevado = false } = {}) {
   let client;
   try {
     client = await pool.connect();
@@ -73,7 +76,7 @@ async function conUsuario(usuario, fn) {
       "SELECT set_config('app.usuario_actual', $1, true), set_config('app.rol_actual', $2, true)",
       [String(usuario.id), String(usuario.rol).toLowerCase()]);
     // Literal fijo: nunca se arma con datos del usuario
-    await client.query(usuario.admin ? 'SET LOCAL ROLE rol_admin' : 'SET LOCAL ROLE rol_ejecutivo');
+    await client.query(usuario.admin || elevado ? 'SET LOCAL ROLE rol_admin' : 'SET LOCAL ROLE rol_ejecutivo');
     const resultado = await fn(client);
     await client.query('COMMIT');
     return resultado;

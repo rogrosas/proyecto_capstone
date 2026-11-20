@@ -139,6 +139,7 @@ async function borradorPersonal(usuario, id) {
 }
 
 async function publicar(usuario, id) {
+  await exigirPermiso(usuario, 'aprobar_documentos');
   id = v.id(id, 'Documento');
   const doc = await conUsuario(usuario, async (db) => {
     const d = await documentosRepo.entregaDe(db, id);

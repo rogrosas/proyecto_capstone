@@ -13,6 +13,7 @@
 const config = require('../../config');
 const { conSistema, conUsuario } = require('../../datos/conexion');
 const { errores } = require('../../comun/errores');
+const { exigirPermiso } = require('../roles');
 const correo = require('../../datos/correo');
 const portalRepo = require('../../datos/repositorios/portal.repositorio');
 const avisosRepo = require('../../datos/repositorios/avisos.repositorio');
@@ -115,21 +116,21 @@ async function ejecutar({ origen = 'automatico', usuarioId = null } = {}) {
   }
 }
 
-/* ---------- Casos de uso del CRM (solo administradores) ---------- */
+/* ---------- Casos de uso del CRM (permiso gestionar_renovaciones) ---------- */
 async function enviarAhora(usuario) {
-  if (!usuario.admin) throw errores.sinPermiso('Solo un administrador puede enviar los avisos.');
+  await exigirPermiso(usuario, 'gestionar_renovaciones');
   const t = await tareas.ejecutar();   // renovaciones automáticas y vencidos antes de avisar
   const r = await ejecutar({ origen: 'manual', usuarioId: usuario.id });
   return { contratos: r.contratos, correos: r.correos, sin_correo: r.sinCorreo, errores: r.errores, detalle: r.detalle, renovados: t.renovados, vencidos: t.vencidos };
 }
 
 async function historial(usuario) {
-  if (!usuario.admin) throw errores.sinPermiso();
+  await exigirPermiso(usuario, 'gestionar_renovaciones');
   return conUsuario(usuario, async (db) => ({
     automatico: config.avisos.activo, hora: config.avisos.hora,
     pendientes: (await avisosRepo.pendientes(db)).length,
     ejecuciones: await avisosRepo.ultimas(db, 15, config.bd.zonaHoraria)
-  }));
+  }), { elevado: true });
 }
 
 /* ---------- Programación diaria ---------- */

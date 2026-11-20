@@ -18,11 +18,13 @@ async function resumen(usuario) {
 
 const { errores } = require('../../comun/errores');
 const v = require('../validacion');
+const { exigirPermiso } = require('../roles');
 
 const ESTADOS = ['pendiente', 'pagado', 'rechazado', 'reembolsado'];
 const PASARELAS = ['transbank', 'mercado_pago', 'transferencia'];
 
 async function registrar(usuario, d = {}) {
+  await exigirPermiso(usuario, 'registrar_pagos');
   const p = {
     contrato_id: v.id(d.contrato_id, 'Contrato', { opcional: true }),
     documento_id: v.id(d.documento_id, 'Documento', { opcional: true }),
@@ -51,6 +53,7 @@ async function registrar(usuario, d = {}) {
 }
 
 async function cambiarEstado(usuario, id, d = {}) {
+  await exigirPermiso(usuario, 'registrar_pagos');
   const estado = v.opcion(d.estado, ESTADOS, 'Estado');
   id = v.id(id, 'Pago');
   // Confirmar el pago de una compra pendiente activa su contrato (igual que cuando lo aprueba la pasarela)

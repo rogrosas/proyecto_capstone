@@ -58,7 +58,11 @@ describe('Tablero por período', () => {
     paso('login', () => E('POST', '/api/crm/login', { email: ctx.cred.ejec[0], password: ctx.cred.ejec[1] }));
     paso('solo ve su cartera aunque pida otro ejecutivo', () => E('GET', `/api/crm/dashboard?ejecutivo=1`),
       (r) => r.status === 200 && r.periodo.ejecutivo === null && r.periodo.indicadores.clientes === 0 && r.periodo.indicadores.contratos === 0);
-    paso('no puede ver ni enviar los avisos → 403', () => E('POST', '/api/crm/avisos/enviar'), (r) => r.status === 403);
+    paso('sin el permiso gestionar_renovaciones no envía los avisos → 403', async () => {
+      await entorno.sql("DELETE FROM roles_permisos WHERE rol_id = (SELECT id FROM roles WHERE rol = 'ejecutivo') AND permisos_id = (SELECT id FROM permisos WHERE permiso = 'gestionar_renovaciones')");
+      return E('POST', '/api/crm/avisos/enviar');
+    }, (r) => r.status === 403);
+    paso('ni ve su historial → 403', () => E('GET', '/api/crm/avisos'), (r) => r.status === 403);
   });
 });
 

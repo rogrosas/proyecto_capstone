@@ -1,7 +1,7 @@
 /* CRM · Clientes (clientes, representantes_legales, direcciones) */
 import { get, post, put, del, exportar } from '../api.js';
 import { esc, clp, fecha, fechaHora, filaVacia, badge, toast, hoyISO } from '../util.js';
-import { estado, opciones, tomarFiltros } from '../estado.js';
+import { estado, tiene, opciones, tomarFiltros } from '../estado.js';
 import { abrirModal, cerrarModal, formularioHTML, leerFormulario, validar, confirmar } from '../modal.js';
 import { direccionHTML, activarDirecciones, direccionLimpia } from '../direccion.js';
 import { abrirContrato, nuevoContrato } from './contratos.js';
@@ -9,8 +9,6 @@ import { abrirDocumento, nuevoDocumento, revisarDocumento } from './documentos.j
 
 let contenedor = null;
 
-// Permisos del rol (Administración → Roles y permisos); los administradores tienen todos
-const tiene = (permiso) => !!estado.usuario && (estado.usuario.admin || (estado.usuario.permisos || []).includes(permiso));
 const puedeAsignar = () => tiene('asignar_clientes');
 const aCargoHTML = (c) => c.a_cargo ? esc(c.a_cargo) : '<span class="sb">Sin asignar</span>';
 // Personal activo para elegir a quién queda a cargo
@@ -151,7 +149,7 @@ export async function abrirFicha(id) {
         <button class="btn btn-o btn-s" data-acc="editar">Editar datos</button>
         <button class="btn btn-g btn-s" data-acc="contrato">Nuevo contrato</button>
         <button class="btn btn-o btn-s" data-acc="documento">Nuevo documento</button>
-        ${estado.usuario.admin ? '<button class="btn btn-peligro btn-s" data-acc="eliminar">Eliminar</button>' : ''}
+        ${tiene('eliminar_registros') ? '<button class="btn btn-peligro btn-s" data-acc="eliminar">Eliminar</button>' : ''}
       </div>
       ${pendientes.length ? `<div class="pend-rev">
         <div class="pr-t">${pendientes.length === 1 ? 'Hay un documento pendiente de revisión' : `Hay ${pendientes.length} documentos pendientes de revisión`}</div>

@@ -6,6 +6,7 @@
 const { conUsuario } = require('../../datos/conexion');
 const { errores } = require('../../comun/errores');
 const v = require('../validacion');
+const { tienePermiso } = require('../roles');
 const dashboardRepo = require('../../datos/repositorios/dashboard.repositorio');
 const pagosRepo = require('../../datos/repositorios/pagos.repositorio');
 
@@ -18,16 +19,16 @@ const MAX_DIAS_PERIODO = 3 * 366;
 const hoy = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago' }).format(new Date());
 
 // Período de los indicadores: por defecto, el mes en curso. Un ejecutivo solo ve su cartera (la BD ya lo filtra).
-function periodo(usuario, { desde, hasta, ejecutivo } = {}) {
+async function periodo(usuario, { desde, hasta, ejecutivo } = {}) {
   const h = v.fecha(hasta, 'La fecha final', { opcional: true }) || hoy();
   const d = v.fecha(desde, 'La fecha inicial', { opcional: true }) || `${h.slice(0, 7)}-01`;
   if (d > h) throw errores.solicitudInvalida('La fecha inicial es posterior a la final.');
   if ((Date.parse(h) - Date.parse(d)) / 864e5 > MAX_DIAS_PERIODO) throw errores.solicitudInvalida('El período no puede superar 3 años.');
-  return { desde: d, hasta: h, ejecutivo: usuario.admin ? v.id(ejecutivo, 'Ejecutivo', { opcional: true }) : null };
+  return { desde: d, hasta: h, ejecutivo: (await tienePermiso(usuario, 'ver_todos_los_clientes')) ? v.id(ejecutivo, 'Ejecutivo', { opcional: true }) : null };
 }
 
 async function obtener(usuario, filtros) {
-  const p = periodo(usuario, filtros);
+  const p = await periodo(usuario, filtros);
   return conUsuario(usuario, async (db) => {
     const k = await dashboardRepo.indicadoresContratos(db);
     const conteos = await dashboardRepo.conteosMenu(db);

@@ -6,6 +6,7 @@
    lo abra directo, con tildes y columnas.
    ========================================================= */
 const { errores } = require('../../comun/errores');
+const { exigirPermiso } = require('../roles');
 const clientes = require('./clientes.servicio');
 const contratos = require('./contratos.servicio');
 const renovaciones = require('./renovaciones.servicio');
@@ -67,6 +68,7 @@ function celda(v) {
 }
 
 async function exportar(usuario, lista, query = {}) {
+  await exigirPermiso(usuario, 'ver_reportes');
   const def = Object.hasOwn(LISTAS, lista) ? LISTAS[lista] : null;   // no "__proto__" ni "constructor"
   if (!def) throw errores.noEncontrado('Listado no disponible para exportar.');
   const filas = await def.datos(usuario, query);

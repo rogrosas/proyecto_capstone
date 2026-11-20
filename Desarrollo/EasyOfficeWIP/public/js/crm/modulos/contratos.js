@@ -1,7 +1,7 @@
 /* CRM · Contratos (contratos, contrato_servicios, alertas, pagos, vistas de impresión) */
 import { get, post, patch, del, exportar } from '../api.js';
 import { esc, clp, fecha, fechaHora, dias, filaVacia, badge, toast, hoyISO, CICLO, pasarela, enlaceArchivo } from '../util.js';
-import { estado, opciones, aOpciones, tomarFiltros } from '../estado.js';
+import { estado, tiene, opciones, aOpciones, tomarFiltros } from '../estado.js';
 import { abrirModal, cerrarModal, formularioHTML, leerFormulario, validar, confirmar } from '../modal.js';
 import { abrirDocumento, nuevoDocumento } from './documentos.js';
 import { registrarPago, cambiarEstadoPago } from './ventas.js';
@@ -41,7 +41,7 @@ const recargarLista = () => { if (contenedor && document.body.contains(contenedo
 export async function abrirContrato(id) {
   const d = await get('/contratos/' + id);
   const k = d.contrato;
-  const admin = estado.usuario.admin;
+  const admin = tiene('eliminar_registros');   // quitar servicios
   const cuerpo = abrirModal({
     titulo: `Contrato ${k.folio}`, ancho: 'lg', ficha: { clave: 'contrato-' + id, reabrir: () => abrirContrato(id) },
     contenido: `
@@ -215,7 +215,7 @@ async function editarContrato(d, alGuardar) {
     { nombre: 'renovacion_automatica', etiqueta: 'Renovación automática', tipo: 'bool', valor: k.renovacion_automatica },
     { nombre: 'observaciones', etiqueta: 'Observaciones', tipo: 'textarea', valor: k.observaciones, ancho: 'full' }
   ];
-  if (estado.usuario.admin) campos.splice(1, 0, { nombre: 'ejecutivo_id', etiqueta: 'Ejecutivo', tipo: 'select', requerido: true, valor: k.ejecutivo_id, opciones: aOpciones(op.usuarios, { soloActivos: true }) });
+  if (tiene('asignar_clientes')) campos.splice(1, 0, { nombre: 'ejecutivo_id', etiqueta: 'Ejecutivo', tipo: 'select', requerido: true, valor: k.ejecutivo_id, opciones: aOpciones(op.usuarios, { soloActivos: true }) });
   abrirModal({
     titulo: `Editar ${k.folio}`, contenido: formularioHTML(campos),
     acciones: [{ texto: 'Cancelar', alHacer: alGuardar }, {
@@ -223,7 +223,7 @@ async function editarContrato(d, alGuardar) {
         validar(c);
         const datos = leerFormulario(c);
         if (datos.fecha_vencimiento === k.vence) delete datos.fecha_vencimiento;
-        if (!estado.usuario.admin) delete datos.ejecutivo_id;
+        if (!tiene('asignar_clientes')) delete datos.ejecutivo_id;
         await patch('/contratos/' + k.id, datos);
         toast('Contrato actualizado.');
         alGuardar();
@@ -257,7 +257,7 @@ async function agregarServicio(id, alGuardar) {
 export async function nuevoContrato(pre = {}) {
   const op = await opciones();
   const { clientes } = await get('/clientes');
-  const admin = estado.usuario.admin;
+  const admin = tiene('asignar_clientes');
   const filaServicio = (i) => `
     <div class="serv-fila" data-serv>
       <select name="servicios.${i}.servicio_id" required><option value="">Servicio…</option>

@@ -10,6 +10,8 @@ const config = require('../../config');
 const { conUsuario, conSistema, conCliente } = require('../../datos/conexion');
 const { errores } = require('../../comun/errores');
 const v = require('../validacion');
+const { exigirPermiso } = require('../roles');
+const exigirCorrespondencia = (usuario) => exigirPermiso(usuario, 'registrar_correspondencia');
 const archivos = require('../../datos/archivos');
 const correo = require('../../datos/correo');
 const portalRepo = require('../../datos/repositorios/portal.repositorio');
@@ -34,6 +36,7 @@ async function listar(usuario, { estado, q }) {
 }
 
 async function registrar(usuario, d = {}) {
+  await exigirCorrespondencia(usuario);
   const c = {
     cliente_id: v.id(d.cliente_id, 'Cliente'),
     sucursal_id: v.id(d.sucursal_id, 'Sucursal', { opcional: true }),
@@ -60,6 +63,7 @@ async function obtener(usuario, id) {
 
 // Escaneo (PDF, JPG o PNG): queda en la carpeta de contratos, en correspondencia/<año>/
 async function subirEscaneo(usuario, id, contenido) {
+  await exigirCorrespondencia(usuario);
   const c = await obtener(usuario, id);
   if (!Buffer.isBuffer(contenido) || !contenido.length) throw errores.solicitudInvalida('Adjunte el escaneo.');
   if (contenido.length > MAX_ESCANEO) throw errores.solicitudInvalida('El escaneo supera 10 MB.');
@@ -72,6 +76,7 @@ async function subirEscaneo(usuario, id, contenido) {
 }
 
 async function notificar(usuario, id) {
+  await exigirCorrespondencia(usuario);
   const c = await obtener(usuario, id);
   if (!['recibida', 'digitalizada', 'notificada'].includes(c.estado)) throw errores.conflicto('Esta correspondencia ya fue retirada o devuelta.');
   const destinos = await portalRepo.contactos(c.cliente_id);
@@ -93,6 +98,7 @@ async function notificar(usuario, id) {
 }
 
 async function cambiarEstado(usuario, id, d = {}) {
+  await exigirCorrespondencia(usuario);
   const estado = v.opcion(d.estado, ['retirada', 'devuelta'], 'Estado');
   const c = await obtener(usuario, id);
   if (!(await conUsuario(usuario, (db) => repo.cambiarEstado(db, c.id, estado, ['recibida', 'digitalizada', 'notificada'])))) throw errores.conflicto('Esta correspondencia ya fue retirada o devuelta.');

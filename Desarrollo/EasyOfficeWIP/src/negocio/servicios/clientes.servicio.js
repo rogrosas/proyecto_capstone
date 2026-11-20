@@ -27,10 +27,10 @@ async function listar(usuario, { q, estado, aCargo }) {
 }
 
 async function eliminar(usuario, id) {
-  if (!usuario.admin) throw errores.sinPermiso('Solo un administrador puede eliminar clientes.');
+  await exigirPermiso(usuario, 'eliminar_registros');
   id = Number(id);
   if (!Number.isInteger(id)) throw errores.solicitudInvalida('Cliente inválido.');
-  const ok = await conUsuario(usuario, (db) => clientesRepo.eliminar(db, id));
+  const ok = await conUsuario(usuario, (db) => clientesRepo.eliminar(db, id), { elevado: true });
   if (!ok) throw errores.noEncontrado('Cliente no encontrado o fuera de su cartera.');
   return { ok: true };
 }
