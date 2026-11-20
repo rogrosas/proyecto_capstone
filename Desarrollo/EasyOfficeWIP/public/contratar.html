@@ -75,10 +75,10 @@
             </select>
           </div>
           <div class="f"><label for="dNombre" id="lNombre">Nombre completo del titular</label><input id="dNombre" autocomplete="name" required></div>
-          <div class="f"><label for="dRut" id="lRut">RUT</label><input id="dRut" placeholder="18.204.331-5" autocomplete="off" required><span class="hint">Se usa para la boleta y para el documento.</span></div>
+          <div class="f"><label for="dRut" id="lRut">RUT</label><input id="dRut" data-rut inputmode="text" maxlength="12" placeholder="18.204.331-5" autocomplete="off" required><span class="hint">Se usa para la boleta y para el documento.</span></div>
           <div class="f"><label for="dMail">Correo electrónico</label><input type="email" id="dMail" placeholder="nombre@correo.cl" autocomplete="email" required><span class="hint">Aquí llegará el enlace para revisar su documento en Mi cuenta.</span></div>
           <div class="f"><label for="dCel">Celular</label><input id="dCel" placeholder="+56 9 0000 0000" autocomplete="tel"></div>
-          <div class="f" id="fRut"><label for="eRut">RUT de la empresa</label><input id="eRut" placeholder="76.000.000-0" autocomplete="off"></div>
+          <div class="f" id="fRut"><label for="eRut">RUT de la empresa</label><input id="eRut" data-rut inputmode="text" maxlength="12" placeholder="76.000.000-0" autocomplete="off"></div>
           <div class="f" id="fGiro"><label for="eGiro">Giro</label><input id="eGiro" placeholder="Ej: Asesorías en marketing"></div>
           <div class="f full" id="fExtra"><label for="eRazon" id="lRazon">Razón social</label><input id="eRazon" placeholder="Ej: Torres Diseño y Marketing SpA"></div>
           <div class="f full"><label for="dCalle" id="lDom">Su domicilio</label>
@@ -184,6 +184,7 @@
 
 <script src="/js/layout.js"></script>
 <script src="/js/catalogo.js"></script>
+<script src="/js/rut.js"></script>
 <script src="/js/contratar.js"></script>
 </body>
 </html>

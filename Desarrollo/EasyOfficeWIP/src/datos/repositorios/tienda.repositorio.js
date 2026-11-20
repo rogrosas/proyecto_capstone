@@ -102,13 +102,17 @@ async function crearContrato(db, c) {
 async function ejecutivoParaVenta(db, clienteId) {
   const r = await db.query(`
     SELECT COALESCE(
+      (SELECT cl.ejecutivo_id FROM clientes cl JOIN usuarios u ON u.id = cl.ejecutivo_id WHERE cl.id = $1 AND u.activo),
       (SELECT k.ejecutivo_id FROM contratos k JOIN usuarios u ON u.id = k.ejecutivo_id
         WHERE k.cliente_id = $1 AND u.activo ORDER BY k.creado_en DESC LIMIT 1),
       (SELECT u.id FROM usuarios u JOIN roles r ON r.id = u.rol_id
         WHERE u.activo AND r.rol = 'ejecutivo'
         ORDER BY (SELECT count(*) FROM contratos k WHERE k.ejecutivo_id = u.id AND k.estado IN ('activo', 'pendiente')), u.id
         LIMIT 1)) AS id`, [clienteId]);
-  return r.rows[0].id;
+  const id = r.rows[0].id;
+  // Un cliente de la tienda sin ejecutivo a cargo queda a cargo del de su venta
+  if (id) await db.query('UPDATE clientes SET ejecutivo_id = $2 WHERE id = $1 AND ejecutivo_id IS NULL', [clienteId, id]);
+  return id;
 }
 
 /* ---------- Pago en línea: la compra sigue solo con el pago aprobado ---------- */

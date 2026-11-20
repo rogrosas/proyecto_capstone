@@ -19,7 +19,7 @@ export function ticketHTML(t, motivos = {}) {
           <div class="sb">${esc(t.cliente)} · ${esc(t.email || '—')} · ${fechaHora(t.creado_en)}${t.documento ? ` · ${esc(t.documento)}${t.folio ? ' ' + esc(t.folio) : ''}` : ''}
             · ${t.mensajes || 1} mensaje(s)${t.actualizado_en ? ` · última actividad ${fechaHora(t.actualizado_en)}` : ''}</div></div>
         <div class="ficha-acciones" style="margin:0;">
-          ${t.documento_id ? `<button class="btn btn-o btn-row" data-doc="${t.documento_id}">Ver documento</button>` : ''}
+          ${t.documento_id && t.documento ? `<button class="btn btn-o btn-row" data-doc="${t.documento_id}">Ver documento</button>` : ''}
           <button class="btn ${esperaRespuesta(t) ? 'btn-g' : 'btn-o'} btn-row" data-ticket="${t.id}">Abrir conversación</button>
         </div>
       </div>
@@ -38,14 +38,15 @@ export function conversacionHTML(mensajes, lado = 'personal') {
 
 export async function responderTicket(t, alTerminar) {
   if (!t) return alTerminar();
-  const { ticket, mensajes } = await get('/tickets/' + t.id);
+  const { ticket, mensajes, puede_responder: puede } = await get('/tickets/' + t.id);
   const cerrado = ticket.estado === 'cerrado';
   const cuerpo = abrirModal({
     titulo: `Ticket #${ticket.id} · ${ticket.cliente}`, ancho: 'lg',
     contenido: `
       <div class="sb" style="margin-bottom:10px;">${badge('ticket', ticket.estado)} · ${esc(ticket.email || '—')}${ticket.documento ? ` · ${esc(ticket.documento)}${ticket.folio ? ' ' + esc(ticket.folio) : ''}` : ''}</div>
       ${conversacionHTML(mensajes)}
-      <div class="chat-resp">
+      ${puede ? '' : '<div class="note" style="margin-top:10px;">Su rol puede ver este ticket, pero no responderlo (falta el permiso <b>responder_tickets</b>). Pídalo a un administrador en Administración → Roles y permisos.</div>'}
+      <div class="chat-resp" ${puede ? '' : 'hidden'}>
         <textarea id="tkResp" rows="3" maxlength="4000" placeholder="${cerrado ? 'El ticket está cerrado: cambie el estado para reabrirlo.' : 'Escriba su respuesta. Le llega al cliente por correo y la ve en Mi cuenta.'}"></textarea>
         <div class="chat-acc">
           <select id="tkEstado" aria-label="Estado del ticket">
@@ -60,7 +61,7 @@ export async function responderTicket(t, alTerminar) {
   });
   const chat = cuerpo.querySelector('.chat');
   chat.scrollTop = chat.scrollHeight;
-  cuerpo.querySelector('#tkResp').focus();
+  if (puede) cuerpo.querySelector('#tkResp').focus();
   cuerpo.querySelector('#tkEnviar').addEventListener('click', async (e) => {
     const respuesta = cuerpo.querySelector('#tkResp').value.trim();
     const estado = cuerpo.querySelector('#tkEstado').value;
@@ -78,9 +79,9 @@ export async function responderTicket(t, alTerminar) {
   });
 }
 
-async function cargar() {
+async function cargar({ silencioso = false } = {}) {
   const lista = contenedor.querySelector('#lsTickets');
-  lista.innerHTML = '<div class="empty">Cargando…</div>';
+  if (!silencioso) lista.innerHTML = '<div class="empty">Cargando…</div>';
   try {
     const d = await get('/tickets?estado=' + contenedor.querySelector('#fTicket').value);
     const esperan = d.tickets.filter(esperaRespuesta).length;
@@ -99,6 +100,7 @@ async function cargar() {
 
 export default {
   id: 'tickets',
+  actualizar: () => cargar({ silencioso: true }),   // main.js la llama cada cierto tiempo para mostrar registros nuevos
   titulo: 'Tickets de clientes',
   sub: () => 'Conversaciones con los clientes: reclamos sobre documentos y consultas desde Mi cuenta',
   async render(el) {

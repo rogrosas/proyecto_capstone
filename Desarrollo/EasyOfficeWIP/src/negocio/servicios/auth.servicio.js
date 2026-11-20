@@ -49,7 +49,8 @@ async function abrirSesion(u, ip) {
   try { permisos = await usuariosRepo.permisosDe(u.rol); } catch { /* sin permisos configurados */ }
   const usuario = { id: u.id, nombre: u.nombre, email: u.email, rol: u.rol, admin: esAdmin(u.rol), permisos };
   const token = crypto.randomBytes(32).toString('hex');
-  sesionesRepo.guardar(token, usuario, Date.now() + config.sesion.duracionMs);
+  // huellaClave: si la contraseña cambia después, esta sesión deja de servir (ver validarSesion)
+  sesionesRepo.guardar(token, usuario, Date.now() + config.sesion.duracionMs, huellaClave(u.password_hash));
   intentos.delete(ip);
   await usuariosRepo.ingresoExitoso(u.id);
   await registrarAcceso(u.id, 'LOGIN');
@@ -213,14 +214,26 @@ async function cerrarSesion(token) {
   await registrarAcceso(s.usuario.id, 'LOGOUT');
 }
 
-// Devuelve el usuario de una sesión vigente o null
-function validarSesion(token) {
+const huellaClave = (hash) => crypto.createHash('sha256').update(String(hash || '')).digest('hex').slice(0, 16);
+
+/*
+ * Devuelve el usuario de una sesión vigente o null. En cada petición se vuelven a leer de la base
+ * su rol y si está activo: un cambio en Administración (rol, desactivar, nueva contraseña) rige de
+ * inmediato, también para quien ya tiene la sesión abierta.
+ */
+async function validarSesion(token) {
   const s = token && sesionesRepo.obtener(token);
   if (!s) return null;
   if (s.expira < Date.now()) {
     sesionesRepo.eliminar(token);
     return null;
   }
+  const u = await usuariosRepo.porId(s.usuario.id);
+  if (!u?.activo || huellaClave(u.password_hash) !== s.huellaClave) {
+    sesionesRepo.eliminar(token);
+    return null;
+  }
+  Object.assign(s.usuario, { nombre: u.nombre, email: u.email, rol: u.rol, admin: esAdmin(u.rol) });
   return s.usuario;
 }
 

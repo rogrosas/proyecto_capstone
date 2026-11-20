@@ -10,9 +10,9 @@ let contenedor = null;
 let extra = {};   // { mes, ejecutivo, desde, hasta, etiqueta } desde un enlace del tablero
 const FILTROS_EXTRA = ['mes', 'ejecutivo', 'desde', 'hasta'];
 
-async function cargar() {
+async function cargar({ silencioso = false } = {}) {
   const tb = contenedor.querySelector('#tbContratos');
-  tb.innerHTML = filaVacia(8, 'Cargando…');
+  if (!silencioso) tb.innerHTML = filaVacia(8, 'Cargando…');
   const p = new URLSearchParams({ q: contenedor.querySelector('#qContratos').value, estado: contenedor.querySelector('#fEstadoK').value });
   for (const k of FILTROS_EXTRA) if (extra[k]) p.set(k, extra[k]);
   const chip = contenedor.querySelector('#chipK');
@@ -43,7 +43,7 @@ export async function abrirContrato(id) {
   const k = d.contrato;
   const admin = estado.usuario.admin;
   const cuerpo = abrirModal({
-    titulo: `Contrato ${k.folio}`, ancho: 'lg',
+    titulo: `Contrato ${k.folio}`, ancho: 'lg', ficha: { clave: 'contrato-' + id, reabrir: () => abrirContrato(id) },
     contenido: `
       <div class="ficha-acciones">
         <button class="btn btn-g btn-s" data-acc="word">Generar contrato Word</button>
@@ -331,6 +331,7 @@ export async function nuevoContrato(pre = {}) {
 
 export default {
   id: 'contratos',
+  actualizar: () => cargar({ silencioso: true }),   // main.js la llama cada cierto tiempo para mostrar registros nuevos
   titulo: 'Contratos',
   sub: () => 'Folios, servicios, vigencia, saldo y alertas',
   async render(el) {

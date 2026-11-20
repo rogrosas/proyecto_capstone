@@ -22,8 +22,7 @@
 --   TIENDA        documentos Word vinculados a planes de la tienda (plantilla_planes),
 --                 con entrega automática o tras revisión; el cliente acepta un borrador
 --                 con marca de agua o envía un ticket (tickets).
---   DATOS BASE    roles, permisos, plazos de alerta, regiones de Chile y comunas
---                 de las regiones Metropolitana y de Valparaíso.
+--   DATOS BASE    roles, permisos, plazos de alerta, regiones y las 346 comunas de Chile.
 --
 -- La aplicación fija en cada transacción:
 --   app.usuario_actual  id del usuario del personal      (CRM)
@@ -320,6 +319,7 @@ CREATE TABLE clientes (
     acepta_comunicaciones   boolean NOT NULL DEFAULT false,           -- Ley 21.719: consentimiento
     consentimiento_en       timestamptz,
     registrado_por          int DEFAULT app_usuario() REFERENCES usuarios (id),
+    ejecutivo_id            int DEFAULT app_usuario() REFERENCES usuarios (id),   -- ejecutivo a cargo (se reasigna en el CRM)
     creado_en               timestamptz NOT NULL DEFAULT now(),
     -- Una empresa comparece por su representante legal
     CONSTRAINT ck_clientes_juridica_con_representante
@@ -336,6 +336,7 @@ CREATE TABLE clientes (
 CREATE INDEX ix_clientes_representante  ON clientes (representante_legal_id);
 CREATE INDEX ix_clientes_direccion      ON clientes (direccion_id);
 CREATE INDEX ix_clientes_registrado_por ON clientes (registrado_por);
+CREATE INDEX ix_clientes_ejecutivo      ON clientes (ejecutivo_id);
 CREATE INDEX ix_clientes_email          ON clientes (email);
 CREATE INDEX ix_clientes_razon_social   ON clientes (lower(razon_social));
 CREATE INDEX ix_clientes_tipo           ON clientes (tipo_persona);
@@ -1266,22 +1267,42 @@ ALTER TABLE cuentas_portal         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tickets                ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ticket_mensajes        ENABLE ROW LEVEL SECURITY;
 
--- ---- Personal (mismas reglas de easyoffice_er.sql) ----
+-- ¿El rol de la sesión (app.rol_actual) tiene este permiso? Los administradores siempre.
+CREATE OR REPLACE FUNCTION app_tiene_permiso(p_permiso text) RETURNS boolean
+LANGUAGE sql STABLE AS
+$$ SELECT app_es_admin() OR EXISTS (
+     SELECT 1 FROM roles r JOIN roles_permisos rp ON rp.rol_id = r.id JOIN permisos p ON p.id = rp.permisos_id
+      WHERE r.rol = current_setting('app.rol_actual', true) AND p.permiso = p_permiso) $$;
+
+-- ¿El cliente está a cargo del usuario de la sesión? SECURITY DEFINER: lo usan las políticas de
+-- contratos y documentos, y la de clientes mira contratos; sin esto habría recursión entre políticas.
+CREATE OR REPLACE FUNCTION fn_cliente_a_cargo(p_cliente int) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS
+$$ SELECT EXISTS (SELECT 1 FROM clientes WHERE id = p_cliente AND ejecutivo_id = app_usuario()) $$;
+
+-- ---- Personal ----
+-- Con el permiso ver_todos_los_clientes (dueno, admin y ejecutivo por defecto) se ve y opera todo;
+-- sin él, solo su cartera: lo que registró, los clientes a su cargo y sus contratos y documentos.
 CREATE POLICY p_contratos ON contratos
-    USING (ejecutivo_id = app_usuario() OR app_es_admin());
+    USING (ejecutivo_id = app_usuario() OR app_es_admin() OR app_tiene_permiso('ver_todos_los_clientes')
+           OR fn_cliente_a_cargo(cliente_id));
 
 CREATE POLICY p_documentos ON documentos
     USING (
         ejecutivo_id = app_usuario()
         OR app_es_admin()
+        OR app_tiene_permiso('ver_todos_los_clientes')
+        OR fn_cliente_a_cargo(cliente_id)
         OR (contrato_id IS NOT NULL
             AND EXISTS (SELECT 1 FROM contratos c WHERE c.id = documentos.contrato_id))
     );
 
 CREATE POLICY p_clientes ON clientes
     USING (
-        registrado_por = app_usuario()
-        OR app_es_admin()
+        app_es_admin()
+        OR app_tiene_permiso('ver_todos_los_clientes')
+        OR registrado_por = app_usuario()
+        OR ejecutivo_id = app_usuario()
         OR EXISTS (SELECT 1 FROM contratos  c WHERE c.cliente_id = clientes.id)
         OR EXISTS (SELECT 1 FROM documentos d WHERE d.cliente_id = clientes.id)
     );
@@ -1325,8 +1346,25 @@ CREATE POLICY p_solicitudes_titular ON solicitudes_titular
     USING (app_es_admin() OR EXISTS (SELECT 1 FROM clientes c WHERE c.id = solicitudes_titular.cliente_id));
 CREATE POLICY p_cuentas_portal ON cuentas_portal
     USING (app_es_admin() OR EXISTS (SELECT 1 FROM clientes c WHERE c.id = cuentas_portal.cliente_id));
+-- Si el cliente o el documento tienen tickets. SECURITY DEFINER: lo usan las políticas de clientes y
+-- documentos, y la de tickets mira clientes; sin esto PostgreSQL vería una recursión entre políticas.
+CREATE OR REPLACE FUNCTION fn_cliente_con_ticket(p_cliente int) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS
+$$ SELECT EXISTS (SELECT 1 FROM tickets WHERE cliente_id = p_cliente) $$;
+
+CREATE OR REPLACE FUNCTION fn_documento_con_ticket(p_documento int) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS
+$$ SELECT EXISTS (SELECT 1 FROM tickets WHERE documento_id = p_documento) $$;
+
+-- Tickets: los de su cartera o, con el permiso ver_todos_los_tickets, los de todos los clientes
+-- (y en ese caso ve, solo lectura, el cliente y el documento de cada ticket)
 CREATE POLICY p_tickets ON tickets
-    USING (app_es_admin() OR EXISTS (SELECT 1 FROM clientes c WHERE c.id = tickets.cliente_id));
+    USING (app_es_admin() OR app_tiene_permiso('ver_todos_los_tickets')
+           OR EXISTS (SELECT 1 FROM clientes c WHERE c.id = tickets.cliente_id));
+CREATE POLICY p_clientes_tickets ON clientes FOR SELECT
+    USING (app_tiene_permiso('ver_todos_los_tickets') AND fn_cliente_con_ticket(id));
+CREATE POLICY p_documentos_tickets ON documentos FOR SELECT
+    USING (app_tiene_permiso('ver_todos_los_tickets') AND fn_documento_con_ticket(id));
 CREATE POLICY p_ticket_mensajes ON ticket_mensajes
     USING (EXISTS (SELECT 1 FROM tickets t WHERE t.id = ticket_mensajes.ticket_id));
 
@@ -1433,13 +1471,15 @@ INSERT INTO roles (rol) VALUES ('dueno'), ('admin'), ('ejecutivo'), ('recepcion'
 INSERT INTO permisos (permiso) VALUES
     ('ver_auditoria'), ('eliminar_registros'), ('administrar_usuarios'), ('administrar_catalogos'),
     ('aprobar_documentos'), ('registrar_pagos'), ('gestionar_renovaciones'),
-    ('registrar_correspondencia'), ('ver_reportes');
+    ('registrar_correspondencia'), ('ver_reportes'), ('ver_todos_los_tickets'), ('responder_tickets'),
+    ('ver_todos_los_clientes'), ('asignar_clientes');
 
 INSERT INTO roles_permisos (rol_id, permisos_id)
 SELECT r.id, p.id FROM roles r CROSS JOIN permisos p WHERE r.rol IN ('dueno', 'admin');
 INSERT INTO roles_permisos (rol_id, permisos_id)
 SELECT r.id, p.id FROM roles r JOIN permisos p
-  ON p.permiso IN ('aprobar_documentos', 'registrar_pagos', 'gestionar_renovaciones', 'ver_reportes')
+  ON p.permiso IN ('aprobar_documentos', 'registrar_pagos', 'gestionar_renovaciones', 'ver_reportes',
+                   'ver_todos_los_tickets', 'responder_tickets', 'ver_todos_los_clientes')
 WHERE r.rol = 'ejecutivo';
 INSERT INTO roles_permisos (rol_id, permisos_id)
 SELECT r.id, p.id FROM roles r JOIN permisos p ON p.permiso IN ('registrar_correspondencia')
@@ -1458,33 +1498,60 @@ INSERT INTO regiones (nombre_region) VALUES
     ('Región de Aysén del General Carlos Ibáñez del Campo'),
     ('Región de Magallanes y de la Antártica Chilena');
 
--- Comunas de las regiones con cobertura (Metropolitana y Valparaíso)
+-- Comunas de Chile (346), por región
 INSERT INTO comunas (nombre_comuna, region_id)
-SELECT c, (SELECT id FROM regiones WHERE nombre_region = 'Región Metropolitana')
-FROM unnest(ARRAY[
-    'Santiago', 'Cerrillos', 'Cerro Navia', 'Conchalí', 'El Bosque', 'Estación Central', 'Huechuraba',
-    'Independencia', 'La Cisterna', 'La Florida', 'La Granja', 'La Pintana', 'La Reina', 'Las Condes',
-    'Lo Barnechea', 'Lo Espejo', 'Lo Prado', 'Macul', 'Maipú', 'Ñuñoa', 'Pedro Aguirre Cerda',
-    'Peñalolén', 'Providencia', 'Pudahuel', 'Quilicura', 'Quinta Normal', 'Recoleta', 'Renca',
-    'San Joaquín', 'San Miguel', 'San Ramón', 'Vitacura',
-    'Puente Alto', 'Pirque', 'San José de Maipo',
-    'Colina', 'Lampa', 'Tiltil',
-    'San Bernardo', 'Buin', 'Calera de Tango', 'Paine',
-    'Melipilla', 'Alhué', 'Curacaví', 'María Pinto', 'San Pedro',
-    'Talagante', 'El Monte', 'Isla de Maipo', 'Padre Hurtado', 'Peñaflor'
-]) AS c;
-
-INSERT INTO comunas (nombre_comuna, region_id)
-SELECT c, (SELECT id FROM regiones WHERE nombre_region = 'Región de Valparaíso')
-FROM unnest(ARRAY[
-    'Valparaíso', 'Casablanca', 'Concón', 'Juan Fernández', 'Puchuncaví', 'Quintero', 'Viña del Mar',
-    'Isla de Pascua',
-    'Los Andes', 'Calle Larga', 'Rinconada', 'San Esteban',
-    'La Ligua', 'Cabildo', 'Papudo', 'Petorca', 'Zapallar',
-    'Quillota', 'La Calera', 'Hijuelas', 'La Cruz', 'Nogales',
-    'San Antonio', 'Algarrobo', 'Cartagena', 'El Quisco', 'El Tabo', 'Santo Domingo',
-    'San Felipe', 'Catemu', 'Llaillay', 'Panquehue', 'Putaendo', 'Santa María',
-    'Quilpué', 'Limache', 'Olmué', 'Villa Alemana'
-]) AS c;
+SELECT x.comuna, r.id
+  FROM (VALUES
+    ('Región de Arica y Parinacota', ARRAY['Arica', 'Camarones', 'General Lagos', 'Putre']),
+    ('Región de Tarapacá', ARRAY['Alto Hospicio', 'Camiña', 'Colchane', 'Huara', 'Iquique', 'Pica', 'Pozo Almonte']),
+    ('Región de Antofagasta', ARRAY['Antofagasta', 'Calama', 'María Elena', 'Mejillones', 'Ollagüe', 'San Pedro de Atacama',
+      'Sierra Gorda', 'Taltal', 'Tocopilla']),
+    ('Región de Atacama', ARRAY['Alto del Carmen', 'Caldera', 'Chañaral', 'Copiapó', 'Diego de Almagro', 'Freirina', 'Huasco',
+      'Tierra Amarilla', 'Vallenar']),
+    ('Región de Coquimbo', ARRAY['Andacollo', 'Canela', 'Combarbalá', 'Coquimbo', 'Illapel', 'La Higuera', 'La Serena', 'Los Vilos',
+      'Monte Patria', 'Ovalle', 'Paihuano', 'Punitaqui', 'Río Hurtado', 'Salamanca', 'Vicuña']),
+    ('Región de Valparaíso', ARRAY['Algarrobo', 'Cabildo', 'Calle Larga', 'Cartagena', 'Casablanca', 'Catemu', 'Concón', 'El Quisco',
+      'El Tabo', 'Hijuelas', 'Isla de Pascua', 'Juan Fernández', 'La Calera', 'La Cruz', 'La Ligua', 'Limache', 'Llaillay', 'Los Andes',
+      'Nogales', 'Olmué', 'Panquehue', 'Papudo', 'Petorca', 'Puchuncaví', 'Putaendo', 'Quillota', 'Quilpué', 'Quintero', 'Rinconada',
+      'San Antonio', 'San Esteban', 'San Felipe', 'Santa María', 'Santo Domingo', 'Valparaíso', 'Villa Alemana', 'Viña del Mar',
+      'Zapallar']),
+    ('Región Metropolitana', ARRAY['Alhué', 'Buin', 'Calera de Tango', 'Cerrillos', 'Cerro Navia', 'Colina', 'Conchalí', 'Curacaví',
+      'El Bosque', 'El Monte', 'Estación Central', 'Huechuraba', 'Independencia', 'Isla de Maipo', 'La Cisterna', 'La Florida',
+      'La Granja', 'La Pintana', 'La Reina', 'Lampa', 'Las Condes', 'Lo Barnechea', 'Lo Espejo', 'Lo Prado', 'Macul', 'Maipú',
+      'María Pinto', 'Melipilla', 'Ñuñoa', 'Padre Hurtado', 'Paine', 'Pedro Aguirre Cerda', 'Peñaflor', 'Peñalolén', 'Pirque',
+      'Providencia', 'Pudahuel', 'Puente Alto', 'Quilicura', 'Quinta Normal', 'Recoleta', 'Renca', 'San Bernardo', 'San Joaquín',
+      'San José de Maipo', 'San Miguel', 'San Pedro', 'San Ramón', 'Santiago', 'Talagante', 'Tiltil', 'Vitacura']),
+    ('Región del Libertador General Bernardo O''Higgins', ARRAY['Chépica', 'Chimbarongo', 'Codegua', 'Coinco', 'Coltauco', 'Doñihue',
+      'Graneros', 'La Estrella', 'Las Cabras', 'Litueche', 'Lolol', 'Machalí', 'Malloa', 'Marchihue', 'Mostazal', 'Nancagua', 'Navidad',
+      'Olivar', 'Palmilla', 'Paredones', 'Peralillo', 'Peumo', 'Pichidegua', 'Pichilemu', 'Placilla', 'Pumanque', 'Quinta de Tilcoco',
+      'Rancagua', 'Rengo', 'Requínoa', 'San Fernando', 'San Vicente', 'Santa Cruz']),
+    ('Región del Maule', ARRAY['Cauquenes', 'Chanco', 'Colbún', 'Constitución', 'Curepto', 'Curicó', 'Empedrado', 'Hualañé', 'Licantén',
+      'Linares', 'Longaví', 'Maule', 'Molina', 'Parral', 'Pelarco', 'Pelluhue', 'Pencahue', 'Rauco', 'Retiro', 'Río Claro', 'Romeral',
+      'Sagrada Familia', 'San Clemente', 'San Javier', 'San Rafael', 'Talca', 'Teno', 'Vichuquén', 'Villa Alegre', 'Yerbas Buenas']),
+    ('Región de Ñuble', ARRAY['Bulnes', 'Chillán', 'Chillán Viejo', 'Cobquecura', 'Coelemu', 'Coihueco', 'El Carmen', 'Ninhue', 'Ñiquén',
+      'Pemuco', 'Pinto', 'Portezuelo', 'Quillón', 'Quirihue', 'Ránquil', 'San Carlos', 'San Fabián', 'San Ignacio', 'San Nicolás',
+      'Treguaco', 'Yungay']),
+    ('Región del Biobío', ARRAY['Alto Biobío', 'Antuco', 'Arauco', 'Cabrero', 'Cañete', 'Chiguayante', 'Concepción', 'Contulmo', 'Coronel',
+      'Curanilahue', 'Florida', 'Hualpén', 'Hualqui', 'Laja', 'Lebu', 'Los Álamos', 'Los Ángeles', 'Lota', 'Mulchén', 'Nacimiento',
+      'Negrete', 'Penco', 'Quilaco', 'Quilleco', 'San Pedro de la Paz', 'San Rosendo', 'Santa Bárbara', 'Santa Juana', 'Talcahuano',
+      'Tirúa', 'Tomé', 'Tucapel', 'Yumbel']),
+    ('Región de La Araucanía', ARRAY['Angol', 'Carahue', 'Cholchol', 'Collipulli', 'Cunco', 'Curacautín', 'Curarrehue', 'Ercilla', 'Freire',
+      'Galvarino', 'Gorbea', 'Lautaro', 'Loncoche', 'Lonquimay', 'Los Sauces', 'Lumaco', 'Melipeuco', 'Nueva Imperial', 'Padre Las Casas',
+      'Perquenco', 'Pitrufquén', 'Pucón', 'Purén', 'Renaico', 'Saavedra', 'Temuco', 'Teodoro Schmidt', 'Toltén', 'Traiguén', 'Victoria',
+      'Vilcún', 'Villarrica']),
+    ('Región de Los Ríos', ARRAY['Corral', 'Futrono', 'La Unión', 'Lago Ranco', 'Lanco', 'Los Lagos', 'Máfil', 'Mariquina', 'Paillaco',
+      'Panguipulli', 'Río Bueno', 'Valdivia']),
+    ('Región de Los Lagos', ARRAY['Ancud', 'Calbuco', 'Castro', 'Chaitén', 'Chonchi', 'Cochamó', 'Curaco de Vélez', 'Dalcahue', 'Fresia',
+      'Frutillar', 'Futaleufú', 'Hualaihué', 'Llanquihue', 'Los Muermos', 'Maullín', 'Osorno', 'Palena', 'Puerto Montt', 'Puerto Octay',
+      'Puerto Varas', 'Puqueldón', 'Purranque', 'Puyehue', 'Queilén', 'Quellón', 'Quemchi', 'Quinchao', 'Río Negro', 'San Juan de la Costa',
+      'San Pablo']),
+    ('Región de Aysén del General Carlos Ibáñez del Campo', ARRAY['Aysén', 'Chile Chico', 'Cisnes', 'Cochrane', 'Coyhaique', 'Guaitecas',
+      'Lago Verde', 'O''Higgins', 'Río Ibáñez', 'Tortel']),
+    ('Región de Magallanes y de la Antártica Chilena', ARRAY['Antártica', 'Cabo de Hornos', 'Laguna Blanca', 'Natales', 'Porvenir',
+      'Primavera', 'Punta Arenas', 'Río Verde', 'San Gregorio', 'Timaukel', 'Torres del Paine'])
+  ) AS t(region, comunas)
+  CROSS JOIN LATERAL unnest(t.comunas) AS x(comuna)
+  JOIN regiones r ON r.nombre_region = t.region
+ON CONFLICT (nombre_comuna, region_id) DO NOTHING;
 
 COMMIT;

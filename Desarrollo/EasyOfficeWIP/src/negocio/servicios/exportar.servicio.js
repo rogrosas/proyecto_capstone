@@ -18,8 +18,9 @@ const fechaArchivo = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America
 // columnas: [encabezado, (fila) => valor]
 const LISTAS = {
   clientes: {
-    datos: async (u, q) => (await clientes.listar(u, { q: q.q, estado: q.estado })).clientes,
+    datos: async (u, q) => (await clientes.listar(u, { q: q.q, estado: q.estado, aCargo: q.a_cargo })).clientes,
     columnas: [['RUT', (x) => x.rut_fmt], ['Razón social', (x) => x.razon_social], ['Nombre de fantasía', (x) => x.nombre_fantasia],
+      ['A cargo de', (x) => x.a_cargo],
       ['Correo', (x) => x.email], ['Celular', (x) => x.celular], ['Servicios vigentes', (x) => x.servicios], ['Último folio', (x) => x.folio],
       ['Vence', (x) => x.vence], ['Estado', (x) => x.estado], ['Ejecutivo', (x) => x.ejecutivo], ['Documentos por revisar', (x) => x.docs_por_revisar],
       ['Cliente desde', (x) => x.desde]]

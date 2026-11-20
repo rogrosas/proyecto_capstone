@@ -10,9 +10,9 @@ const TIPOS = { fiscal: 'Fiscal (SII)', judicial: 'Judicial', laboral: 'Laboral'
 const ESTADOS = { recibida: ['amb', 'Recibida'], digitalizada: ['blu', 'Escaneada'], notificada: ['grn', 'Avisada'], retirada: ['gry', 'Retirada'], devuelta: ['gry', 'Devuelta'] };
 let contenedor = null;
 
-async function cargar() {
+async function cargar({ silencioso = false } = {}) {
   const tb = contenedor.querySelector('#tbCorr');
-  tb.innerHTML = filaVacia(6, 'Cargando…');
+  if (!silencioso) tb.innerHTML = filaVacia(6, 'Cargando…');
   try {
     const p = new URLSearchParams({ estado: contenedor.querySelector('#fCorr').value, q: contenedor.querySelector('#qCorr').value });
     const { correspondencia } = await get('/correspondencia?' + p);
@@ -87,6 +87,7 @@ function subirEscaneo(id) {
 
 export default {
   id: 'correspondencia',
+  actualizar: () => cargar({ silencioso: true }),   // main.js la llama cada cierto tiempo para mostrar registros nuevos
   titulo: 'Correspondencia',
   sub: () => 'Cartas y notificaciones recibidas en el domicilio tributario',
   async render(el) {

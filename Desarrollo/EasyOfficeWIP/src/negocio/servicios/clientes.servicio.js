@@ -11,13 +11,16 @@ const clientesRepo = require('../../datos/repositorios/clientes.repositorio');
 const ESTADOS = ['Activo', 'Por vencer', 'Vencido', 'Pendiente', 'Sin contrato'];
 const LIMITE = 500;
 
-async function listar(usuario, { q, estado }) {
+// aCargo: 'yo' (a mi cargo), 'sin' (sin ejecutivo a cargo) o el id de un usuario del personal; vacío = todos
+async function listar(usuario, { q, estado, aCargo }) {
   const texto = String(q || '').trim().slice(0, 80);
   const filtros = {
     texto,
     rut: texto.toUpperCase().replace(/[^0-9K-]/g, ''),   // "18.204.331-5" -> "18204331-5"
     estado: ESTADOS.includes(estado) ? estado : '',
-    porRevisar: estado === 'Por revisar'
+    porRevisar: estado === 'Por revisar',
+    aCargo: aCargo === 'yo' ? usuario.id : aCargo && aCargo !== 'sin' ? v.id(aCargo, 'Ejecutivo a cargo') : null,
+    sinAsignar: aCargo === 'sin'
   };
   const clientes = await conUsuario(usuario, (db) => clientesRepo.listar(db, filtros, LIMITE));
   return { clientes };
@@ -43,6 +46,8 @@ const cuentasPortalRepo = require('../../datos/repositorios/cuentasPortal.reposi
 const gestionesRepo = require('../../datos/repositorios/gestiones.repositorio');
 const firmaRepo = require('../../datos/repositorios/firma.repositorio');
 const v = require('../validacion');
+const usuariosRepo = require('../../datos/repositorios/usuarios.repositorio');
+const { exigirPermiso } = require('../roles');
 
 async function ficha(usuario, id) {
   id = v.id(id, 'Cliente');
@@ -190,4 +195,25 @@ async function actualizar(usuario, id, datos) {
   });
 }
 
-module.exports = { listar, eliminar, ficha, crear, actualizar, guardarAcceso, registrarGestion };
+/*
+ * Asigna uno o varios clientes a un usuario del personal (o los deja sin asignar). Permiso asignar_clientes.
+ * d = { clientes: [ids], ejecutivo_id: id | null, con_contratos: true }: con_contratos pasa también sus
+ * contratos vigentes y documentos en curso al nuevo ejecutivo.
+ */
+async function asignar(usuario, d = {}) {
+  await exigirPermiso(usuario, 'asignar_clientes', 'Su rol no tiene el permiso "asignar_clientes". Pídalo a un administrador.');
+  const ids = [...new Set((Array.isArray(d.clientes) ? d.clientes : []).map((x) => v.id(x, 'Cliente')))];
+  if (!ids.length) throw errores.solicitudInvalida('Elija al menos un cliente.');
+  if (ids.length > LIMITE) throw errores.solicitudInvalida(`Puede asignar hasta ${LIMITE} clientes a la vez.`);
+  const ejecutivoId = v.id(d.ejecutivo_id, 'Ejecutivo a cargo', { opcional: true });
+  const conContratos = d.con_contratos === undefined ? true : v.booleano(d.con_contratos);
+  if (ejecutivoId) {
+    const u = await usuariosRepo.porId(ejecutivoId);
+    if (!u?.activo) throw errores.solicitudInvalida('El ejecutivo elegido no existe o está desactivado.');
+  }
+  const cambiados = await conUsuario(usuario, (db) => clientesRepo.asignar(db, ids, ejecutivoId, conContratos));
+  if (!cambiados.length) throw errores.noEncontrado('Ninguno de los clientes está a su alcance.');
+  return { ok: true, asignados: cambiados.length };
+}
+
+module.exports = { listar, eliminar, ficha, crear, actualizar, guardarAcceso, registrarGestion, asignar };

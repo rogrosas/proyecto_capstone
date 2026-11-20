@@ -5,9 +5,9 @@ import { esc, fechaHora, filaVacia, toast } from '../util.js';
 const ACC = { INSERT: ['grn', 'Creó'], UPDATE: ['amb', 'Modificó'], DELETE: ['red', 'Eliminó'], LOGIN: ['blu', 'Ingresó'], LOGOUT: ['gry', 'Salió'] };
 let contenedor = null;
 
-async function cargar() {
+async function cargar({ silencioso = false } = {}) {
   const tb = contenedor.querySelector('#tbAud');
-  tb.innerHTML = filaVacia(6, 'Cargando…');
+  if (!silencioso) tb.innerHTML = filaVacia(6, 'Cargando…');
   const v = (id) => contenedor.querySelector(id).value;
   try {
     const { registros } = await get('/auditoria?' + new URLSearchParams({ q: v('#qAud'), accion: v('#fAudAccion'), dias: v('#fAudDias') }));
@@ -23,6 +23,7 @@ async function cargar() {
 
 export default {
   id: 'auditoria',
+  actualizar: () => cargar({ silencioso: true }),   // main.js la llama cada cierto tiempo para mostrar registros nuevos
   titulo: 'Auditoría',
   sub: () => 'Registro de acciones por usuario',
   soloAdmin: true,

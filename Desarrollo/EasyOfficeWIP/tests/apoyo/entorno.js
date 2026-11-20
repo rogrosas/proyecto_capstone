@@ -47,6 +47,10 @@ async function crearBase() {
   await db.query('UPDATE usuarios SET password_hash = $1 WHERE email = $2', [bcrypt.hashSync(cred.admin[1], 4), cred.admin[0]]);
   await db.query(`INSERT INTO usuarios (nombre, email, rol_id, password_hash)
     SELECT 'Ejecutiva Prueba', $1, id, $2 FROM roles WHERE rol = 'ejecutivo'`, [cred.ejec[0], bcrypt.hashSync(cred.ejec[1], 4)]);
+  // Por defecto el ejecutivo ve a todos los clientes (ver_todos_los_clientes). Las pruebas trabajan con la
+  // cartera restringida, que es lo que hay que verificar; tests/api/cartera.test.js prueba el permiso.
+  await db.query(`DELETE FROM roles_permisos WHERE rol_id = (SELECT id FROM roles WHERE rol = 'ejecutivo')
+                    AND permisos_id = (SELECT id FROM permisos WHERE permiso = 'ver_todos_los_clientes')`);
   await db.end();
   return { nombre, cred };
 }

@@ -22,7 +22,8 @@ module.exports = {
   opciones: responder((req) => opcionesServicio.obtener(req.usuario)),
 
   // Clientes
-  listarClientes: responder((req) => clientesServicio.listar(req.usuario, { q: req.query.q, estado: req.query.estado })),
+  listarClientes: responder((req) => clientesServicio.listar(req.usuario, { q: req.query.q, estado: req.query.estado, aCargo: req.query.a_cargo })),
+  asignarClientes: responder((req) => clientesServicio.asignar(req.usuario, req.body)),
   fichaCliente: responder((req) => clientesServicio.ficha(req.usuario, req.params.id)),
   crearCliente: creado((req) => clientesServicio.crear(req.usuario, req.body)),
   actualizarCliente: responder((req) => clientesServicio.actualizar(req.usuario, req.params.id, req.body)),

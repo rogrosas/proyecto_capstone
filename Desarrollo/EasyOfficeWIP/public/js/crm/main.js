@@ -6,7 +6,7 @@
 import { $, esc, iniciales, toast } from './util.js';
 import { api, post, onSesionExpirada } from './api.js';
 import { estado, nav } from './estado.js';
-import { cerrarModal } from './modal.js';
+import { cerrarModal, cerrarTodo } from './modal.js';
 
 import dashboard from './modulos/dashboard.js';
 import clientes from './modulos/clientes.js';
@@ -180,7 +180,35 @@ document.addEventListener('click', async (e) => {
   mostrarLogin();
 });
 
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarModal(); });
+/* ---------- actualización automática ----------
+   Cada 30 s (y al volver a la pestaña del navegador) la sección abierta vuelve a pedir sus datos,
+   sin "Cargando…" y con los mismos filtros: así aparecen los registros nuevos sin recargar la página.
+   No interrumpe: espera si hay una ventana abierta, si se está escribiendo en un campo, si la
+   pestaña no se ve o si la sección lo pide (puedeActualizar, por ejemplo con clientes marcados). */
+const CADA_MS = 30 * 1000;
+let ultimaActualizacion = Date.now();
+let actualizando = false;
+
+async function actualizarVista() {
+  const m = visibles().find((x) => x.id === actual);
+  if (!estado.usuario || !m?.actualizar || actualizando || document.visibilityState !== 'visible') return;
+  if (!$('modalRaiz').hidden) return;
+  const foco = document.activeElement;
+  if (foco && $('vista').contains(foco) && foco.matches('input, select, textarea')) return;
+  if (m.puedeActualizar && !m.puedeActualizar()) return;
+  actualizando = true;
+  try {
+    await m.actualizar($('vista'), { refrescarMenu: renderMenu });
+    ultimaActualizacion = Date.now();
+  } catch { /* se reintenta en la próxima vuelta; una sesión vencida la maneja api.js */ }
+  finally { actualizando = false; }
+}
+setInterval(actualizarVista, CADA_MS);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && Date.now() - ultimaActualizacion > 10 * 1000) actualizarVista();
+});
+
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarTodo(); });
 window.addEventListener('hashchange', () => { if (estado.usuario && location.hash.slice(1) !== actual) ir(location.hash.slice(1)); });
 window.addEventListener('unhandledrejection', (e) => { if (e.reason?.message && e.reason.message !== 'sesion') toast(e.reason.message, true); });
 

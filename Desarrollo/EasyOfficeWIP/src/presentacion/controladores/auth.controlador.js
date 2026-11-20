@@ -3,6 +3,7 @@
    ========================================================= */
 const config = require('../../config');
 const authServicio = require('../../negocio/servicios/auth.servicio');
+const { permisosActuales } = require('../../negocio/roles');
 const { leerSesion, escribirSesion, borrarSesion } = require('../middleware/cookies');
 
 // Con segundo factor, el paso 1 no abre sesión: devuelve el desafío para pedir el código
@@ -25,8 +26,9 @@ async function logout(req, res) {
   res.json({ ok: true });
 }
 
-function yo(req, res) {
-  res.json({ usuario: req.usuario });
+// Con los permisos vigentes del rol (pudieron cambiar desde que inició sesión)
+async function yo(req, res) {
+  res.json({ usuario: { ...req.usuario, permisos: await permisosActuales(req.usuario) } });
 }
 
 const responder = (fn) => async (req, res) => res.json(await fn(req));

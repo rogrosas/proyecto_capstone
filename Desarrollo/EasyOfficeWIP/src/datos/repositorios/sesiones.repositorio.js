@@ -7,12 +7,12 @@
    Dos espacios separados: personal del CRM y clientes del portal,
    para que un token de un tipo nunca sirva en el otro.
    ========================================================= */
-const personal = new Map();      // token -> { usuario, expira }
+const personal = new Map();      // token -> { usuario, expira, huellaClave }
 const clientes = new Map();      // token -> { cliente, expira }
 const enlacesUsados = new Map(); // id del enlace de acceso -> vencimiento (uso único)
 const registros = new Map();     // token del correo de confirmación -> { datos, expira } (registro en el portal)
 
-function guardar(token, usuario, expira) { personal.set(token, { usuario, expira }); }
+function guardar(token, usuario, expira, huellaClave) { personal.set(token, { usuario, expira, huellaClave }); }
 function obtener(token) { return personal.get(token) || null; }
 function eliminar(token) { personal.delete(token); }
 

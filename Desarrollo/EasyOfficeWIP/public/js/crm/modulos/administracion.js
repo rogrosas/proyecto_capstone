@@ -2,7 +2,7 @@
 import { get, post, put, patch, del } from '../api.js';
 import { esc, clp, fecha, filaVacia, toast } from '../util.js';
 import { estado, opciones } from '../estado.js';
-import { abrirModal, formularioHTML, leerFormulario, validar, confirmar } from '../modal.js';
+import { abrirModal, cerrarModal, formularioHTML, leerFormulario, validar, confirmar } from '../modal.js';
 import { direccionHTML, activarDirecciones, direccionLimpia } from '../direccion.js';
 import { verDocumentosTienda } from './documentosTienda.js';
 
@@ -29,7 +29,8 @@ async function verUsuarios(panel) {
           ${u.totp_activo && u.id !== estado.usuario.id ? `<button class="btn btn-o btn-row" data-quitar-totp="${u.id}" title="Si perdió su teléfono: podrá activarla de nuevo">Quitar 2 pasos</button>` : ''}
           <button class="btn btn-o btn-row" data-editar="${u.id}">Editar</button></td></tr>`).join('')}</tbody>
     </table></div>
-    <div class="note">Los roles "admin" y "dueno" trabajan como rol_admin en la base de datos (ven todo); los demás, como rol_ejecutivo (solo su cartera, sin eliminar).</div>`;
+    <div class="note">Los roles "admin" y "dueno" trabajan como rol_admin en la base de datos (ven todo); los demás, como rol_ejecutivo (solo su cartera, sin eliminar).
+      Cambiar el rol, desactivar a alguien o cambiarle la contraseña rige de inmediato, aunque tenga la sesión abierta.</div>`;
   const opRoles = roles.map((r) => ({ valor: r.id, texto: r.rol }));
   const form = (u) => abrirModal({
     titulo: u ? `Editar ${u.nombre}` : 'Nuevo usuario',
@@ -48,6 +49,7 @@ async function verUsuarios(panel) {
         if (u && u.id === estado.usuario.id) { delete d.activo; if (Number(d.rol_id) === u.rol_id) delete d.rol_id; }
         if (u) await patch('/admin/usuarios/' + u.id, d); else await post('/admin/usuarios', d);
         toast('Usuario guardado.');
+        cerrarModal();
         mostrar('usuarios');
       }
     }]
@@ -90,7 +92,7 @@ async function verRoles(panel) {
         <td class="right acciones"><button class="btn btn-o btn-row" data-editar="${r.id}">Editar</button>
           <button class="btn btn-o btn-row" data-eliminar="${r.id}" ${r.usuarios ? 'disabled title="Tiene usuarios asignados"' : ''}>Eliminar</button></td></tr>`).join('')}</tbody>
     </table></div>
-    <div class="note">Los permisos se administran en el catálogo "Permisos". La sesión de cada usuario carga los permisos de su rol.</div>`;
+    <div class="note">Los permisos se administran en el catálogo "Permisos". Un cambio en los permisos de un rol rige de inmediato, también para quienes ya tienen la sesión abierta.</div>`;
   const form = (r) => abrirModal({
     titulo: r ? `Rol ${r.rol}` : 'Nuevo rol',
     contenido: `${formularioHTML([{ nombre: 'rol', etiqueta: 'Nombre del rol', requerido: true, valor: r?.rol, ancho: 'full', ayuda: '"admin" y "dueno" son administradores para la base de datos.' }])}
@@ -102,6 +104,7 @@ async function verRoles(panel) {
         const d = { rol: leerFormulario(c).rol, permisos: [...c.querySelectorAll('[data-permiso]:checked')].map((x) => Number(x.value)) };
         if (r) await put('/admin/roles/' + r.id, d); else await post('/admin/roles', d);
         toast('Rol guardado.');
+        cerrarModal();
         mostrar('roles');
       }
     }]
@@ -224,6 +227,7 @@ async function verCatalogo(panel, nombre) {
           delete cacheRefs[nombre];
           await opciones(true);
           toast(`${def.titulo}: guardado.`);
+          cerrarModal();
           mostrar(nombre);
         }
       }]

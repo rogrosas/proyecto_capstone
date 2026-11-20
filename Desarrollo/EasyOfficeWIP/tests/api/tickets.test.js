@@ -60,3 +60,41 @@ describe('Ticket como conversación', () => {
     assert.ok(a.n >= m.n);
   });
 });
+
+/* Un ejecutivo que no tiene al cliente en su cartera igual ve y responde los tickets (permiso
+   ver_todos_los_tickets y responder_tickets del rol); un rol sin esos permisos no. */
+describe('Tickets según los permisos del rol', () => {
+  const N = perezosa(), R = perezosa();
+  const nuevo = (rol, email) => async () => {
+    const { roles } = await A('GET', '/api/crm/admin/roles');
+    return A('POST', '/api/crm/admin/usuarios', { nombre: `Prueba ${rol}`, email, rol_id: roles.find((x) => x.rol === rol).id, password: 'Prueba-Permisos-2026' });
+  };
+  paso('el cliente abre otro ticket', () => C('POST', '/api/cliente/tickets', { motivo: 'otro', detalle: '¿Cuál es el horario de la oficina?' }), (r) => { tk.otro = r.id; return r.status === 200; });
+  paso('crear un ejecutivo nuevo (sin cartera)', nuevo('ejecutivo', 'ejecutivo.nuevo@easyoffice.test'));
+  paso('crear un usuario de recepción', nuevo('recepcion', 'recepcion.prueba@easyoffice.test'));
+  paso('el ejecutivo nuevo ingresa', () => N('POST', '/api/crm/login', { email: 'ejecutivo.nuevo@easyoffice.test', password: 'Prueba-Permisos-2026' }),
+    (r) => r.status === 200 && r.usuario.permisos.includes('ver_todos_los_tickets') && r.usuario.permisos.includes('responder_tickets'));
+  paso('ve el ticket aunque el cliente no es de su cartera', () => N('GET', '/api/crm/tickets'),
+    (r) => r.status === 200 && r.tickets.some((t) => t.id === tk.otro && t.cliente === LUIS.nombre) && r.pendientes >= 1);
+  paso('abre la conversación', () => N('GET', `/api/crm/tickets/${tk.otro}`), (r) => r.status === 200 && r.mensajes.length === 1);
+  paso('y responde', () => N('PATCH', `/api/crm/tickets/${tk.otro}`, { respuesta: 'De lunes a jueves de 8:30 a 17:30.' }));
+  paso('la respuesta queda con su nombre', () => N('GET', `/api/crm/tickets/${tk.otro}`), (r) => r.mensajes[1]?.autor === 'Prueba ejecutivo');
+  paso('pero no ve la ficha ni los contratos del cliente (no son de su cartera)', () => N('GET', '/api/crm/contratos'), (r) => r.status === 200 && r.contratos.length === 0);
+  paso('recepción ingresa', () => R('POST', '/api/crm/login', { email: 'recepcion.prueba@easyoffice.test', password: 'Prueba-Permisos-2026' }));
+  paso('recepción no tiene el permiso: no puede responder → 403', () => R('PATCH', `/api/crm/tickets/${tk.otro}`, { respuesta: 'Hola' }), (r) => r.status === 403);
+  paso('quitar el permiso de responder al rol ejecutivo', async () => {
+    const { roles, permisos } = await A('GET', '/api/crm/admin/roles');
+    const ej = roles.find((x) => x.rol === 'ejecutivo');
+    const sin = permisos.find((p) => p.permiso === 'responder_tickets').id;
+    return A('PUT', `/api/crm/admin/roles/${ej.id}`, { rol: 'ejecutivo', permisos: ej.permisos.filter((p) => p !== sin) });
+  });
+  paso('con la sesión ya abierta, el cambio rige de inmediato → 403', () => N('PATCH', `/api/crm/tickets/${tk.otro}`, { respuesta: 'Otra' }), (r) => r.status === 403);
+});
+
+describe('Auditoría de tickets', () => {
+  it('cada mensaje queda en la auditoría (después de las pruebas de permisos)', async () => {
+    const [a] = await entorno.sql("SELECT count(*)::int AS n FROM registros_actividad WHERE tabla_afectada = 'ticket_mensajes' AND accion = 'INSERT'");
+    const [m] = await entorno.sql('SELECT count(*)::int AS n FROM ticket_mensajes WHERE ticket_id = $1', [tk.id]);
+    assert.ok(a.n >= m.n);
+  });
+});

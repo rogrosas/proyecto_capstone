@@ -644,6 +644,30 @@
     resumen(p); await documentos(p); pagos(p); datos(p);
   }
 
+  /* Actualización automática: al cambiar de pestaña, cada 60 s y al volver a la pestaña del navegador.
+     No interrumpe: espera si está abierta la revisión de un documento o si el cliente está escribiendo
+     (un ticket o una respuesta), y deja abiertas las conversaciones que tenía desplegadas. */
+  let actualizando = false, ultimaActualizacion = 0;
+  async function actualizarPanel() {
+    if (actualizando || $('panelWrap').hidden || !$('revision').hidden || document.visibilityState !== 'visible') return;
+    const escribiendo = [...$('panelWrap').querySelectorAll('textarea, input:not([type=checkbox])')]
+      .some((x) => x === document.activeElement || x.value.trim());
+    if (escribiendo) return;
+    const abiertos = [...document.querySelectorAll('details[open] [data-tk-texto]')].map((x) => x.dataset.tkTexto);
+    actualizando = true;
+    try {
+      await recargarPanel();
+      ultimaActualizacion = Date.now();
+      abiertos.forEach((id) => document.querySelector(`[data-tk-texto="${id}"]`)?.closest('details')?.setAttribute('open', ''));
+    } catch (err) {
+      if (err.status === 401) mostrarAcceso({ error: 'Su sesión expiró. Ingrese nuevamente.' });
+    } finally { actualizando = false; }
+  }
+  setInterval(actualizarPanel, 60 * 1000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && Date.now() - ultimaActualizacion > 10 * 1000) actualizarPanel();
+  });
+
   async function mostrarPanel(cliente) {
     $('gate').hidden = true;
     $('tabs').hidden = false;
@@ -657,6 +681,7 @@
     setTab('resumen');
     try {
       await recargarPanel();
+      ultimaActualizacion = Date.now();
     } catch (err) {
       if (err.status === 401) return mostrarAcceso({ error: 'Su sesión expiró. Ingrese nuevamente.' });
       $('v-resumen').innerHTML = `<div class="panel"><div class="empty" style="color:var(--red)">${esc(err.message)}</div></div>`;
@@ -688,7 +713,7 @@
     }
     if ('cerrarRev' in t.dataset) return cerrarRevision();
     if ('ticketNuevo' in t.dataset) return consultaGeneral();
-    if (t.dataset.tab) return setTab(t.dataset.tab);
+    if (t.dataset.tab) { setTab(t.dataset.tab); return actualizarPanel(); }   // la pestaña muestra lo último
     await api('/salir', {}).catch(() => {});
     mostrarAcceso({ ok: 'Cerró su sesión.' });
   });

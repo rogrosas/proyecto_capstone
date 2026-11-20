@@ -6,9 +6,9 @@ import { estado, tomarFiltros } from '../estado.js';
 
 let contenedor = null;
 
-async function cargar() {
+async function cargar({ silencioso = false } = {}) {
   const tb = contenedor.querySelector('#tbRenov');
-  tb.innerHTML = filaVacia(8, 'Cargando…');
+  if (!silencioso) tb.innerHTML = filaVacia(8, 'Cargando…');
   try {
     const d = await get('/renovaciones?filtro=' + contenedor.querySelector('#fRenov').value);
     const e = d.etapas;
@@ -45,6 +45,7 @@ async function cargar() {
 
 export default {
   id: 'renovaciones',
+  actualizar: () => cargar({ silencioso: true }),   // main.js la llama cada cierto tiempo para mostrar registros nuevos
   titulo: 'Renovaciones y cobranza',
   sub: () => 'Vencimientos, alertas y saldo por contrato',
   cnt: 'vencidos',

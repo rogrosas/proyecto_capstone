@@ -1,6 +1,7 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "easyoffice", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "Desarrollo/EasyOfficeWIP", "run", "dev"], "port": 3000 }
+    { "name": "easyoffice", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "Desarrollo/EasyOfficeWIP", "run", "dev"], "port": 3000 },
+    { "name": "easyoffice-local", "runtimeExecutable": "node", "runtimeArgs": ["--env-file=Desarrollo/EasyOfficeWIP/.env", "-e", "process.chdir('Desarrollo/EasyOfficeWIP'); delete process.env.DATABASE_URL; process.env.PORT = '3001'; process.env.AVISOS_AUTOMATICOS = 'no'; require(require('path').resolve('server.js'))"], "port": 3001 }
   ]
 }

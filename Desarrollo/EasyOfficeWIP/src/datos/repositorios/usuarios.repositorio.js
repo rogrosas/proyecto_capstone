@@ -82,6 +82,10 @@ async function actualizar(db, id, cambios) {
 
 // Quién atiende a un cliente: los ejecutivos activos de sus contratos; si no tiene, los administradores
 async function equipoDeCliente(clienteId, rolesAdmin) {
+  // El ejecutivo a cargo del cliente; si no tiene, los ejecutivos de sus contratos; si no, los administradores
+  const aCargo = await consultaSistema(`
+    SELECT u.email FROM clientes cl JOIN usuarios u ON u.id = cl.ejecutivo_id WHERE cl.id = $1 AND u.activo`, [clienteId]);
+  if (aCargo.rows.length) return aCargo.rows.map((x) => x.email);
   const r = await consultaSistema(`
     SELECT DISTINCT u.email FROM contratos k JOIN usuarios u ON u.id = k.ejecutivo_id
      WHERE k.cliente_id = $1 AND u.activo AND k.estado <> 'cancelado'`, [clienteId]);

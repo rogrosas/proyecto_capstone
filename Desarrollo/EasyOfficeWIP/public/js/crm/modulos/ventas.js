@@ -8,9 +8,9 @@ import { abrirModal, formularioHTML, leerFormulario, validar } from '../modal.js
 
 let contenedor = null;
 
-async function cargar() {
+async function cargar({ silencioso = false } = {}) {
   const tb = contenedor.querySelector('#tbPagos');
-  tb.innerHTML = filaVacia(9, 'Cargando…');
+  if (!silencioso) tb.innerHTML = filaVacia(9, 'Cargando…');
   try {
     const d = await get('/ventas');
     const tot = d.resumen.reduce((a, v) => ({ monto: a.monto + v.monto, pagados: a.pagados + v.pagados, pend: a.pend + v.pendientes, rech: a.rech + v.rechazados }), { monto: 0, pagados: 0, pend: 0, rech: 0 });
@@ -83,6 +83,7 @@ export async function cambiarEstadoPago(id, actual, alGuardar) {
 
 export default {
   id: 'ventas',
+  actualizar: () => cargar({ silencioso: true }),   // main.js la llama cada cierto tiempo para mostrar registros nuevos
   titulo: 'Ventas y pagos',
   sub: () => 'Pagos por pasarela, cuotas y estado',
   async render(el) {

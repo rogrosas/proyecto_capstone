@@ -29,8 +29,10 @@ export default {
   id: 'dashboard',
   titulo: 'Dashboard',
   sub: () => `Resumen operativo · ${new Date().toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' })}`,
-  async render(el, { refrescarMenu }) {
-    el.innerHTML = '<div class="kpis"><div class="kpi"><div class="l">Cargando…</div></div></div>';
+  // main.js la llama cada cierto tiempo: mismo período, sin "Cargando…" (y refresca los conteos del menú)
+  actualizar(el, ctx) { return this.render(el, { ...ctx, silencioso: true }); },
+  async render(el, { refrescarMenu, silencioso = false }) {
+    if (!silencioso) el.innerHTML = '<div class="kpis"><div class="kpi"><div class="l">Cargando…</div></div></div>';
     if (per.preset !== 'otro') [per.desde, per.hasta] = rango(per.preset);
     const q = new URLSearchParams({ desde: per.desde, hasta: per.hasta, ...(per.ejecutivo ? { ejecutivo: per.ejecutivo } : {}) });
     const [d, op] = await Promise.all([get('/dashboard?' + q), estado.usuario.admin ? opciones() : null]);

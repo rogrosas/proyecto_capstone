@@ -10,6 +10,31 @@ import { esc } from './util.js';
 
 const raiz = () => document.getElementById('modalRaiz');
 
+/* ---------- Historial de fichas ("← Volver") ----------
+   Una ficha (cliente, contrato, documento) se abre con abrirModal({ ficha: { clave, reabrir } }).
+   Si se abre desde dentro de otra ficha (el clic fue en la ventana), la anterior queda en el
+   historial y la nueva muestra "← Volver a …". Si se abre desde la página (una lista, el tablero),
+   el historial empieza de cero. Volver a abrir la misma ficha (tras guardar algo) no la repite. */
+let actual = null;          // { clave, titulo, reabrir } de la ficha que se ve
+let historial = [];         // fichas anteriores, la última arriba
+let clicEnVentana = false;  // el último clic fue dentro de la ventana
+document.addEventListener('click', (e) => { clicEnVentana = !!e.target.closest?.('#modalRaiz'); }, true);
+
+function registrarFicha(ficha, titulo) {
+  if (!clicEnVentana) historial = [];
+  const i = historial.findIndex((x) => x.clave === ficha.clave);
+  if (i >= 0) historial = historial.slice(0, i);                  // volvió a una anterior
+  else if (actual && actual.clave !== ficha.clave && clicEnVentana) historial.push(actual);
+  actual = { clave: ficha.clave, titulo, reabrir: ficha.reabrir };
+}
+
+// El usuario cerró la ventana (✕, fondo, Esc o "Cerrar"): se olvida el historial
+export function cerrarTodo() {
+  historial = [];
+  actual = null;
+  cerrarModal();
+}
+
 export function cerrarModal() {
   raiz().innerHTML = '';
   raiz().hidden = true;
@@ -18,24 +43,32 @@ export function cerrarModal() {
 
 /**
  * Abre un modal. contenido: HTML. acciones: [{ texto, clase, alHacer(modalEl) }]
+ * ficha: { clave, reabrir } para las fichas que participan del "← Volver" (ver arriba).
  * Devuelve el elemento del cuerpo para enganchar eventos.
  */
-export function abrirModal({ titulo, contenido, acciones = [], ancho = 'md' }) {
+export function abrirModal({ titulo, contenido, acciones = [], ancho = 'md', ficha = null }) {
+  if (ficha) registrarFicha(ficha, titulo);
+  const anterior = ficha && historial.at(-1);
   const r = raiz();
   r.hidden = false;
   document.body.classList.add('con-modal');
   r.innerHTML = `
     <div class="modal-fondo" data-cerrar></div>
     <div class="modal ${ancho}" role="dialog" aria-modal="true" aria-labelledby="modalTitulo">
+      ${anterior ? `<button class="modal-volver" data-volver title="Volver a la ventana anterior">← Volver a ${esc(anterior.titulo)}</button>` : ''}
       <div class="modal-h"><h3 id="modalTitulo">${esc(titulo)}</h3><button class="modal-x" data-cerrar aria-label="Cerrar">✕</button></div>
       <div class="modal-b" id="modalCuerpo">${contenido}</div>
       ${acciones.length ? `<div class="modal-f"><div class="modal-error" id="modalError" hidden></div>
         ${acciones.map((a, i) => `<button class="btn ${a.clase || 'btn-o'}" data-accion="${i}">${esc(a.texto)}</button>`).join('')}</div>` : ''}
     </div>`;
-  r.querySelectorAll('[data-cerrar]').forEach((b) => b.addEventListener('click', cerrarModal));
+  r.querySelectorAll('[data-cerrar]').forEach((b) => b.addEventListener('click', cerrarTodo));
+  r.querySelector('[data-volver]')?.addEventListener('click', async (e) => {
+    e.currentTarget.disabled = true;
+    try { await anterior.reabrir(); } catch (err) { if (err.message !== 'sesion') mostrarErrorModal(err.message); }
+  });
   r.querySelectorAll('[data-accion]').forEach((b) => b.addEventListener('click', async () => {
     const accion = acciones[Number(b.dataset.accion)];
-    if (!accion.alHacer) return cerrarModal();
+    if (!accion.alHacer) return cerrarTodo();
     b.disabled = true;
     try {
       await accion.alHacer(r.querySelector('#modalCuerpo'));

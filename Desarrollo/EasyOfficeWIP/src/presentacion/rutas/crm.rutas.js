@@ -23,7 +23,7 @@ router.post('/clave/definir', a(auth.definirClave));               // nueva cont
 
 // Requieren sesión
 router.use(requiereSesion);
-router.get('/yo', auth.yo);
+router.get('/yo', a(auth.yo));
 router.get('/yo/seguridad', a(auth.seguridad));
 router.post('/yo/totp/iniciar', a(auth.iniciarTotp));
 router.post('/yo/totp/activar', a(auth.activarTotp));
@@ -34,6 +34,7 @@ router.get('/opciones', a(crm.opciones));
 // Clientes (clientes, representantes_legales, direcciones)
 router.get('/clientes', a(crm.listarClientes));
 router.post('/clientes', a(crm.crearCliente));
+router.post('/clientes/asignar', a(crm.asignarClientes));          // ejecutivo a cargo de uno o varios clientes
 router.get('/clientes/:id', a(crm.fichaCliente));
 router.put('/clientes/:id', a(crm.actualizarCliente));
 router.delete('/clientes/:id', a(crm.eliminarCliente));

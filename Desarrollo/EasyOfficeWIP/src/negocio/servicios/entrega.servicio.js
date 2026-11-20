@@ -21,6 +21,7 @@ const ticketsRepo = require('../../datos/repositorios/tickets.repositorio');
 const portalRepo = require('../../datos/repositorios/portal.repositorio');
 const portalServicio = require('./portal.servicio');
 const v = require('../validacion');
+const { tienePermiso, exigirPermiso } = require('../roles');
 
 const MOTIVOS = { datos_incorrectos: 'Mis datos están incorrectos', condiciones: 'No estoy de acuerdo con las condiciones',
   falta_informacion: 'Falta información en el documento', otro: 'Otro motivo' };
@@ -172,7 +173,7 @@ async function detalleTicket(usuario, id) {
   return conUsuario(usuario, async (db) => {
     const ticket = await ticketsRepo.obtener(db, id);
     if (!ticket) throw errores.noEncontrado('Ticket no encontrado o fuera de su cartera.');
-    return { ticket, mensajes: await ticketsRepo.mensajes(db, id), motivos: MOTIVOS };
+    return { ticket, mensajes: await ticketsRepo.mensajes(db, id), motivos: MOTIVOS, puede_responder: await tienePermiso(usuario, 'responder_tickets') };
   });
 }
 
@@ -185,6 +186,7 @@ async function atenderTicket(usuario, id, d = {}) {
   const respuesta = v.texto(d.respuesta, 'Respuesta', { opcional: true, max: 4000 });
   const pedido = v.opcion(d.estado, ESTADOS_TICKET, 'Estado', { opcional: true });
   if (!respuesta && !pedido) throw errores.solicitudInvalida('Escriba un mensaje o elija un estado.');
+  await exigirPermiso(usuario, 'responder_tickets', 'Su rol no tiene el permiso "responder_tickets". Pídalo a un administrador.');
   const t = await conUsuario(usuario, async (db) => {
     const actual = await ticketsRepo.obtener(db, id);
     if (!actual) throw errores.noEncontrado('Ticket no encontrado o fuera de su cartera.');

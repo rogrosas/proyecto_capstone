@@ -9,28 +9,77 @@ import { abrirDocumento, nuevoDocumento, revisarDocumento } from './documentos.j
 
 let contenedor = null;
 
-async function cargar() {
+// Permisos del rol (Administración → Roles y permisos); los administradores tienen todos
+const tiene = (permiso) => !!estado.usuario && (estado.usuario.admin || (estado.usuario.permisos || []).includes(permiso));
+const puedeAsignar = () => tiene('asignar_clientes');
+const aCargoHTML = (c) => c.a_cargo ? esc(c.a_cargo) : '<span class="sb">Sin asignar</span>';
+// Personal activo para elegir a quién queda a cargo
+const personal = async () => (await opciones()).usuarios.filter((u) => u.activo !== false);
+
+async function cargar({ silencioso = false } = {}) {
   const tb = contenedor.querySelector('#tbClientes');
-  tb.innerHTML = filaVacia(7, 'Cargando…');
-  const p = new URLSearchParams({ q: contenedor.querySelector('#qClientes').value, estado: contenedor.querySelector('#fEstado').value });
+  const conCasillas = puedeAsignar();
+  const cols = conCasillas ? 8 : 7;
+  if (!silencioso) tb.innerHTML = filaVacia(cols, 'Cargando…');
+  const p = new URLSearchParams({ q: contenedor.querySelector('#qClientes').value, estado: contenedor.querySelector('#fEstado').value,
+    a_cargo: contenedor.querySelector('#fACargo').value });
   try {
     const { clientes } = await get('/clientes?' + p);
     tb.innerHTML = clientes.length ? clientes.map((c) => `
       <tr class="clic" data-cliente="${c.id}">
+        ${conCasillas ? `<td class="sel"><input type="checkbox" data-sel value="${c.id}" aria-label="Elegir ${esc(c.razon_social)}"></td>` : ''}
         <td><div class="nm">${esc(c.razon_social)}</div><div class="sb">${esc(c.nombre_fantasia || c.email || '')}</div></td>
         <td class="mono">${esc(c.rut_fmt)}</td>
         <td>${esc(c.servicios || '—')}</td>
-        <td>${esc(c.ejecutivo || '—')}</td>
+        <td>${aCargoHTML(c)}</td>
         <td>${c.vence ? fecha(c.vence) : '—'}${c.folio ? `<div class="sb"><button class="lnk mono" data-contrato="${c.contrato_id}" title="Abrir el contrato">${esc(c.folio)}</button></div>` : ''}</td>
         <td>${badge('cliente', c.estado)}${c.docs_por_revisar ? `<div style="margin-top:4px;"><span class="bg amb" title="Documentos pendientes de revisión">${c.docs_por_revisar} por revisar</span></div>` : ''}</td>
         <td class="right"><button class="btn btn-o btn-row" data-cliente="${c.id}">Ficha</button></td>
-      </tr>`).join('') : filaVacia(7, 'No hay clientes que coincidan.');
-    contenedor.querySelector('#ntClientes').textContent = estado.usuario.admin
-      ? `${clientes.length} cliente(s) de todos los ejecutivos.`
-      : `${clientes.length} cliente(s) de su cartera: los que registró y los de sus contratos o documentos.`;
+      </tr>`).join('') : filaVacia(cols, 'No hay clientes que coincidan.');
+    contenedor.querySelector('#ntClientes').textContent = tiene('ver_todos_los_clientes')
+      ? `${clientes.length} cliente(s) de todo el equipo.`
+      : `${clientes.length} cliente(s) de su cartera: los que tiene a cargo, los que registró y los de sus contratos o documentos.`;
+    marcarTodos();
   } catch (err) {
-    if (err.message !== 'sesion') tb.innerHTML = filaVacia(7, err.message, true);
+    if (err.message !== 'sesion') tb.innerHTML = filaVacia(cols, err.message, true);
   }
+}
+
+/* ---------- Asignar el ejecutivo a cargo (uno o varios clientes) ---------- */
+const elegidos = () => [...contenedor.querySelectorAll('#tbClientes [data-sel]:checked')].map((x) => Number(x.value));
+
+// Barra de asignación: aparece al marcar clientes; la casilla del encabezado marca o desmarca todos
+function marcarTodos() {
+  const n = elegidos().length, total = contenedor.querySelectorAll('#tbClientes [data-sel]').length;
+  const barra = contenedor.querySelector('#barAsignar');
+  if (barra) { barra.hidden = !n; barra.querySelector('[data-n]').textContent = `${n} cliente(s) elegido(s)`; }
+  const todos = contenedor.querySelector('#selTodos');
+  if (todos) { todos.checked = !!n && n === total; todos.indeterminate = !!n && n < total; }
+}
+
+async function asignarA(ids, ejecutivoId, conContratos) {
+  const r = await post('/clientes/asignar', { clientes: ids, ejecutivo_id: ejecutivoId || null, con_contratos: conContratos });
+  toast(`${r.asignados} cliente(s) ${ejecutivoId ? 'asignado(s)' : 'quedaron sin asignar'}.`);
+}
+
+// Desde la ficha: cambiar a quién está a cargo un cliente
+async function cambiarACargo(c) {
+  const lista = await personal();
+  const cuerpo = abrirModal({
+    titulo: `A cargo de ${c.razon_social}`, ancho: 'sm',
+    contenido: `${formularioHTML([{ nombre: 'ejecutivo_id', etiqueta: 'Ejecutivo a cargo', tipo: 'select', valor: c.ejecutivo_id, ancho: 'full',
+      opciones: lista.map((u) => ({ valor: u.id, texto: u.nombre })) }])}
+      <label class="chk" style="margin-top:10px;"><input type="checkbox" id="conContratos" checked> Pasar también sus contratos vigentes y documentos en curso</label>
+      <div class="note" style="margin-top:10px;">Elija "—" para dejarlo sin asignar. El ejecutivo a cargo recibe los avisos de sus ventas, tickets y firmas.</div>`,
+    acciones: [{ texto: 'Cancelar', alHacer: () => abrirFicha(c.id) }, {
+      texto: 'Guardar', clase: 'btn-g', alHacer: async (el) => {
+        await asignarA([c.id], Number(el.querySelector('[name="ejecutivo_id"]').value) || null, el.querySelector('#conContratos').checked);
+        if (contenedor && document.body.contains(contenedor)) cargar({ silencioso: true });
+        await abrirFicha(c.id);
+      }
+    }]
+  });
+  return cuerpo;
 }
 
 /* ---------- Acceso al portal (/mi-cuenta) ---------- */
@@ -96,7 +145,7 @@ export async function abrirFicha(id) {
   const saldo = f.contratos.reduce((s, k) => s + Math.max(0, Number(k.saldo) || 0), 0);
   const proxima = f.gestiones.map((g) => g.proxima).filter((p) => p && p >= hoyISO()).sort()[0];
   const cuerpo = abrirModal({
-    titulo: c.razon_social, ancho: 'lg',
+    titulo: c.razon_social, ancho: 'lg', ficha: { clave: 'cliente-' + id, reabrir: () => abrirFicha(id) },
     contenido: `
       <div class="ficha-acciones">
         <button class="btn btn-o btn-s" data-acc="editar">Editar datos</button>
@@ -128,6 +177,8 @@ export async function abrirFicha(id) {
           <div class="kv"><span class="k">Celular</span><span class="v">${c.celular ? '+56 ' + esc(c.celular) : '—'}</span></div>
           <div class="kv"><span class="k">Escritura</span><span class="v">${fecha(c.fecha_escritura)}${c.sitio_notaria ? ' · ' + esc(c.sitio_notaria) : ''}</span></div>
           <div class="kv"><span class="k">Registrado por</span><span class="v">${esc(c.registrado_por || 'Tienda en línea')} · ${fecha(c.creado_en)}</span></div>
+          <div class="kv"><span class="k">A cargo de</span><span class="v">${aCargoHTML(c)}
+            ${puedeAsignar() ? '<button class="lnk" data-acc="a-cargo" style="margin-left:8px;">Cambiar</button>' : ''}</span></div>
         </div>
         <div class="panel plano">
           <h3>Representante legal</h3>
@@ -200,6 +251,7 @@ export async function abrirFicha(id) {
       }
       return abrirFicha(id);
     }
+    if (t.dataset.acc === 'a-cargo') return cambiarACargo(c).catch((err) => toast(err.message, true));
     if (t.dataset.acc === 'autorizar') return autorizarPersona(c);
     if (t.dataset.acc === 'gestion') return registrarGestion(c, f.contratos);
     if (t.dataset.contrato) return abrirContrato(t.dataset.contrato);
@@ -300,11 +352,15 @@ export async function formularioCliente(ficha = null) {
 
 export default {
   id: 'clientes',
+  actualizar: () => cargar({ silencioso: true }),   // main.js la llama cada cierto tiempo para mostrar registros nuevos
+  puedeActualizar: () => !contenedor?.querySelector('#tbClientes [data-sel]:checked'),   // no borra lo que se está eligiendo
   titulo: 'Clientes',
-  sub: () => 'Ficha única por RUT, con su representante legal',
+  sub: () => 'Ficha única por RUT, con su representante legal y su ejecutivo a cargo',
   cnt: 'clientes', verde: true,
   async render(el) {
     contenedor = el;
+    const lista = await personal();
+    const conCasillas = puedeAsignar();
     el.innerHTML = `
       <div class="toolbar">
         <input class="search" id="qClientes" placeholder="Buscar por nombre, RUT (con o sin puntos) o folio…">
@@ -313,23 +369,64 @@ export default {
           <option>Activo</option><option>Por vencer</option><option>Vencido</option><option>Pendiente</option><option>Sin contrato</option>
           <option value="Por revisar">Con documentos por revisar</option>
         </select>
+        <select class="fl" id="fACargo" title="Ejecutivo a cargo">
+          <option value="">A cargo de: todos</option>
+          <option value="yo">A mi cargo</option>
+          <option value="sin">Sin asignar</option>
+          ${lista.map((u) => `<option value="${u.id}">A cargo de: ${esc(u.nombre)}</option>`).join('')}
+        </select>
         <button class="btn btn-o" data-exportar title="Descargar este listado como CSV para Excel">Exportar a Excel</button>
         <button class="btn btn-g" id="btnNuevoCliente">Nuevo cliente</button>
       </div>
+      ${conCasillas ? `<div class="panel barra-asignar" id="barAsignar" hidden>
+        <b data-n></b>
+        <select class="fl" id="asgEjecutivo" aria-label="Asignar a">
+          <option value="">Asignar a…</option>
+          ${lista.map((u) => `<option value="${u.id}">${esc(u.nombre)}</option>`).join('')}
+          <option value="0">Dejar sin asignar</option>
+        </select>
+        <label class="chk"><input type="checkbox" id="asgContratos" checked> También sus contratos vigentes y documentos en curso</label>
+        <button class="btn btn-g" id="btnAsignar">Asignar</button>
+        <button class="btn btn-o" id="btnQuitarSel">Quitar selección</button>
+      </div>` : ''}
       <div class="panel tbl-panel tbl-wrap"><table>
-        <thead><tr><th>Cliente</th><th>RUT</th><th>Servicios vigentes</th><th>Ejecutivo</th><th>Vigencia</th><th>Estado</th><th></th></tr></thead>
+        <thead><tr>${conCasillas ? '<th class="sel"><input type="checkbox" id="selTodos" aria-label="Elegir todos"></th>' : ''}
+          <th>Cliente</th><th>RUT</th><th>Servicios vigentes</th><th>A cargo de</th><th>Vigencia</th><th>Estado</th><th></th></tr></thead>
         <tbody id="tbClientes"></tbody>
       </table></div>
       <div class="note" id="ntClientes"></div>`;
     let t;
     el.querySelector('#qClientes').addEventListener('input', () => { clearTimeout(t); t = setTimeout(cargar, 300); });
-    el.querySelector('#fEstado').addEventListener('change', cargar);
+    el.querySelector('#fEstado').addEventListener('change', () => cargar());
+    el.querySelector('#fACargo').addEventListener('change', () => cargar());
     el.querySelector('#btnNuevoCliente').addEventListener('click', () => formularioCliente());
-    el.querySelector('[data-exportar]').addEventListener('click', () => exportar('clientes', { q: el.querySelector('#qClientes').value, estado: el.querySelector('#fEstado').value })
+    el.querySelector('[data-exportar]').addEventListener('click', () => exportar('clientes', { q: el.querySelector('#qClientes').value, estado: el.querySelector('#fEstado').value, a_cargo: el.querySelector('#fACargo').value })
       .catch((err) => { if (err.message !== 'sesion') toast(err.message, true); }));
     const fl = tomarFiltros('clientes');
     if (fl?.estado) el.querySelector('#fEstado').value = fl.estado;
+    if (conCasillas) {
+      el.querySelector('#selTodos').addEventListener('change', (e) => {
+        el.querySelectorAll('#tbClientes [data-sel]').forEach((x) => { x.checked = e.target.checked; });
+        marcarTodos();
+      });
+      el.querySelector('#btnQuitarSel').addEventListener('click', () => { el.querySelectorAll('#tbClientes [data-sel]').forEach((x) => { x.checked = false; }); marcarTodos(); });
+      el.querySelector('#btnAsignar').addEventListener('click', async (e) => {
+        const valor = el.querySelector('#asgEjecutivo').value;
+        if (valor === '') return toast('Elija a quién quedan a cargo.', true);
+        const ids = elegidos();
+        const nombre = valor === '0' ? null : lista.find((u) => String(u.id) === valor)?.nombre;
+        if (!(await confirmar(nombre ? `¿Dejar ${ids.length} cliente(s) a cargo de ${nombre}?` : `¿Dejar ${ids.length} cliente(s) sin ejecutivo a cargo?`,
+          { titulo: 'Asignar clientes', textoSi: 'Asignar' }))) return;
+        e.target.disabled = true;
+        try {
+          await asignarA(ids, Number(valor) || null, el.querySelector('#asgContratos').checked);
+          await cargar();
+        } catch (err) { if (err.message !== 'sesion') toast(err.message, true); }
+        finally { e.target.disabled = false; }
+      });
+    }
     el.querySelector('#tbClientes').addEventListener('click', (e) => {
+      if (e.target.closest('td.sel')) { if (e.target.matches('[data-sel]')) marcarTodos(); return; }   // la casilla no abre la ficha
       const k = e.target.closest('[data-contrato]');
       if (k) { e.stopPropagation(); return abrirContrato(k.dataset.contrato).catch((err) => toast(err.message, true)); }
       const fila = e.target.closest('[data-cliente]');
