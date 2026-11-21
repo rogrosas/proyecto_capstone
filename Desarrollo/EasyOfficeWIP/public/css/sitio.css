@@ -5,6 +5,14 @@
    ========================================================= */
 body.pg-publico{font-size:15px;}
 
+/* Pie siempre al fondo: si el contenido es más corto que la ventana,
+   el espacio sobrante queda entre el contenido y el pie, no debajo del pie. */
+body.pg-publico,body.pg-cuenta,body.pg-firma{min-height:100vh;display:flex;flex-direction:column;}
+body.pg-publico > *,body.pg-cuenta > *,body.pg-firma > *{flex-shrink:0;}
+body.pg-publico > footer,body.pg-cuenta > footer,body.pg-firma > footer{margin-top:auto;}
+/* En una columna flex, los contenedores con margin:0 auto se encogerían al contenido */
+.wrap,.pwrap,.fwrap,.vwrap{width:100%;}
+
 /* ===== Cabecera ===== */
 .strip{background:var(--green-tint);display:flex;align-items:center;justify-content:space-between;padding:10px 40px;font-size:13.5px;font-weight:600;color:var(--ink);}
 .strip .phone{background:var(--white);border:1.5px solid var(--green);color:var(--green);border-radius:6px;padding:6px 26px;font-weight:700;font-size:14px;}
