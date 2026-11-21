@@ -7,16 +7,27 @@
    - Usa la misma plantilla, los datos actuales del contrato y las respuestas guardadas
      en documentos.datos, y guarda el archivo en la MISMA ruta.
    - No cambia la base (transacción de solo lectura) ni reemplaza archivos que existen.
-   - El resultado puede no ser idéntico al original si cambiaron los datos o la fecha:
-     sirve para desarrollo, no reemplaza el archivo original de un documento firmado.
+   - También vuelve a crear el documento firmado (documentos.archivo_firmado) que entregan
+     Mi cuenta y el CRM: el contrato más la hoja de constancia de la plataforma de firma,
+     con los firmantes, fechas, IP y código de verificación guardados en la base.
+     En Render el disco se borra en cada reinicio: sin esto, los firmados no se descargan.
+   - El resultado puede no ser idéntico al original si cambiaron los datos o la fecha
+     (su huella SHA-256 no coincidirá con hash_firmado): sirve para desarrollo y la demo,
+     no reemplaza el archivo original de un documento firmado.
+   - No puede recrear los escaneos de correspondencia (son archivos subidos).
    ========================================================= */
 const fs = require('fs');
+const config = require('../src/config');
 const { pool } = require('../src/datos/conexion');
 const archivos = require('../src/datos/archivos');
 const word = require('../src/datos/word');
+const plataforma = require('../src/datos/firma');
 const campos = require('../src/negocio/camposDocumento');
 const contratosRepo = require('../src/datos/repositorios/contratos.repositorio');
 const plantillasRepo = require('../src/datos/repositorios/plantillas.repositorio');
+const firmaRepo = require('../src/datos/repositorios/firma.repositorio');
+
+const urlVerificacion = (codigo) => `${config.appUrl}/verificar?codigo=${encodeURIComponent(codigo)}`;
 
 (async () => {
   const db = await pool.connect();
@@ -48,6 +59,34 @@ const plantillasRepo = require('../src/datos/repositorios/plantillas.repositorio
         await archivos.guardar(d.url_archivo, buffer, { reemplazar: false });
         creados++;
         console.log(`  ✔ ${etiqueta} → ${d.url_archivo}${pendientes.length ? `  (sin dato: ${pendientes.join(', ')})` : ''}`);
+      } catch (err) {
+        fallidos++;
+        console.log(`  ✘ ${etiqueta}: ${err.message}`);
+      }
+    }
+
+    // Documentos firmados: el contrato (ya recreado arriba si faltaba) + la constancia de firma
+    const firmados = (await db.query(`
+      SELECT d.id, d.url_archivo, d.archivo_firmado, d.firma_id_externo, d.codigo_verificacion, k.folio
+        FROM documentos d LEFT JOIN contratos k ON k.id = d.contrato_id
+       WHERE d.archivo_firmado IS NOT NULL AND d.archivo_firmado !~* '^https?://'
+       ORDER BY d.id`)).rows;
+    const faltanFirmados = firmados.filter((d) => !fs.existsSync(archivos.absoluta(d.archivo_firmado)));
+    console.log(`\n${firmados.length} documento(s) firmado(s); faltan ${faltanFirmados.length}.\n`);
+
+    for (const d of faltanFirmados) {
+      const etiqueta = `#${d.id} ${d.folio || ''} (firmado)`;
+      try {
+        if (!d.url_archivo) throw new Error('el documento no tiene el contrato original');
+        const firmantes = (await firmaRepo.firmantes(db, d.id)).filter((f) => f.estado === 'firmado');
+        if (!firmantes.length) throw new Error('no hay firmantes registrados');
+        const firmado = await plataforma.proveedor().documentoFirmado({
+          idExterno: d.firma_id_externo, original: await archivos.leer(d.url_archivo), firmantes,
+          codigo: d.codigo_verificacion, urlVerificacion: urlVerificacion(d.codigo_verificacion)
+        });
+        await archivos.guardar(d.archivo_firmado, firmado, { reemplazar: false });
+        creados++;
+        console.log(`  ✔ ${etiqueta} → ${d.archivo_firmado}`);
       } catch (err) {
         fallidos++;
         console.log(`  ✘ ${etiqueta}: ${err.message}`);
