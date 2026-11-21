@@ -1,4 +1,4 @@
-/* CRM · Administración → Documentos de la tienda (plantillas_documento, plantilla_planes)
+/* CRM · Tienda → Documentos Word (plantillas_documento, plantilla_planes)
    Subir un Word, vincularlo a planes de la tienda, elegir la entrega y decidir qué dato va en cada marca. */
 import { get, post, put } from '../api.js';
 import { esc, filaVacia, toast } from '../util.js';

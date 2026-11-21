@@ -84,6 +84,16 @@ router.get('/admin/documentos-tienda', a(entrega.documentosTienda));
 router.get('/admin/plantillas/:id/campos', a(entrega.camposPlantilla));
 router.put('/admin/plantillas/:id/tienda', a(entrega.configurarTienda));
 router.put('/admin/tienda/planes/:codigo/documentos', a(entrega.documentosDePlan));   // documentos que genera un plan
+
+// Tienda del sitio (solo administradores): servicios, planes, precios y orden
+router.get('/admin/tienda', a(adm.tienda));
+router.post('/admin/tienda/servicios', a(adm.crearServicioTienda));
+router.put('/admin/tienda/servicios/:codigo', a(adm.editarServicioTienda));
+router.delete('/admin/tienda/servicios/:codigo', a(adm.borrarServicioTienda));
+router.post('/admin/tienda/planes', a(adm.crearPlanTienda));
+router.put('/admin/tienda/planes/:codigo', a(adm.editarPlanTienda));
+router.delete('/admin/tienda/planes/:codigo', a(adm.borrarPlanTienda));
+router.put('/admin/tienda/orden/:tipo', a(adm.ordenarTienda));          // tipo: familias | planes
 router.get('/admin/archivos', a(arch.listarArchivos));
 router.post('/admin/archivos', express.raw({ type: () => true, limit: archivosCfg.maxBytes }), a(arch.subirArchivo));
 

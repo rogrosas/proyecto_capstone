@@ -1,6 +1,10 @@
 /* =========================================================
-   Catálogo único de servicios y planes (precios de easyoffice.cl).
-   Lo usan el navegador (window.CATALOGO) y el servidor Node (/api/catalogo).
+   RESPALDO del catálogo de la tienda (precios de easyoffice.cl).
+   La tienda vive en la base (tienda_familias, tienda_planes) y se arma en
+   CRM → Tienda; el servidor responde /js/catalogo.js desde la base, así que
+   este archivo NO llega al navegador. Solo se usa si la base aún no tiene
+   las tablas (falta easyoffice_v2_tienda.sql) o no responde, y sirvió para
+   cargarlas. Cambiar precios aquí no tiene efecto con la base al día.
 
    price    -> número en CLP, o null si requiere cotización
    priceTxt -> texto cuando price es null (ej. "UF 14")

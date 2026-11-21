@@ -24,6 +24,8 @@ const pool = new Pool({
 });
 pool.on('error', (err) => console.error('[bd] error en conexión inactiva:', err.message));
 
+const SIN_TIENDA = 'La base aún no tiene las tablas de la tienda: ejecute easyoffice_v2_tienda.sql.';
+
 // Traduce los códigos de error de PostgreSQL a errores de la aplicación
 // https://www.postgresql.org/docs/current/errcodes-appendix.html
 function traducir(err) {
@@ -46,6 +48,10 @@ function traducir(err) {
     case '23514': return errores.solicitudInvalida('Los datos no cumplen las reglas de la base de datos (por ejemplo, RUT inválido).');
     case '22P02':
     case '22023': return errores.solicitudInvalida();
+    case '42P01':   // tabla inexistente: la base de producción puede ir una migración atrás
+      if (/tienda_(familias|planes)/.test(err.message || '')) return errores.conflicto(SIN_TIENDA);
+      console.error('[bd]', err.code, err.message);
+      return new AppError(500, 'Error al consultar la base de datos.');
     case '57014': return new AppError(503, 'La consulta tardó demasiado. Intente de nuevo o acote la búsqueda.');   // statement_timeout
     case '28P01':
     case '3D000':

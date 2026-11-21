@@ -3,8 +3,11 @@
    desde catalogo.js (requiere cargarlo antes). Marcadores:
 
    <div class="plans" data-planes="dom-anual,dom-sem"></div>   tarjetas de plan
+   <div class="plans" data-familia="domicilio"></div>          todos los planes de una familia
    <div class="plans" data-grupos="bolsas,planes,digitales"></div>  listas de precios (firmas)
    <div data-nota="domicilio"></div>                           nota de la familia
+   El catálogo se arma en el CRM (Administración → Tienda): un plan
+   desactivado simplemente no se muestra.
    ========================================================= */
 (function () {
   const clp = (n) => '$' + n.toLocaleString('es-CL');
@@ -34,6 +37,7 @@
   function listaPrecios(grupo) {
     const items = Object.values(TODOS).filter((p) => p.grupo === grupo);
     const g = GRUPOS[grupo];
+    if (!items.length) return '';
     return `
       <div class="plan static">
         <div class="plan-head">${g.t}</div>
@@ -46,12 +50,17 @@
   }
 
   document.querySelectorAll('[data-planes]').forEach((el) => {
-    el.innerHTML = el.dataset.planes.split(',').map((id) => tarjeta(TODOS[id.trim()])).join('');
+    el.innerHTML = el.dataset.planes.split(',').map((id) => TODOS[id.trim()]).filter(Boolean).map(tarjeta).join('');
+  });
+  document.querySelectorAll('[data-familia]').forEach((el) => {
+    const fam = CATALOGO.find((f) => f.id === el.dataset.familia);
+    el.innerHTML = fam ? fam.plans.map(tarjeta).join('') : '';
   });
   document.querySelectorAll('[data-grupos]').forEach((el) => {
     el.innerHTML = el.dataset.grupos.split(',').map((g) => listaPrecios(g.trim())).join('');
   });
   document.querySelectorAll('[data-nota]').forEach((el) => {
-    el.textContent = CATALOGO.find((f) => f.id === el.dataset.nota).note;
+    const fam = CATALOGO.find((f) => f.id === el.dataset.nota);
+    el.textContent = fam ? fam.note : '';
   });
 })();

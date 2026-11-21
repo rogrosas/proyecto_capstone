@@ -300,15 +300,31 @@ button.bcol{border:none;background:none;font:inherit;padding:0;}
 .chat-acc{display:flex;gap:10px;justify-content:flex-end;align-items:center;margin-top:8px;flex-wrap:wrap;}
 .chat-acc select{font:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:4px;background:#fff;}
 
-/* Administración → Planes y documentos */
+/* Tienda: servicios, planes y documentos de cada plan */
 .kpis.kpis-t{grid-template-columns:repeat(4,1fr);}
 @media (max-width:900px){.kpis.kpis-t{grid-template-columns:repeat(2,1fr);}}
-.tbl-planes{table-layout:fixed;}
-.tbl-planes td{vertical-align:top;}
-.tbl-planes th:nth-child(1){width:24%;}
-.tbl-planes th:nth-child(2){width:96px;}
-.tbl-planes th:nth-child(4){width:124px;}
-@media (max-width:900px){.tbl-planes{table-layout:auto;}}
+.nowrap{white-space:nowrap;}
+.adm-menu .adm-link{padding:8px 10px;font-size:13px;color:var(--green-dark);}
+.t-fam{border:1px solid var(--line);border-radius:4px;margin-bottom:16px;background:#fff;}
+.t-fam.inactiva{background:#FAFBFB;}
+.t-fam-h{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line);background:#F7F9F9;flex-wrap:wrap;}
+.t-fam-t{flex:1;min-width:200px;}
+.t-fam-t h4{font-size:15.5px;display:flex;align-items:center;gap:8px;}
+.t-fam .tbl-wrap{box-shadow:none;}
+.t-fam .empty{padding:18px;}
+.t-fam.inactiva .t-fam-t,.t-fam.inactiva table{opacity:.6;}
+.ord{display:flex;flex-direction:column;gap:0;width:26px;}
+.ord .ib{padding:0 5px;font-size:10px;line-height:1.5;}
+.ord .ib:disabled{opacity:.25;cursor:default;}
+.tbl-tienda{table-layout:fixed;}
+.tbl-tienda td{vertical-align:top;}
+.tbl-tienda th:nth-child(1){width:40px;}
+.tbl-tienda th:nth-child(2){width:30%;}
+.tbl-tienda th:nth-child(3){width:120px;}
+.tbl-tienda th:nth-child(5){width:86px;}
+.lnk{border:none;background:none;padding:0;font:inherit;font-size:12.5px;color:var(--green-dark);font-weight:600;cursor:pointer;}
+.lnk:hover{text-decoration:underline;}
+@media (max-width:900px){.tbl-tienda{table-layout:auto;}}
 .docs-plan{display:flex;flex-direction:column;gap:5px;align-items:flex-start;}
 .doc-plan{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;background:#F4F6F7;border:1px solid var(--line);border-radius:3px;padding:4px 8px;font-size:12.5px;}
 .doc-plan.inactivo{opacity:.6;}
@@ -316,3 +332,14 @@ button.bcol{border:none;background:none;font:inherit;padding:0;}
 .chk-doc{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:3px;padding:9px 12px;cursor:pointer;font-size:13px;}
 .chk-doc input{margin-top:3px;}
 .chk-doc .d{display:block;margin-top:3px;}
+/* Editor de plan con vista previa de la tarjeta */
+.t-editor{display:grid;grid-template-columns:1fr 250px;gap:20px;align-items:start;}
+.t-prev{position:sticky;top:0;}
+.t-card{border:1px solid var(--line);border-radius:4px;overflow:hidden;background:#fff;position:relative;font-size:12.5px;}
+.t-card-h{background:var(--ink);color:#fff;font-family:'Lora',serif;font-weight:700;font-size:15px;text-align:center;padding:14px 10px;}
+.t-card-r{background:var(--amber-tint);color:var(--amber);text-align:center;font-size:10.5px;font-weight:700;text-transform:uppercase;padding:3px;}
+.t-card-p{font-family:'Lora',serif;font-size:24px;font-weight:700;text-align:center;color:var(--ink);padding:14px 10px 2px;}
+.t-card-per{text-align:center;color:var(--muted);font-size:11.5px;min-height:14px;}
+.t-card ul{margin:12px 0;padding:0 14px 0 30px;line-height:1.6;}
+.t-card-cta{margin:0 14px 14px;background:var(--green);color:#fff;text-align:center;font-weight:700;border-radius:3px;padding:8px;font-size:12px;}
+@media (max-width:760px){.t-editor{grid-template-columns:1fr;}.t-prev{position:static;}}

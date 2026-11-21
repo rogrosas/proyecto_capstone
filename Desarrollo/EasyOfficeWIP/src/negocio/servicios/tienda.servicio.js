@@ -51,15 +51,15 @@ function excedido(ip) {
   return ++r.n > 10;
 }
 
-function planDeTienda(codigo) {
-  const plan = catalogoRepo.plan(String(codigo || ''));
+async function planDeTienda(codigo) {
+  const plan = await catalogoRepo.plan(String(codigo || ''));
   if (!plan) throw errores.solicitudInvalida('El plan elegido no existe.');
   return plan;
 }
 
 // Preguntas que el comprador responde para completar los documentos del plan
 async function preguntas(codigo) {
-  const plan = planDeTienda(codigo);
+  const plan = await planDeTienda(codigo);
   const plantillas = await conSistema((db) => plantillasRepo.porPlan(db, plan.id));
   const vistas = new Map();
   for (const p of plantillas) {
@@ -77,8 +77,8 @@ async function preguntas(codigo) {
   };
 }
 
-function leerCompra(d = {}) {
-  const plan = planDeTienda(d.plan);
+async function leerCompra(d = {}) {
+  const plan = await planDeTienda(d.plan);
   const tipo = v.opcion(d.tipo, ['persona', 'empresa', 'nueva'], 'Tipo de contratación');
   const t = d.titular || {};
   const titular = {
@@ -114,7 +114,7 @@ function leerCompra(d = {}) {
 
 async function comprar(datos, ip) {
   if (excedido(ip)) throw errores.demasiadosIntentos('Demasiadas compras seguidas desde esta conexión. Espere unos minutos.');
-  const c = leerCompra(datos);
+  const c = await leerCompra(datos);
   const { plan } = c;
   if (plan.price === null) {
     return { cotizacion: true, mensaje: 'Este servicio se cotiza: un ejecutivo lo contactará para agendar la asesoría.' };
@@ -238,7 +238,7 @@ async function completarCompra(contratoId, ip) {
   await conSistema((db) => tiendaRepo.guardarEntrega(db, contratoId, entrega));
 
   // Aviso al ejecutivo de la venta (o a los administradores): qué se vendió y qué espera su revisión
-  const plan = catalogoRepo.plan(t.plan);
+  const plan = await catalogoRepo.plan(t.plan);
   const porRevisar = r.documentos.filter((x) => !x.publicado);
   await personal.avisar(k.cliente_id, {
     asunto: `Nueva venta en la tienda: ${k.folio} · ${k.cliente}`,
@@ -255,9 +255,9 @@ async function completarCompra(contratoId, ip) {
 }
 
 /* ---------- Vuelta de la pasarela de pago ---------- */
-const resumenDe = (p) => {
+const resumenDe = async (p) => {
   const t = p.datos_formulario?.tienda || {};
-  const plan = catalogoRepo.plan(t.plan);
+  const plan = await catalogoRepo.plan(t.plan);
   return {
     orden: p.folio, plan: plan?.name || t.plan, familia: plan?.fam || '', monto: Number(p.monto), total: plan?.price ?? null,
     modo: t.pago?.modo, pasarela: p.pasarela, email: t.titular?.email
@@ -270,8 +270,8 @@ async function estadoPago(token) {
   const p = await conSistema((db) => tiendaRepo.pagoPorTransaccion(db, id));
   if (!p) throw errores.noEncontrado('Pago no encontrado.');
   // Una cuota posterior se paga desde Mi cuenta y la pasarela vuelve allá
-  if (p.cuota > 1) return { ...resumenDe(p), estado: p.estado, cuota: p.cuota, total_cuotas: p.total_cuotas, retorno: '/mi-cuenta' };
-  return { ...resumenDe(p), estado: p.estado, ...(p.estado === 'pagado' ? p.datos_formulario?.entrega || {} : {}) };
+  if (p.cuota > 1) return { ...(await resumenDe(p)), estado: p.estado, cuota: p.cuota, total_cuotas: p.total_cuotas, retorno: '/mi-cuenta' };
+  return { ...(await resumenDe(p)), estado: p.estado, ...(p.estado === 'pagado' ? p.datos_formulario?.entrega || {} : {}) };
 }
 
 /*
@@ -294,11 +294,11 @@ async function confirmarPago(token, d = {}, ip) {
     await tiendaRepo.activarContrato(db, p.contrato_id);
     return { p, aprobado: true, siguiente: await pagosRepo.crearSiguienteCuota(db, p.id) };
   });
-  if (!r.aprobado) return { ...resumenDe(r.p), estado: 'rechazado', ...(r.p.cuota > 1 ? { retorno: '/mi-cuenta' } : {}) };
+  if (!r.aprobado) return { ...(await resumenDe(r.p)), estado: 'rechazado', ...(r.p.cuota > 1 ? { retorno: '/mi-cuenta' } : {}) };
   if (r.siguiente) await avisarCuota(r.p.contrato_id, r.siguiente);
   // Una cuota posterior no vuelve a generar documentos: la compra ya se entregó con la primera
-  if (r.p.estado_contrato !== 'pendiente') return { ...resumenDe(r.p), estado: 'pagado', cuota: r.p.cuota, retorno: '/mi-cuenta' };
-  return { ...resumenDe(r.p), estado: 'pagado', ...(await completarCompra(r.p.contrato_id, ip)) };
+  if (r.p.estado_contrato !== 'pendiente') return { ...(await resumenDe(r.p)), estado: 'pagado', cuota: r.p.cuota, retorno: '/mi-cuenta' };
+  return { ...(await resumenDe(r.p)), estado: 'pagado', ...(await completarCompra(r.p.contrato_id, ip)) };
 }
 
 // La cuota siguiente de un pago 50/50 queda pendiente: se le avisa al cliente para que la pague en Mi cuenta

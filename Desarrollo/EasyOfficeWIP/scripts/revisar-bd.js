@@ -37,7 +37,8 @@ const info = (t) => console.log('    ' + t);
 
     // 2. Tablas del modelo
     const tablas = ['usuarios', 'roles', 'clientes', 'contratos', 'contrato_servicios', 'servicios',
-      'documentos', 'pagos', 'alertas', 'sucursales', 'empresas_emisoras', 'registros_actividad'];
+      'documentos', 'pagos', 'alertas', 'sucursales', 'empresas_emisoras', 'registros_actividad',
+      'tienda_familias', 'tienda_planes'];   // si faltan: ejecutar easyoffice_v2_tienda.sql
     console.log('\n  Registros por tabla:');
     for (const t of tablas) {
       try {

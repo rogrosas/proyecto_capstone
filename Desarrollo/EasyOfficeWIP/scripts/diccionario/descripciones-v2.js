@@ -83,8 +83,20 @@ module.exports = function aplicarV2(D) {
   tabla('plantilla_planes', {
     desc: 'Planes de la tienda que generan cada plantilla Word al comprarse.',
     estado: 'conectado', usa: ['plantilla_id', 'plan_codigo'],
-    app: 'Administración → Documentos de la tienda (vincular planes) y compra en /contratar (qué documentos generar y qué preguntar).',
-    cols: { plantilla_id: 'Plantilla Word.', plan_codigo: 'Código del plan en la tienda (ej. dom-anual).' }
+    app: 'CRM → Tienda (vincular documentos a cada plan) y compra en /contratar (qué documentos generar y qué preguntar).',
+    cols: { plantilla_id: 'Plantilla Word.', plan_codigo: 'Código del plan en la tienda (tienda_planes.codigo, ej. dom-anual).' }
+  });
+  tabla('tienda_familias', {
+    desc: 'Servicios de la tienda del sitio: cada uno es una pestaña de /contratar.',
+    estado: 'conectado', usa: ['codigo', 'nombre', 'nota', 'orden', 'activo'],
+    app: 'CRM → Tienda (crear, editar, ordenar, ocultar). El sitio los lee en /js/catalogo.js y /api/catalogo.',
+    cols: { id: 'Identificador.', codigo: 'Código (ej. domicilio); no cambia.', nombre: 'Nombre de la pestaña.', nota: 'Texto bajo las pestañas.', orden: 'Posición en la tienda.', activo: 'Visible en el sitio.' }
+  });
+  tabla('tienda_planes', {
+    desc: 'Planes de la tienda del sitio: precio, cobro, vigencia y características de cada tarjeta.',
+    estado: 'conectado', usa: ['codigo', 'familia_id', 'nombre', 'precio', 'precio_texto', 'periodo', 'recurrencia', 'grupo', 'corto', 'caracteristicas', 'detalle', 'orden', 'activo'],
+    app: 'CRM → Tienda (crear, editar, ordenar, ocultar; un plan vendido no se borra). /contratar y las páginas de servicio los muestran; la compra valida el plan y su precio aquí.',
+    cols: { id: 'Identificador.', codigo: 'Código del plan (ej. dom-anual); lo usan servicios.codigo y plantilla_planes. No cambia.', familia_id: 'Servicio de la tienda.', nombre: 'Nombre del plan.', precio: 'Precio en CLP; NULL = se cotiza.', precio_texto: 'Texto en vez del precio si se cotiza (ej. UF 14).', periodo: 'Vigencia o periodicidad que se muestra.', recurrencia: 'anual, semestral, mensual, bolsa, unico o cotiza.', grupo: 'Lista de precios de la página de firmas.', corto: 'Texto en esa lista.', caracteristicas: 'Resumen de la tarjeta.', detalle: 'Lista completa de la página del servicio.', orden: 'Posición dentro del servicio.', activo: 'Visible en el sitio.' }
   });
   tabla('ejecuciones_avisos', {
     desc: 'Registro de cada envío de avisos de vencimiento por correo.',

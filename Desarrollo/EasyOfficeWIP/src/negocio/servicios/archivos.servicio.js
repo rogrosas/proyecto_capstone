@@ -203,10 +203,10 @@ async function documentosTienda(usuario) {
     }
     delete p.mapa_campos;
   }
-  return { plantillas: lista, planes: planesTienda() };
+  return { plantillas: lista, planes: await planesTienda() };
 }
 
-const planesTienda = () => catalogoRepo.todos().map((f) => ({
+const planesTienda = async () => (await catalogoRepo.todos()).map((f) => ({
   familia: f.tab, planes: f.plans.map((p) => ({ codigo: p.id, nombre: p.name, precio: p.price, precio_texto: p.priceTxt || null, periodo: p.per || '' }))
 }));
 
@@ -214,7 +214,7 @@ const planesTienda = () => catalogoRepo.todos().map((f) => ({
 async function documentosDePlan(usuario, codigo, d = {}) {
   await exigirAdmin(usuario);
   codigo = String(codigo || '');
-  if (!catalogoRepo.todos().some((f) => f.plans.some((p) => p.id === codigo))) throw errores.noEncontrado('El plan no existe en la tienda.');
+  if (!(await catalogoRepo.todos()).some((f) => f.plans.some((p) => p.id === codigo))) throw errores.noEncontrado('El plan no existe en la tienda.');
   if (!Array.isArray(d.plantillas)) throw errores.solicitudInvalida('Indique las plantillas del plan.');
   const ids = [...new Set(d.plantillas.map((x) => v.id(x, 'Plantilla')))];
   return conAdmin(usuario, async (db) => {
@@ -245,7 +245,7 @@ async function camposPlantilla(usuario, id) {
       return { marca, tipo, ...(guardada || sugerida), sugerida: sugerida.dato, guardada: !!guardada };
     }),
     datos: campos.DATOS,
-    planes: planesTienda()
+    planes: await planesTienda()
   };
 }
 
@@ -254,7 +254,7 @@ async function configurarTienda(usuario, id, d = {}) {
   await exigirAdmin(usuario);
   id = v.id(id, 'Plantilla');
   const entrega = v.opcion(d.entrega, ['automatica', 'revision'], 'Entrega');
-  const codigos = new Set(catalogoRepo.todos().flatMap((f) => f.plans.map((p) => p.id)));
+  const codigos = new Set((await catalogoRepo.todos()).flatMap((f) => f.plans.map((p) => p.id)));
   const planes = [...new Set(Array.isArray(d.planes) ? d.planes : [])];
   const desconocido = planes.find((c) => !codigos.has(c));
   if (desconocido) throw errores.solicitudInvalida(`El plan "${desconocido}" no existe en la tienda.`);

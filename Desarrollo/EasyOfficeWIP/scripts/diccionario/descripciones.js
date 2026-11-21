@@ -102,7 +102,7 @@ module.exports = {
     servicios: {
       desc: 'Catálogo interno de servicios con precio de lista NETO (más IVA) y ciclo de pago por defecto.',
       estado: 'parcial', usa: ['id', 'nombre'],
-      app: 'Hoy solo se lee su nombre para mostrar qué servicios tiene cada cliente o contrato. Al crear un contrato (módulo 2) el trigger copia precio, ciclo y descripción desde aquí. El catálogo del sitio público aún sale de public/js/catalogo.js; pasar a esta tabla solo cambia catalogo.repositorio.js.',
+      app: 'Hoy solo se lee su nombre para mostrar qué servicios tiene cada cliente o contrato. Al crear un contrato (módulo 2) el trigger copia precio, ciclo y descripción desde aquí. El catálogo del sitio público está en tienda_planes (CRM → Tienda); al vender un plan se crea aquí su servicio con servicios.codigo = código del plan.',
       cols: { id: 'Identificador autonumérico.', nombre: 'Nombre del servicio (único).', tipo: 'PRINCIPAL (del formulario) o COMPLEMENTARIO (Anexo 1).', descripcion_base: 'Texto por defecto del servicio en el contrato.', precio_lista: 'Precio neto en CLP; NULL = por cotizar.', precio_desde: 'Si el precio se muestra como "desde".', unidad: 'Unidad de cobro ("por firma", "por página").', incluye_iva: 'Si el precio ya incluye IVA.', ciclo_pago_defecto: 'UNICO, MENSUAL, TRIMESTRAL, SEMESTRAL o ANUAL.', campos_formulario: 'Campos extra que pide el servicio (JSON).', activo: 'Si se ofrece.' }
     },
     folios_correlativos: {

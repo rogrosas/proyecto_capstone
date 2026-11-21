@@ -20,6 +20,10 @@ app.set('trust proxy', require('./config').proxy);
 app.use(cabecerasSeguras);
 app.use(express.json({ limit: '100kb' }));
 
+// Catálogo de la tienda para el navegador: se arma en el CRM y se lee de la base
+// (reemplaza al archivo public/js/catalogo.js, que queda solo como respaldo)
+app.get('/js/catalogo.js', require('./presentacion/controladores/catalogo.controlador').script);
+
 // Sitio estático con URLs limpias: /contabilidad sirve public/contabilidad.html
 app.use(express.static(PUBLIC, { extensions: ['html'] }));
 app.get('/asesoriaempresas', (req, res) => res.redirect(301, '/asesoria-empresas')); // URL del WordPress anterior

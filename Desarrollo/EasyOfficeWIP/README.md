@@ -86,26 +86,52 @@ El código está en `src/datos/archivos.js` (carpeta, sin permitir rutas fuera d
 (combinación) y `src/negocio/servicios/archivos.servicio.js` (equivalencia campo del Word → dato de la base).
 `generados/` está en `.gitignore`: contiene datos personales de clientes.
 
+## Tienda (CRM → Tienda)
+
+Toda la tienda del sitio se arma en **CRM → Tienda → Servicios y planes** (permiso `administrar_catalogos`):
+
+- **Servicios** (`tienda_familias`): cada uno es una pestaña de `/contratar`, con su nota. Se crean, editan, ordenan
+  con flechas y se ocultan; solo se borran si no tienen planes.
+- **Planes** (`tienda_planes`): nombre, precio (o *se cotiza* con un texto como "UF 14"), cobro (único, mensual,
+  semestral, anual o bolsa), vigencia, características (tarjeta de `/contratar`), detalle (página del servicio) y, en
+  firmas, la lista de precios donde aparece. El editor muestra una vista previa de la tarjeta. El código (ej.
+  `dom-anual`) no se cambia después de creado; un plan ya vendido no se borra, se oculta. Al cambiar el precio también
+  se actualiza el precio de lista del catálogo comercial (`servicios`); los contratos ya hechos no cambian.
+- **Documentos** de cada plan: el enlace "Vincular documento" de cada plan (o **Tienda → Documentos Word**, abajo).
+
+El sitio lee el catálogo de la base: `/js/catalogo.js` ya no es un archivo, lo arma el servidor
+(`catalogo.controlador.js`) con la misma forma de antes, así que `contratar.js` y `planes.js` no cambiaron. Los cambios
+se ven al instante. `public/js/catalogo.js` queda solo como respaldo: se usa si la base aún no tiene las tablas
+(falta `easyoffice_v2_tienda.sql`) o no responde. Las páginas de cada servicio muestran planes fijos
+(`data-planes="..."`); `/domicilio-tributario` muestra todos los de su servicio (`data-familia`), y un plan nuevo de
+otro servicio aparece en `/contratar`.
+
+Base de datos: `easyoffice_v2.sql` ya lo trae; una base anterior necesita
+`Desarrollo/base de datos/scripts/easyoffice_v2_tienda.sql` (crea las tablas y las carga con los planes de siempre).
+
+API: `GET /api/crm/admin/tienda`, `POST|PUT|DELETE /api/crm/admin/tienda/servicios[/:codigo]`,
+`POST|PUT|DELETE /api/crm/admin/tienda/planes[/:codigo]`, `PUT /api/crm/admin/tienda/orden/familias|planes`,
+`PUT /api/crm/admin/tienda/planes/:codigo/documentos`.
+
 ## Documentos de la tienda (Word → borrador con marca de agua → aceptación)
 
 Base de datos: `easyoffice_v2.sql` ya lo trae; una base anterior necesita
 `Desarrollo/base de datos/scripts/easyoffice_v2_documentos_tienda.sql` (tablas `plantilla_planes` y `tickets`,
 columnas `entrega`/`mapa_campos` en plantillas y `estado_cliente`/`aceptado_*` en documentos).
 
-1. **CRM → Administración → Documentos de la tienda** (permiso `administrar_catalogos`): se sube el `.docx` (queda en
+1. **CRM → Tienda → Documentos Word** (permiso `administrar_catalogos`): se sube el `.docx` (queda en
    `base de datos/Contratos/plantillas/`), se vincula a uno o más **planes de la tienda** y se elige la **entrega**:
    - *Automática*: al comprar, el cliente recibe el borrador para revisarlo.
    - *Con revisión*: al comprar queda esperando que el personal lo revise y lo publique.
-   **CRM → Administración → Planes y documentos** muestra lo mismo al revés: cada servicio con sus planes, el precio y
-   los documentos que genera la compra, con un aviso en los planes que se venden en línea sin ningún documento. Desde
-   ahí se vinculan o quitan documentos de un plan (`PUT /api/crm/admin/tienda/planes/:codigo/documentos`).
+   En **Tienda → Servicios y planes** se ve al revés: cada plan con los documentos que genera su compra, con un aviso
+   en los que se venden en línea sin ningún documento.
 2. **Dónde van los datos**: se detectan los campos de combinación de Word y los textos entre corchetes
    (`[RAZÓN SOCIAL DE LA EMPRESA]`, `[RUT EMPRESA]`, `[FECHA]`…) y se sugiere el dato del cliente que corresponde
    (diccionario y sinónimos en `src/negocio/camposDocumento.js`). Lo que no es dato del cliente se marca como
    *lo responde el cliente en la tienda*, *lo completa el personal al generar* o *dejar tal cual*.
 3. **Tienda** (`/contratar`): la compra se guarda de verdad (cliente `origen = 'web'` con su domicilio, contrato
    `pendiente`, pago `pendiente` —el cobro sigue siendo de demostración— y los documentos del plan). Si el plan aún no
-   tiene servicio en la base (`servicios.codigo` = id del plan en `catalogo.js`), se crea. Un RUT que ya es cliente
+   tiene servicio en la base (`servicios.codigo` = código del plan de la tienda), se crea. Un RUT que ya es cliente
    solo compra con un correo vinculado.
    - **Con cuenta**: la compra queda en su cuenta. Si ya tiene contraseña de Mi cuenta por otro cliente (por ejemplo,
      compra para una empresa nueva), esa misma contraseña le sirve para entrar por el nuevo.
@@ -282,7 +308,7 @@ EasyOfficeWIP/
 │   │   └── crm.css
 │   ├── js/
 │   │   ├── layout.js    # cabecera y pie comunes (menú, teléfono, correo, redes)
-│   │   ├── catalogo.js  # ÚNICA fuente de planes y precios (navegador + servidor)
+│   │   ├── catalogo.js  # respaldo del catálogo (la tienda vive en la base y se edita en CRM → Tienda)
 │   │   ├── planes.js    # dibuja las tarjetas de planes en las páginas de servicio
 │   │   ├── contratar.js # flujo de compra en 4 pasos
 │   │   ├── cuenta.js    # panel del cliente
@@ -296,7 +322,7 @@ EasyOfficeWIP/
 
 ## Dónde cambiar cosas
 
-- **Precios o planes** → `public/js/catalogo.js`. Cambia en las páginas de servicio, en `/contratar` y en la API.
+- **Precios o planes** → CRM → Tienda. Cambia al instante en `/contratar`, en las páginas de servicio y en la API.
 - **Menú, teléfono, correo, horario, redes** → objeto `SITIO` al inicio de `public/js/layout.js`.
 - **Colores y fuentes** → variables `:root` en `public/css/base.css`.
 - **Nueva página** → copiar una página de servicio, cambiar `data-activo` en `<header id="cabecera">`

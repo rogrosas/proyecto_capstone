@@ -17,10 +17,11 @@ import tickets from './modulos/tickets.js';
 import ventas from './modulos/ventas.js';
 import auditoria from './modulos/auditoria.js';
 import administracion from './modulos/administracion.js';
+import tienda from './modulos/tienda.js';
 import correspondencia from './modulos/correspondencia.js';
 import { abrirSeguridad } from './modulos/seguridad.js';
 
-const MODULOS = [dashboard, clientes, contratos, renovaciones, documentos, tickets, ventas, correspondencia, auditoria, administracion];
+const MODULOS = [dashboard, clientes, contratos, renovaciones, documentos, tickets, ventas, correspondencia, tienda, auditoria, administracion];
 let actual = 'dashboard';
 
 // Un módulo con permisos se muestra si el rol tiene al menos uno de ellos
