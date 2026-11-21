@@ -207,8 +207,28 @@ async function documentosTienda(usuario) {
 }
 
 const planesTienda = () => catalogoRepo.todos().map((f) => ({
-  familia: f.tab, planes: f.plans.map((p) => ({ codigo: p.id, nombre: p.name, precio: p.price }))
+  familia: f.tab, planes: f.plans.map((p) => ({ codigo: p.id, nombre: p.name, precio: p.price, precio_texto: p.priceTxt || null, periodo: p.per || '' }))
 }));
+
+/** Administración → Planes y documentos: deja el plan con exactamente estas plantillas. d = { plantillas: [id, ...] } */
+async function documentosDePlan(usuario, codigo, d = {}) {
+  await exigirAdmin(usuario);
+  codigo = String(codigo || '');
+  if (!catalogoRepo.todos().some((f) => f.plans.some((p) => p.id === codigo))) throw errores.noEncontrado('El plan no existe en la tienda.');
+  if (!Array.isArray(d.plantillas)) throw errores.solicitudInvalida('Indique las plantillas del plan.');
+  const ids = [...new Set(d.plantillas.map((x) => v.id(x, 'Plantilla')))];
+  return conAdmin(usuario, async (db) => {
+    const actuales = new Set((await plantillasRepo.deTienda(db)).filter((p) => p.planes.includes(codigo)).map((p) => p.id));
+    for (const id of ids) {
+      if (actuales.has(id)) continue;   // una ya vinculada puede quedar aunque se haya desactivado
+      const p = await plantillasRepo.obtener(db, id);
+      if (!p || !p.archivo_base) throw errores.solicitudInvalida('Una de las plantillas no tiene archivo Word.');
+      if (!p.activo) throw errores.solicitudInvalida(`"${p.tipo_documento}" está inactiva: no se puede vincular.`);
+    }
+    await plantillasRepo.guardarDocumentosDePlan(db, codigo, ids);
+    return { ok: true };
+  });
+}
 
 // Marcas detectadas en el Word con la fuente guardada o sugerida, para el formulario de configuración
 async function camposPlantilla(usuario, id) {
@@ -264,5 +284,5 @@ async function configurarTienda(usuario, id, d = {}) {
 
 module.exports = {
   generarEnTransaccion, generarContrato, preguntasGeneracion, archivoDocumento, archivoPlantilla, plantillas, listarArchivos, subirArchivo,
-  documentosTienda, camposPlantilla, configurarTienda, planesTienda, leerRespuestas
+  documentosTienda, camposPlantilla, configurarTienda, documentosDePlan, planesTienda, leerRespuestas
 };

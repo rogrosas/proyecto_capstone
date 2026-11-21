@@ -11,6 +11,7 @@
     "db:cargar": "node --env-file-if-exists=.env scripts/cargar-bd.js",
     "db:migrar": "node --env-file-if-exists=.env scripts/migrar-bd.js",
     "crear-usuario": "node --env-file-if-exists=.env scripts/crear-usuario.js",
+    "crear-perfiles": "node --env-file-if-exists=.env scripts/crear-perfiles.js",
     "regenerar-archivos": "node --env-file-if-exists=.env scripts/regenerar-archivos.js",
     "db:diccionario": "node scripts/diccionario/generar.js \"../base de datos/scripts/easyoffice_v2.sql\" \"../base de datos/diccionario_datos_easyoffice.html\"",
     "test": "node --env-file-if-exists=.env --test --test-concurrency=2 \"tests/**/*.test.js\"",

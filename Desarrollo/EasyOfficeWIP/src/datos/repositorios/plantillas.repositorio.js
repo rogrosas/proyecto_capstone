@@ -66,4 +66,11 @@ async function guardarTienda(db, id, t) {
   return true;
 }
 
-module.exports = { conArchivo, obtener, usoDeArchivos, deTienda, porPlan, guardarTienda };
+// Deja un plan con exactamente estas plantillas (Administración → Planes y documentos)
+async function guardarDocumentosDePlan(db, planCodigo, ids) {
+  await db.query('DELETE FROM plantilla_planes WHERE plan_codigo = $1 AND NOT (plantilla_id = ANY($2::int[]))', [planCodigo, ids]);
+  await db.query(`INSERT INTO plantilla_planes (plantilla_id, plan_codigo)
+                  SELECT unnest($2::int[]), $1 ON CONFLICT DO NOTHING`, [planCodigo, ids]);
+}
+
+module.exports = { conArchivo, obtener, usoDeArchivos, deTienda, porPlan, guardarTienda, guardarDocumentosDePlan };

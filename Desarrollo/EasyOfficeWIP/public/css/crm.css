@@ -299,3 +299,20 @@ button.bcol{border:none;background:none;font:inherit;padding:0;}
 .chat-resp textarea:focus{outline:none;border-color:var(--green);}
 .chat-acc{display:flex;gap:10px;justify-content:flex-end;align-items:center;margin-top:8px;flex-wrap:wrap;}
 .chat-acc select{font:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:4px;background:#fff;}
+
+/* Administración → Planes y documentos */
+.kpis.kpis-t{grid-template-columns:repeat(4,1fr);}
+@media (max-width:900px){.kpis.kpis-t{grid-template-columns:repeat(2,1fr);}}
+.tbl-planes{table-layout:fixed;}
+.tbl-planes td{vertical-align:top;}
+.tbl-planes th:nth-child(1){width:24%;}
+.tbl-planes th:nth-child(2){width:96px;}
+.tbl-planes th:nth-child(4){width:124px;}
+@media (max-width:900px){.tbl-planes{table-layout:auto;}}
+.docs-plan{display:flex;flex-direction:column;gap:5px;align-items:flex-start;}
+.doc-plan{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;background:#F4F6F7;border:1px solid var(--line);border-radius:3px;padding:4px 8px;font-size:12.5px;}
+.doc-plan.inactivo{opacity:.6;}
+.lista-docs{display:flex;flex-direction:column;gap:8px;}
+.chk-doc{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:3px;padding:9px 12px;cursor:pointer;font-size:13px;}
+.chk-doc input{margin-top:3px;}
+.chk-doc .d{display:block;margin-top:3px;}

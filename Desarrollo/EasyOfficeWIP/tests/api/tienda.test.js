@@ -118,6 +118,14 @@ describe('Administración · documentos de la tienda', () => {
     assert.equal(r.status, 200);
     assert.ok(r.texto.includes('KXRT-55') && !r.texto.includes('[PATENTE]') && r.texto.includes('[X]'));
   });
+  paso('vincular el vehículo a un plan desde "Planes y documentos"', () => A('PUT', '/api/crm/admin/tienda/planes/dig-api/documentos', { plantillas: [veh.id] }));
+  paso('el plan aparece en la plantilla', () => A('GET', '/api/crm/admin/documentos-tienda'), (r) =>
+    r.plantillas.find((p) => p.id === veh.id)?.planes.includes('dig-api') && r.plantillas.find((p) => p.id === veh.id)?.planes.includes('dig-not'));
+  paso('quitar todos los documentos del plan', () => A('PUT', '/api/crm/admin/tienda/planes/dig-api/documentos', { plantillas: [] }));
+  paso('el plan quedó sin documentos (los demás planes siguen)', () => A('GET', '/api/crm/admin/documentos-tienda'), (r) =>
+    !r.plantillas.some((p) => p.planes.includes('dig-api')) && r.plantillas.find((p) => p.id === veh.id)?.planes.includes('dig-not'));
+  paso('documentos de un plan inexistente → 404', () => A('PUT', '/api/crm/admin/tienda/planes/no-existe/documentos', { plantillas: [] }), (r) => r.status === 404);
+  paso('plantilla inexistente → 400', () => A('PUT', '/api/crm/admin/tienda/planes/dig-api/documentos', { plantillas: [999999] }), (r) => r.status === 400);
   it('preguntas al generar (vehículo, ya respondidas)', async () => {
     const kVeh = (await A('GET', '/api/crm/contratos?q=SOTO')).contratos.find((k) => /NOTARIAL/i.test(k.servicios || ''));
     const r = await A('GET', `/api/crm/plantillas/${veh.id}/preguntas?contrato=${kVeh.id}`);
@@ -128,6 +136,7 @@ describe('Administración · documentos de la tienda', () => {
     paso('login', () => X('POST', '/api/crm/login', { email: ctx.cred.ejec[0], password: ctx.cred.ejec[1] }));
     paso('ve los tickets de los clientes web que se le asignaron', () => X('GET', '/api/crm/tickets'), (r) => r.status === 200 && r.tickets.length > 0);
     paso('documentos de la tienda → 403', () => X('GET', '/api/crm/admin/documentos-tienda'), (r) => r.status === 403);
+    paso('documentos de un plan → 403', () => X('PUT', '/api/crm/admin/tienda/planes/dig-not/documentos', { plantillas: [] }), (r) => r.status === 403);
     paso('publicar documento ajeno → 404', () => X('POST', '/api/crm/documentos/1/publicar'), (r) => r.status === 404);
   });
 });

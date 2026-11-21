@@ -41,6 +41,7 @@ module.exports = {
   documentosTienda: responder((req) => archivosServicio.documentosTienda(req.usuario)),
   camposPlantilla: responder((req) => archivosServicio.camposPlantilla(req.usuario, req.params.id)),
   configurarTienda: responder((req) => archivosServicio.configurarTienda(req.usuario, req.params.id, req.body)),
+  documentosDePlan: responder((req) => archivosServicio.documentosDePlan(req.usuario, req.params.codigo, req.body)),
 
   // Portal del cliente
   borradorCliente: async (req, res) => enviarBorrador(res, await entrega.borradorCliente(req.cliente, req.params.id)),

@@ -5,6 +5,7 @@ import { estado, tiene, opciones } from '../estado.js';
 import { abrirModal, cerrarModal, formularioHTML, leerFormulario, validar, confirmar } from '../modal.js';
 import { direccionHTML, activarDirecciones, direccionLimpia } from '../direccion.js';
 import { verDocumentosTienda } from './documentosTienda.js';
+import { verPlanesTienda } from './tiendaPlanes.js';
 
 let contenedor = null;
 let defs = null;
@@ -266,6 +267,7 @@ async function mostrar(nombre) {
     if (nombre === 'usuarios') await verUsuarios(nuevo);
     else if (nombre === 'roles') await verRoles(nuevo);
     else if (nombre === 'tienda') await verDocumentosTienda(nuevo);
+    else if (nombre === 'tienda-planes') await verPlanesTienda(nuevo);
     else await verCatalogo(nuevo, nombre);
   } catch (err) {
     if (err.message !== 'sesion') nuevo.innerHTML = `<div class="empty err">${esc(err.message)}</div>`;
@@ -275,13 +277,13 @@ async function mostrar(nombre) {
 export default {
   id: 'administracion',
   titulo: 'Administración',
-  sub: () => 'Usuarios, roles, permisos, documentos de la tienda y catálogos',
+  sub: () => 'Usuarios, roles, permisos, planes y documentos de la tienda y catálogos',
   permisos: ['administrar_usuarios', 'administrar_catalogos'],
   async render(el) {
     contenedor = el;
     defs = await get('/admin/catalogos');
     const usuarios = tiene('administrar_usuarios'), catalogos = tiene('administrar_catalogos');
-    const permitidas = [...(usuarios ? ['usuarios', 'roles'] : []), ...(catalogos ? ['tienda', ...Object.keys(defs)] : [])];
+    const permitidas = [...(usuarios ? ['usuarios', 'roles'] : []), ...(catalogos ? ['tienda-planes', 'tienda', ...Object.keys(defs)] : [])];
     if (!permitidas.includes(seccion)) seccion = permitidas[0];
     const grupos = {};
     Object.entries(defs).forEach(([k, d]) => { (grupos[d.grupo] ||= []).push([k, d.titulo]); });
@@ -292,6 +294,7 @@ export default {
           <button data-sec="usuarios">Usuarios</button>
           <button data-sec="roles">Roles y permisos</button>` : ''}
           ${catalogos ? `<div class="adm-g">Tienda</div>
+          <button data-sec="tienda-planes">Planes y documentos</button>
           <button data-sec="tienda">Documentos de la tienda</button>
           ${Object.entries(grupos).map(([g, items]) => `<div class="adm-g">${esc(g)}</div>${items.map(([k, t]) => `<button data-sec="${k}">${esc(t)}</button>`).join('')}`).join('')}` : ''}
         </aside>

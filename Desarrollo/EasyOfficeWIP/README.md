@@ -25,6 +25,9 @@ esquema anterior (`easyoffice_er.sql`).
 2. `npm run db:revisar` → comprueba la conexión, los roles y los usuarios del personal.
 3. `npm run crear-usuario` → crea un usuario del CRM (o restablece su contraseña). La contraseña se
    guarda solo como hash bcrypt en `usuarios.password_hash`.
+   Opcional: `npm run crear-perfiles` crea de una vez un dueño, un ejecutivo y una persona natural
+   con acceso a /mi-cuenta (contraseñas al azar, anotadas en `credenciales-demo.txt`;
+   `npm run crear-perfiles -- --restablecer` genera contraseñas nuevas).
 4. `npm run dev` y entrar a <http://localhost:3000/crm>.
 
 Cada consulta corre con el rol del usuario (`rol_admin` o `rol_ejecutivo`) y con `app.usuario_actual`,
@@ -93,6 +96,9 @@ columnas `entrega`/`mapa_campos` en plantillas y `estado_cliente`/`aceptado_*` e
    `base de datos/Contratos/plantillas/`), se vincula a uno o más **planes de la tienda** y se elige la **entrega**:
    - *Automática*: al comprar, el cliente recibe el borrador para revisarlo.
    - *Con revisión*: al comprar queda esperando que el personal lo revise y lo publique.
+   **CRM → Administración → Planes y documentos** muestra lo mismo al revés: cada servicio con sus planes, el precio y
+   los documentos que genera la compra, con un aviso en los planes que se venden en línea sin ningún documento. Desde
+   ahí se vinculan o quitan documentos de un plan (`PUT /api/crm/admin/tienda/planes/:codigo/documentos`).
 2. **Dónde van los datos**: se detectan los campos de combinación de Word y los textos entre corchetes
    (`[RAZÓN SOCIAL DE LA EMPRESA]`, `[RUT EMPRESA]`, `[FECHA]`…) y se sugiere el dato del cliente que corresponde
    (diccionario y sinónimos en `src/negocio/camposDocumento.js`). Lo que no es dato del cliente se marca como

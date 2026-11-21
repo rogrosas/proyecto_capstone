@@ -83,6 +83,7 @@ router.patch('/tickets/:id', a(entrega.atenderTicket));            // responder 
 router.get('/admin/documentos-tienda', a(entrega.documentosTienda));
 router.get('/admin/plantillas/:id/campos', a(entrega.camposPlantilla));
 router.put('/admin/plantillas/:id/tienda', a(entrega.configurarTienda));
+router.put('/admin/tienda/planes/:codigo/documentos', a(entrega.documentosDePlan));   // documentos que genera un plan
 router.get('/admin/archivos', a(arch.listarArchivos));
 router.post('/admin/archivos', express.raw({ type: () => true, limit: archivosCfg.maxBytes }), a(arch.subirArchivo));
 
