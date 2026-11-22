@@ -61,7 +61,7 @@ async function obtener(usuario, id) {
   return c;
 }
 
-// Escaneo (PDF, JPG o PNG): queda en la carpeta de contratos, en correspondencia/<año>/
+// Escaneo (PDF, JPG o PNG): se guarda con datos/archivos.js (tabla archivos) como correspondencia/<año>/...
 async function subirEscaneo(usuario, id, contenido) {
   await exigirCorrespondencia(usuario);
   const c = await obtener(usuario, id);

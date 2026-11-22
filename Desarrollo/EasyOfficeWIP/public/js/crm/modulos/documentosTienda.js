@@ -23,7 +23,7 @@ export async function verDocumentosTienda(panel) {
   const nombrePlan = Object.fromEntries(planes.flatMap((f) => f.planes.map((p) => [p.codigo, `${f.familia} · ${p.nombre}`])));
   panel.innerHTML = `
     <div class="toolbar"><h3 class="tt-sec">Documentos de la tienda</h3><button class="btn btn-g" data-nuevo>Subir documento</button></div>
-    <div class="note" style="margin:0 0 12px;">Cada documento Word se guarda en la carpeta <b>base de datos/Contratos</b>. Vincúlelo a los planes de la tienda:
+    <div class="note" style="margin:0 0 12px;">Cada documento Word se guarda en la <b>base de datos</b> (no se pierde al reiniciar el servidor). Vincúlelo a los planes de la tienda:
       al comprar uno de ellos se genera con los datos del cliente. El cliente siempre revisa primero un borrador con marca de agua y debe aceptarlo
       para recibir el documento final; si no está de acuerdo, envía un ticket.</div>
     <div class="tbl-wrap"><table>
@@ -61,7 +61,7 @@ function subirDocumento() {
         <div class="f full"><label>Archivo Word (.docx) <span class="req">*</span></label>
           <input type="file" id="tdArchivo" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
           <span class="hint">Marque dónde van los datos con campos de combinación de Word o escribiéndolos entre corchetes, por ejemplo
-          [RAZÓN SOCIAL DE LA EMPRESA], [RUT EMPRESA] o [FECHA]. Se guarda en base de datos/Contratos/plantillas.</span></div>` }
+          [RAZÓN SOCIAL DE LA EMPRESA], [RUT EMPRESA] o [FECHA]. Se guarda en la base de datos (ruta plantillas/).</span></div>` }
     ]),
     acciones: [{ texto: 'Cancelar' }, {
       texto: 'Subir y configurar', clase: 'btn-g', alHacer: async (c) => {

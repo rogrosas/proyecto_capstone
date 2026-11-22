@@ -50,7 +50,8 @@ describe('Portal · persona: borrador, aceptar, descargar', () => {
   const d1 = {};
   paso('aceptar con casilla', () => { d1.id = doc().id; return P('POST', `/api/cliente/documentos/${d1.id}/aceptar`, { acepto: true }); });
   paso('aceptar dos veces → 409', () => P('POST', `/api/cliente/documentos/${d1.id}/aceptar`, { acepto: true }), (r) => r.status === 409);
-  paso('descarga el Word final', () => P('GET', `/api/cliente/documentos/${d1.id}/archivo`, undefined, { crudo: true }), (r) => r.status === 200 && /wordprocessingml/.test(r.tipo) && r.largo > 5000);
+  paso('descarga el documento final en PDF', () => P('GET', `/api/cliente/documentos/${d1.id}/archivo`, undefined, { crudo: true }),
+    (r) => r.status === 200 && r.tipo === 'application/pdf' && r.texto.startsWith('%PDF-') && /\.pdf"/.test(r.cabeceras.get('content-disposition')));
   paso('documento ajeno → 404', () => P('GET', '/api/cliente/documentos/1/borrador', undefined, { crudo: true }), (r) => r.status === 404);
 });
 

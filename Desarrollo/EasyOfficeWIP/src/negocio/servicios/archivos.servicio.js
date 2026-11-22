@@ -3,8 +3,8 @@
    Reemplaza el paso "Excel + combinar correspondencia": las marcas de la
    plantilla (campos MERGEFIELD y textos entre corchetes) se llenan con los
    datos del contrato (v_datos_contrato) según plantillas_documento.mapa_campos,
-   y el .docx se guarda en la carpeta de contratos; la BD solo guarda su
-   ubicación (documentos.url_archivo).
+   y el .docx se guarda con datos/archivos.js (tabla archivos; documentos.url_archivo
+   guarda su ruta).
    Reglas: no se regenera un documento que ya está en revisión, aprobado,
    enviado a firma o firmado (hay que anularlo antes), ni uno que el cliente
    ya aceptó. Si la plantilla se entrega en forma automática y no falta ningún

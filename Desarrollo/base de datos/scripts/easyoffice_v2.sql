@@ -23,6 +23,7 @@
 --                 documentos Word vinculados a planes de la tienda (plantilla_planes),
 --                 con entrega automática o tras revisión; el cliente acepta un borrador
 --                 con marca de agua o envía un ticket (tickets).
+--   ARCHIVOS      plantillas y contratos Word guardados en la base (archivos).
 --   DATOS BASE    roles, permisos, plazos de alerta, regiones y las 346 comunas de Chile.
 --
 -- La aplicación fija en cada transacción:
@@ -417,6 +418,19 @@ CREATE TABLE tienda_planes (
     CONSTRAINT ck_tienda_planes_cotiza CHECK ((precio IS NULL) = (recurrencia = 'cotiza'))
 );
 CREATE INDEX ix_tienda_planes_familia ON tienda_planes (familia_id, orden);
+
+-- Archivos de la aplicación (plantillas Word, contratos generados y firmados, escaneos de
+-- correspondencia). Se guardan en la base para que no se pierdan cuando el servidor borra su disco
+-- (Render). La clave es la MISMA ruta relativa que guardan plantillas_documento.archivo_base,
+-- documentos.url_archivo, documentos.archivo_firmado y correspondencia.url_archivo.
+-- Solo la usa src/datos/archivos.js con el usuario de conexión; los permisos los revisa la aplicación.
+CREATE TABLE archivos (
+    ruta            text PRIMARY KEY CHECK (ruta <> '' AND ruta !~ '^/' AND strpos(ruta, chr(92)) = 0 AND ruta !~ '(^|/)\.\.(/|$)'),  -- relativa, sin \ ni ..
+    contenido       bytea NOT NULL,
+    bytes           int  NOT NULL CHECK (bytes >= 0),
+    sha256          text NOT NULL CHECK (sha256 ~ '^[0-9a-f]{64}$'),
+    actualizado_en  timestamptz NOT NULL DEFAULT now()
+);
 
 
 -- =====================================================================

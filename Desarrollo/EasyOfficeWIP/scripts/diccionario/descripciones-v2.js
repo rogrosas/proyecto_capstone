@@ -4,7 +4,8 @@
    y su uso actual en la aplicación. Actualizar cuando cambie el esquema.
    ========================================================= */
 module.exports = function aplicarV2(D) {
-  D.grupos.find((g) => g.id === 'documentos').tablas.push('documento_versiones', 'documento_firmantes', 'plantilla_planes');
+  D.grupos.find((g) => g.id === 'documentos').tablas.push('documento_versiones', 'documento_firmantes', 'plantilla_planes', 'archivos');
+  D.grupos.find((g) => g.id === 'catalogo').tablas.push('tienda_familias', 'tienda_planes');
   D.grupos.find((g) => g.id === 'pagos').tablas.push('ejecuciones_avisos');
   D.grupos.push(
     { id: 'portal', t: '10. Portal de clientes', tablas: ['cuentas_portal', 'tickets', 'ticket_mensajes'] },
@@ -56,7 +57,7 @@ module.exports = function aplicarV2(D) {
     version_aceptada: 'Versión del Word que aceptó el cliente.',
     firma_proveedor: 'Plataforma de firma usada: simulador (laboratorio) o la real.',
     enviado_firma_en: 'Cuándo se envió a la plataforma de firma.',
-    archivo_firmado: 'Documento firmado que devolvió la plataforma (ruta relativa a la carpeta de contratos).',
+    archivo_firmado: 'Documento firmado que devolvió la plataforma (ruta; el contenido está en la tabla archivos). El cliente lo descarga en PDF.',
     hash_firmado: 'Huella SHA-256 del documento firmado: /verificar la compara con el archivo que tenga el usuario.'
   });
   columnas('pagos', {
@@ -97,6 +98,12 @@ module.exports = function aplicarV2(D) {
     estado: 'conectado', usa: ['codigo', 'familia_id', 'nombre', 'precio', 'precio_texto', 'periodo', 'recurrencia', 'grupo', 'corto', 'caracteristicas', 'detalle', 'orden', 'activo'],
     app: 'CRM → Tienda (crear, editar, ordenar, ocultar; un plan vendido no se borra). /contratar y las páginas de servicio los muestran; la compra valida el plan y su precio aquí.',
     cols: { id: 'Identificador.', codigo: 'Código del plan (ej. dom-anual); lo usan servicios.codigo y plantilla_planes. No cambia.', familia_id: 'Servicio de la tienda.', nombre: 'Nombre del plan.', precio: 'Precio en CLP; NULL = se cotiza.', precio_texto: 'Texto en vez del precio si se cotiza (ej. UF 14).', periodo: 'Vigencia o periodicidad que se muestra.', recurrencia: 'anual, semestral, mensual, bolsa, unico o cotiza.', grupo: 'Lista de precios de la página de firmas.', corto: 'Texto en esa lista.', caracteristicas: 'Resumen de la tarjeta.', detalle: 'Lista completa de la página del servicio.', orden: 'Posición dentro del servicio.', activo: 'Visible en el sitio.' }
+  });
+  tabla('archivos', {
+    desc: 'Contenido de los archivos de la aplicación (plantillas Word, contratos generados y firmados, escaneos), para que no dependan del disco del servidor.',
+    estado: 'conectado', usa: ['ruta', 'contenido', 'bytes', 'sha256', 'actualizado_en'],
+    app: 'src/datos/archivos.js: toda lectura y escritura de archivos. Las plantillas de la carpeta de git se copian aquí al abrirlas. También guarda el PDF que descarga el cliente en Mi cuenta (ruta pdf/<sha256 del Word>.pdf, src/datos/pdf.js).',
+    cols: { ruta: 'Ruta relativa a la carpeta de contratos; la misma que guardan plantillas_documento.archivo_base, documentos.url_archivo, documentos.archivo_firmado y correspondencia.url_archivo.', contenido: 'Bytes del archivo.', bytes: 'Tamaño.', sha256: 'Huella SHA-256 del contenido.', actualizado_en: 'Última vez que se guardó.' }
   });
   tabla('ejecuciones_avisos', {
     desc: 'Registro de cada envío de avisos de vencimiento por correo.',

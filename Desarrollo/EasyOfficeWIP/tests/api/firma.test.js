@@ -2,7 +2,6 @@
 const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('crypto');
-const PizZip = require('pizzip');
 const entorno = require('../apoyo/entorno');
 
 const paso = entorno.pasos(it, assert);
@@ -72,18 +71,23 @@ describe('Firma de un documento de la tienda', () => {
     const d = r.documentos.find((x) => x.id === doc.id);
     return d.estado === 'firmado' && d.con_firmado === true && d.codigo === firmado.codigo && r.firmas.disponibles === 4 && r.firmas.movimientos[0].motivo === 'consumo';
   });
-  it('descarga el documento firmado, con su hoja de constancia', async () => {
+  it('descarga el documento firmado en PDF, con su hoja de constancia', async () => {
     const r = await P('GET', `/api/cliente/documentos/${doc.id}/archivo`, undefined, { crudo: true });
     assert.equal(r.status, 200);
-    const xml = new PizZip(r.buffer).file('word/document.xml').asText();
-    assert.ok(xml.includes('CONSTANCIA DE FIRMA ELECTRÓNICA') && xml.includes(firmado.codigo) && xml.includes('SIMULADOR DE LABORATORIO'));
+    assert.equal(r.tipo, 'application/pdf');
+    const txt = r.buffer.toString('latin1');
+    assert.ok(txt.startsWith('%PDF-') && txt.includes('CONSTANCIA DE FIRMA ELECTRÓNICA') && txt.includes(firmado.codigo) && txt.includes('SIMULADOR DE LABORATORIO'));
     firmado.hash = crypto.createHash('sha256').update(r.buffer).digest('hex');
+  });
+  it('la segunda descarga es el mismo PDF (misma huella)', async () => {
+    const r = await P('GET', `/api/cliente/documentos/${doc.id}/archivo`, undefined, { crudo: true });
+    assert.equal(crypto.createHash('sha256').update(r.buffer).digest('hex'), firmado.hash);
   });
 });
 
 describe('Verificación pública por código', () => {
   paso('código válido: auténtico, con la misma huella del archivo', () => F('GET', `/api/verificar/${firmado.codigo.toLowerCase()}`),
-    (r) => r.status === 200 && r.valido === true && r.hash === firmado.hash && r.cliente === 'Valentina S. M.' && r.firmantes[0].nombre === 'Valentina S. M.' && !JSON.stringify(r.cuerpo).includes('19876543'));
+    (r) => r.status === 200 && r.valido === true && /^[0-9a-f]{64}$/.test(firmado.hashVerificado = r.hash) && r.hash_pdf === firmado.hash && r.cliente === 'Valentina S. M.' && r.firmantes[0].nombre === 'Valentina S. M.' && !JSON.stringify(r.cuerpo).includes('19876543'));
   paso('código inexistente → no válido', () => F('GET', '/api/verificar/EO-0000-0000'), (r) => r.status === 200 && r.valido === false);
   paso('formato incorrecto → 400', () => F('GET', '/api/verificar/12345'), (r) => r.status === 400);
   paso('la página /verificar existe', () => F('GET', '/verificar', undefined, { crudo: true }), (r) => r.status === 200 && r.texto.includes('Verificar un documento'));
@@ -92,8 +96,9 @@ describe('Verificación pública por código', () => {
 describe('CRM: firma de los documentos', () => {
   paso('login administrador', () => A('POST', '/api/crm/login', { email: ctx.cred.admin[0], password: ctx.cred.admin[1] }));
   paso('el detalle muestra firmantes, plataforma y huella', () => A('GET', `/api/crm/documentos/${doc.id}`),
-    (r) => r.firma?.firmantes?.[0]?.estado === 'firmado' && r.firma.proveedor === 'simulador' && r.firma.hash === firmado.hash && r.firma.impedimento === 'El documento ya está firmado.');
-  paso('descarga del firmado desde el CRM', () => A('GET', `/api/crm/documentos/${doc.id}/firmado`, undefined, { crudo: true }), (r) => r.status === 200 && r.largo > 5000);
+    (r) => r.firma?.firmantes?.[0]?.estado === 'firmado' && r.firma.proveedor === 'simulador' && (firmado.hashWord = r.firma.hash) === firmado.hashVerificado && r.firma.impedimento === 'El documento ya está firmado.');
+  paso('descarga del firmado desde el CRM', () => A('GET', `/api/crm/documentos/${doc.id}/firmado`, undefined, { crudo: true }), (r) => r.status === 200 && r.largo > 5000
+    && crypto.createHash('sha256').update(r.buffer).digest('hex') === firmado.hashWord);   // el CRM entrega el Word
   paso('aparece entre los firmados', () => A('GET', '/api/crm/documentos?tipo=firmados'), (r) => r.documentos.some((d) => d.id === doc.id));
   paso('un documento sin Word no se envía a firma → 409', async () => {
     const op = (await A('GET', '/api/crm/opciones')).cuerpo;

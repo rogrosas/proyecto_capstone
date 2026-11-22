@@ -4,8 +4,9 @@
    1. El documento se publica al cliente (automático al generarlo, o el
       personal lo publica tras revisarlo): estado_cliente = 'por_revisar'.
    2. En /mi-cuenta el cliente SIEMPRE ve primero un borrador con marca de
-      agua (HTML generado desde el Word; el .docx no se entrega todavía).
-   3. Marca la casilla "estoy de acuerdo" y lo acepta → recibe el Word final.
+      agua (HTML generado desde el Word; el .docx no se entrega).
+   3. Marca la casilla "estoy de acuerdo" y lo acepta → descarga el documento
+      final en PDF (datos/pdf.js), y una vez firmado, el PDF firmado.
       Si no está de acuerdo, envía un ticket → estado_cliente = 'objetado'.
    4. El personal atiende el ticket, corrige, regenera y vuelve a publicar.
    ========================================================= */
@@ -13,6 +14,7 @@ const mammoth = require('mammoth');
 const { conUsuario, conSistema } = require('../../datos/conexion');
 const { errores } = require('../../comun/errores');
 const archivos = require('../../datos/archivos');
+const pdf = require('../../datos/pdf');
 const correo = require('../../datos/correo');
 const word = require('../../datos/word');
 const config = require('../../config');
@@ -268,12 +270,16 @@ async function enviarTicket(sesion, id, d = {}) {
   return { ok: true, id: ticketId, mensaje: `Recibimos su ticket #${ticketId}. Le responderemos por correo y en esta misma sección.` };
 }
 
+// Siempre en PDF: el cliente no recibe un Word que pueda modificar (el personal sí, en el CRM)
 async function archivoFinal(sesion, id) {
   const doc = await conSistema((db) => documentoDelCliente(db, sesion, id));
   // Firmado, se entrega el documento que devolvió la plataforma de firma
-  if (doc.archivo_firmado) return { nombre: doc.archivo_firmado.split('/').pop(), contenido: await archivos.leer(doc.archivo_firmado) };
-  if (doc.estado_cliente !== 'aceptado') throw errores.sinPermiso('Acepte el borrador para descargar el documento final.');
-  return { nombre: doc.url_archivo.split('/').pop(), contenido: await archivos.leer(doc.url_archivo) };
+  const ruta = doc.archivo_firmado || (doc.estado_cliente === 'aceptado' ? doc.url_archivo : null);
+  if (!ruta) throw errores.sinPermiso('Acepte el borrador para descargar el documento final.');
+  return {
+    nombre: ruta.split('/').pop().replace(/\.docx$/i, '') + '.pdf',
+    contenido: await pdf.desdeWord(await archivos.leer(ruta))
+  };
 }
 
 // Mi cuenta: los tickets del cliente, cada uno con su conversación

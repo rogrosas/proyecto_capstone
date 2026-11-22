@@ -22,13 +22,35 @@ reales de la muestra, más correos ficticios `.test` para probar el portal). `ea
 esquema anterior (`easyoffice_er.sql`).
 
 1. Completar `PGPASSWORD` en el archivo `.env` (copia de `.env.example`; no se sube a git).
-2. `npm run db:revisar` → comprueba la conexión, los roles y los usuarios del personal.
+2. `npm run db:revisar` → comprueba la conexión, los roles, los usuarios del personal y **qué migraciones le faltan**
+   a la base (ver "Migraciones", abajo).
 3. `npm run crear-usuario` → crea un usuario del CRM (o restablece su contraseña). La contraseña se
    guarda solo como hash bcrypt en `usuarios.password_hash`.
    Opcional: `npm run crear-perfiles` crea de una vez un dueño, un ejecutivo y una persona natural
    con acceso a /mi-cuenta (contraseñas al azar, anotadas en `credenciales-demo.txt`;
    `npm run crear-perfiles -- --restablecer` genera contraseñas nuevas).
 4. `npm run dev` y entrar a <http://localhost:3000/crm>.
+
+### Migraciones
+
+Una base creada con `easyoffice_v2.sql` completo ya tiene todo. Una base creada antes (la local EO_ER o la de Neon)
+necesita los scripts `easyoffice_v2_*.sql` que se agregaron después, una vez cada uno y en este orden:
+
+| Script | Qué agrega |
+|---|---|
+| `easyoffice_v2_cuentas_portal.sql` | Contraseñas del portal de clientes (`cuentas_portal`) |
+| `easyoffice_v2_documentos_tienda.sql` | Documentos de la tienda y tickets (`plantilla_planes`, `tickets`) |
+| `easyoffice_v2_trl4.sql` | Avisos de vencimiento, firma electrónica y verificación |
+| `easyoffice_v2_tickets_conversacion.sql` | Tickets como conversación (`ticket_mensajes`) |
+| `easyoffice_v2_comunas_permisos.sql` | Las 346 comunas y los permisos de tickets |
+| `easyoffice_v2_cartera.sql` | Ejecutivo a cargo de cada cliente (`clientes.ejecutivo_id`) |
+| `easyoffice_v2_tienda.sql` | Servicios y planes de la tienda (`tienda_familias`, `tienda_planes`) |
+| `easyoffice_v2_archivos.sql` | Word y PDF guardados en la base (`archivos`) |
+
+`npm run db:revisar` dice cuáles faltan. Se aplican con `npm run db:migrar -- <archivo.sql>` (sobre `DATABASE_URL` si
+está en `.env`, si no sobre la base local), en pgAdmin (Query Tool → abrir el archivo → F5) o pegándolos en el
+SQL Editor de Neon. Cada uno corre en una transacción: si falla, no queda nada a medias.
+`easyoffice_v2_perfiles_prueba.sql` no es una migración: crea perfiles de prueba (lo mismo que `npm run crear-perfiles`).
 
 Cada consulta corre con el rol del usuario (`rol_admin` o `rol_ejecutivo`) y con `app.usuario_actual`,
 así PostgreSQL aplica la seguridad por fila (el ejecutivo ve solo su cartera) y registra la auditoría.
@@ -61,20 +83,21 @@ módulos y botones (es solo visual: la revisión real es la del servidor). `admi
 Las acciones de administración (auditoría, usuarios, catálogos, eliminar) se ejecutan con `rol_admin` en la base
 solo después de revisar el permiso; la seguridad por fila sigue aplicando el rol real del usuario.
 
-Lo que el modelo aún no tiene (correspondencia, saldo de firmas) no se conectó:
-la sección Correspondencia del CRM y del portal lo indica.
-
 ## Contratos Word (reemplaza Excel + combinar correspondencia)
 
-Las plantillas y los contratos generados viven en la carpeta `Desarrollo/base de datos/Contratos`
-(configurable con `CONTRATOS_DIR` en `.env`). **La base de datos solo guarda su ubicación, relativa a esa carpeta**:
+Las plantillas y los contratos generados se identifican por su ruta relativa a la carpeta
+`Desarrollo/base de datos/Contratos` (configurable con `CONTRATOS_DIR` en `.env`). Las tablas guardan esa ruta:
 
-| Qué | Dónde se guarda la ubicación | Ejemplo |
+| Qué | Dónde se guarda la ruta | Ejemplo |
 |---|---|---|
 | Plantilla Word | `plantillas_documento.archivo_base` | `CONTRATO DE SERVICIOS OFICINA EASY OFFICE 2026 (1).docx` |
+| Plantilla subida desde el CRM | `plantillas_documento.archivo_base` | `plantillas/Poder simple.docx` |
 | Contrato generado | `documentos.url_archivo` (+ `documento_versiones` con hash si la BD es v2) | `generados/2026/LF-0152-2026 Contrato de servicios oficina_v1.docx` |
+| Contrato firmado | `documentos.archivo_firmado` (+ `hash_firmado`) | `generados/2026/LF-0152-2026 Contrato de servicios oficina_v1_firmado.docx` |
+| Escaneo de correspondencia | `correspondencia.url_archivo` | `correspondencia/2026/C12-1a2b3c4d.pdf` |
+| PDF que descarga el cliente | (se deriva del Word) | `pdf/<sha256 del Word>.pdf` |
 
-1. **Administración → Plantillas de documento**: se elige el `.docx` de la carpeta (o se sube uno nuevo, queda en `plantillas/`).
+1. **Administración → Plantillas de documento**: se elige un `.docx` (o se sube uno nuevo, queda como `plantillas/…`).
 2. **Contrato → "Generar contrato Word"**: llena los campos `MERGEFIELD` del Word (los mismos del Excel:
    `FOLIO`, `RAZON_SOCIAL`, `SERVICIO_1`…) con los datos de `v_datos_contrato`, quita el enlace al Excel y guarda el
    archivo en `generados/<año>/`. El documento queda en *borrador*; si se vuelve a generar se crea la versión siguiente
@@ -82,7 +105,19 @@ Las plantillas y los contratos generados viven en la carpeta `Desarrollo/base de
 3. El archivo se descarga desde el detalle del contrato o del documento (`GET /api/crm/documentos/:id/archivo`),
    respetando la cartera del ejecutivo.
 
-El código está en `src/datos/archivos.js` (carpeta, sin permitir rutas fuera de ella), `src/datos/word.js`
+**El contenido se guarda en la base**, en la tabla `archivos` (clave: la misma ruta), para que no se pierda cuando
+el servidor borra su disco (Render). Al leer, `src/datos/archivos.js` busca primero en la tabla y, si no está, en la
+carpeta; lo que encuentra en la carpeta (las plantillas de git) lo copia a la tabla. Todo lo que se guarda (plantillas
+subidas desde el CRM, contratos generados y firmados, escaneos de correspondencia, PDF de Mi cuenta) va a la tabla.
+Una base anterior necesita `Desarrollo/base de datos/scripts/easyoffice_v2_archivos.sql`; mientras no lo tenga, se usa
+solo la carpeta (y en Render se pierde al reiniciar). Por eso una plantilla subida desde el CRM ya no aparece en la
+carpeta: para llevarla a git, descárguela del CRM.
+
+`npm run regenerar-archivos` (va en el arranque de Render) vuelve a crear los contratos y firmados que la base menciona
+pero que no están guardados ni en la tabla ni en la carpeta, por ejemplo los creados antes de la tabla `archivos` o una
+base cargada en otro equipo sin sus archivos. Con todo guardado, no hace nada.
+
+El código está en `src/datos/archivos.js` (tabla y carpeta, sin permitir rutas fuera de ella), `src/datos/word.js`
 (combinación) y `src/negocio/servicios/archivos.servicio.js` (equivalencia campo del Word → dato de la base).
 `generados/` está en `.gitignore`: contiene datos personales de clientes.
 
@@ -120,7 +155,7 @@ Base de datos: `easyoffice_v2.sql` ya lo trae; una base anterior necesita
 columnas `entrega`/`mapa_campos` en plantillas y `estado_cliente`/`aceptado_*` en documentos).
 
 1. **CRM → Tienda → Documentos Word** (permiso `administrar_catalogos`): se sube el `.docx` (queda en
-   `base de datos/Contratos/plantillas/`), se vincula a uno o más **planes de la tienda** y se elige la **entrega**:
+   la base como `plantillas/…`), se vincula a uno o más **planes de la tienda** y se elige la **entrega**:
    - *Automática*: al comprar, el cliente recibe el borrador para revisarlo.
    - *Con revisión*: al comprar queda esperando que el personal lo revise y lo publique.
    En **Tienda → Servicios y planes** se ve al revés: cada plan con los documentos que genera su compra, con un aviso
@@ -140,7 +175,24 @@ columnas `entrega`/`mapa_campos` en plantillas y `estado_cliente`/`aceptado_*` e
      crear su contraseña. Si no hay documento que enviar, recibe solo el enlace.
 4. **Mi cuenta → Mis documentos**: el cliente siempre ve primero un **borrador con marca de agua** (HTML generado desde
    el Word con `mammoth`; el `.docx` no se entrega aún), marca *"he leído el borrador y estoy de acuerdo"* y lo acepta
-   → descarga el Word final. Si no está de acuerdo envía un **ticket** (el documento queda "objetado").
+   → descarga el documento final **en PDF** (y, una vez firmado, el PDF firmado). Si no está de acuerdo envía un
+   **ticket** (el documento queda "objetado").
+
+   El cliente nunca recibe el Word editable. `src/datos/wordPdf.js` lee el XML del Word y arma el PDF con **pdfmake**,
+   solo JavaScript (no instala nada en el servidor, 10–250 ms por documento). Conserva tamaño de página y márgenes,
+   encabezado y pie (con el logo), secciones con texto a dos columnas (mide cada bloque con pdfmake y lo reparte entre
+   columnas como Word), saltos de sección, alineación, sangrías, interlineado, negritas/cursivas/subrayado, tamaños y
+   colores, tablas con celdas combinadas y bordes por celda, imágenes PNG/JPG (también giradas), enlaces y saltos de
+   página. Comparado con LibreOffice, todas las plantillas quedan con las mismas páginas. No usa las fuentes exactas:
+   dibuja con Times, Helvetica y Courier (las estándar de PDF) usando el alto de línea de la fuente original, y si el
+   Word usa una fuente que no existe (ej. gobCL) toma el reemplazo que el propio Word indica (`w:altName` en
+   `word/fontTable.xml`, ej. Calibri). En documentos en Calibri alguna palabra puede pasar a la línea siguiente.
+   Cada PDF se guarda en la tabla `archivos` como `pdf/<sha256 del Word>.pdf` y además es determinista (el mismo Word da
+   el mismo PDF byte a byte), así que el cliente siempre recibe el mismo archivo; `/verificar` acepta tanto la huella
+   del Word firmado como la de ese PDF. El personal sigue descargando el Word en el CRM.
+   `PDF_PROVEEDOR=libreoffice` usa LibreOffice si está instalado (PDF idéntico al Word, pero ocupa cientos de MB);
+   `PDF_PROVEEDOR=texto` entrega solo el texto (lo usan las pruebas). Si la conversión falla, el cliente ve un aviso
+   (503) y no se le entrega el Word.
 5. **CRM → Tickets de clientes** y el detalle del documento: el personal responde (le llega por correo), corrige,
    genera una nueva versión desde el contrato y vuelve a publicar. No se regenera un documento ya aceptado.
 
@@ -206,6 +258,7 @@ API: `POST /api/cliente/ingresar`, `POST /api/cliente/clave` (pide el enlace), `
 | Documentos | Alta desde plantilla con partes y cláusulas; revisión, aprobación, firma con código de verificación | documentos, documento_partes, documento_clausulas, plantillas_documento, clausulas_documento |
 | Ventas y pagos | Pagos y cuotas por pasarela; cambio de estado | pagos |
 | Auditoría (permiso `ver_auditoria`) | Bitácora de cambios, ingresos y salidas | registros_actividad |
+| Tienda (`administrar_catalogos`) | Servicios y planes del sitio (precios, orden, ocultar), documentos Word de cada plan | tienda_familias, tienda_planes, plantilla_planes, plantillas_documento, archivos |
 | Administración (`administrar_usuarios` / `administrar_catalogos`) | Usuarios, roles y permisos, y 13 catálogos (servicios, plantillas, cláusulas, emisoras, sucursales, cuentas, propietarios, representantes, regiones, comunas, permisos, plazos de alertas, correlativos de folio) | usuarios, roles, permisos, roles_permisos y las tablas de cada catálogo |
 
 El detalle por tabla y columna está en `Desarrollo/base de datos/diccionario_datos_easyoffice.html`
@@ -281,6 +334,11 @@ src/
 └── datos/
     ├── conexion.js                 # pool, conUsuario(), traducción de errores
     ├── conversion.js               # numeric/count de pg -> Number
+    ├── archivos.js                 # Word, PDF y escaneos: tabla archivos (o la carpeta de contratos)
+    ├── word.js                     # combinar campos del Word, marca de agua
+    ├── wordPdf.js                  # Word -> PDF con pdfmake (lo que descarga el cliente)
+    ├── pdf.js                      # elige el conversor (javascript, libreoffice, texto) y guarda cada PDF
+    ├── correo.js, firma/, pago/    # correo saliente y proveedores (simuladores de laboratorio)
     ├── sql/fragmentos.js           # SQL reutilizado
     └── repositorios/ usuarios, sesiones, roles, dashboard, opciones, clientes, representantes, direcciones, contratos, alertas, documentos, pagos, auditoria, catalogos, catalogo
 ```
@@ -296,7 +354,8 @@ EasyOfficeWIP/
 ├── server.js            # punto de entrada (levanta src/app.js)
 ├── package.json
 ├── .env.example         # plantilla de conexión a PostgreSQL (.env no se sube)
-├── scripts/             # herramientas: db:revisar, crear-usuario
+├── scripts/             # herramientas: db:revisar, db:migrar, db:cargar, crear-usuario, crear-perfiles, regenerar-archivos
+├── tests/               # npm test (API y base en bases desechables) · npm run test:unidad
 ├── src/                 # backend por capas (ver arriba)
 ├── public/              # todo lo que ve el navegador
 │   ├── *.html           # una página por archivo

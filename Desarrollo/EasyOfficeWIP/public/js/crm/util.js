@@ -56,7 +56,7 @@ export const PASARELAS = { transbank: 'Webpay (Transbank)', mercado_pago: 'Merca
 export const pasarela = (p) => PASARELAS[p] || esc(p || '—');
 export const CICLO = { UNICO: 'Único', MENSUAL: 'Mensual', TRIMESTRAL: 'Trimestral', SEMESTRAL: 'Semestral', ANUAL: 'Anual' };
 
-// Archivo de un documento: Word guardado en la carpeta de contratos (se descarga por la API) o enlace externo
+// Archivo de un documento: Word guardado por la aplicación (se descarga por la API) o enlace externo
 export const enlaceArchivo = (x) => !x.url_archivo ? '<span class="sb">—</span>'
   : /^https?:\/\//i.test(x.url_archivo) ? `<a href="${esc(x.url_archivo)}" target="_blank" rel="noopener">Enlace</a>`
   : `<a href="/api/crm/documentos/${x.id}/archivo" download>${esc(x.url_archivo.split('/').pop())}</a>`;

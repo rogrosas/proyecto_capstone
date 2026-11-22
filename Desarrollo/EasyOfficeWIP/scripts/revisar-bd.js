@@ -38,7 +38,8 @@ const info = (t) => console.log('    ' + t);
     // 2. Tablas del modelo
     const tablas = ['usuarios', 'roles', 'clientes', 'contratos', 'contrato_servicios', 'servicios',
       'documentos', 'pagos', 'alertas', 'sucursales', 'empresas_emisoras', 'registros_actividad',
-      'tienda_familias', 'tienda_planes'];   // si faltan: ejecutar easyoffice_v2_tienda.sql
+      'tienda_familias', 'tienda_planes',    // si faltan: ejecutar easyoffice_v2_tienda.sql
+      'archivos'];                           // si falta: ejecutar easyoffice_v2_archivos.sql
     console.log('\n  Registros por tabla:');
     for (const t of tablas) {
       try {
@@ -49,7 +50,32 @@ const info = (t) => console.log('    ' + t);
       }
     }
 
-    // 3. Roles y usuarios del CRM
+    // 3. Migraciones de "base de datos/scripts" que le faltan a esta base (una base creada con
+    //    easyoffice_v2.sql completo ya las tiene todas). Se reconocen por lo que crea cada una.
+    const existe = async (sql) => Boolean((await pool.query(sql)).rows[0]?.ok);
+    const tabla = (t) => `SELECT to_regclass('${t}') IS NOT NULL AS ok`;
+    const columna = (t, c) => `SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = '${t}' AND column_name = '${c}') AS ok`;
+    const funcion = (f) => `SELECT EXISTS (SELECT 1 FROM pg_proc WHERE proname = '${f}') AS ok`;
+    const MIGRACIONES = [
+      ['easyoffice_v2_cuentas_portal.sql', 'contraseñas del portal de clientes', tabla('cuentas_portal')],
+      ['easyoffice_v2_documentos_tienda.sql', 'documentos de la tienda y tickets', columna('documentos', 'estado_cliente')],
+      ['easyoffice_v2_trl4.sql', 'avisos, firma electrónica y verificación', tabla('documento_firmantes')],
+      ['easyoffice_v2_tickets_conversacion.sql', 'tickets como conversación', tabla('ticket_mensajes')],
+      ['easyoffice_v2_comunas_permisos.sql', '346 comunas y permisos de tickets', funcion('fn_cliente_con_ticket')],
+      ['easyoffice_v2_cartera.sql', 'ejecutivo a cargo de cada cliente', columna('clientes', 'ejecutivo_id')],
+      ['easyoffice_v2_tienda.sql', 'servicios y planes de la tienda (CRM → Tienda)', tabla('tienda_planes')],
+      ['easyoffice_v2_archivos.sql', 'Word y PDF guardados en la base', tabla('archivos')]
+    ];
+    const faltan = [];
+    for (const [archivo, que, sql] of MIGRACIONES) if (!(await existe(sql))) faltan.push([archivo, que]);
+    console.log('');
+    if (!faltan.length) ok('La base tiene todas las migraciones.');
+    else {
+      mal(`Faltan ${faltan.length} migración(es). Ejecútelas en este orden (npm run db:migrar -- <archivo>, o en el SQL Editor de Neon):`);
+      faltan.forEach(([archivo, que]) => info(`${archivo.padEnd(40)} ${que}`));
+    }
+
+    // 4. Roles y usuarios del CRM
     const roles = (await pool.query('SELECT id, rol FROM roles ORDER BY id')).rows;
     console.log('');
     if (!roles.length) mal('La tabla roles está vacía: "npm run crear-usuario" ofrece crear admin y ejecutivo.');

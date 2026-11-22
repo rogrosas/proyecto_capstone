@@ -1,11 +1,12 @@
 -- =====================================================================
 -- EASY OFFICE · Migración v2 → tienda administrable desde el CRM
--- Ejecutar UNA vez sobre EO_ER (en pgAdmin: Query Tool → abrir este archivo → F5),
--- después de easyoffice_v2_documentos_tienda.sql. easyoffice_v2.sql ya lo incluye.
+-- Ejecutar UNA vez sobre la base que usa la aplicación (Neon: SQL Editor o pgAdmin →
+-- Query Tool → abrir este archivo → F5), después de easyoffice_v2_documentos_tienda.sql.
+-- easyoffice_v2.sql ya lo incluye.
 --
 --   Los servicios y planes de la tienda dejan de estar escritos en
 --   public/js/catalogo.js: viven en tienda_familias y tienda_planes y se editan
---   en CRM → Administración → Tienda. Se cargan con los mismos datos que tenía
+--   en CRM → Tienda. Se cargan con los mismos datos que tenía
 --   catalogo.js, así que el sitio se ve igual tras ejecutarla.
 --   Mientras no se ejecute, la aplicación sigue usando catalogo.js.
 -- =====================================================================

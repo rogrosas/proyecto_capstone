@@ -1,22 +1,23 @@
 /* =========================================================
    npm run regenerar-archivos
    Vuelve a crear los contratos Word que la base menciona (documentos.url_archivo)
-   y que faltan en la carpeta de contratos. Pasa al cargar la base en otro equipo:
-   generados/ no va en git (tiene datos de clientes) ni en easyoffice_completo.sql.
+   y que no están guardados (ni en la tabla archivos ni en la carpeta de contratos).
+   Con la tabla archivos (easyoffice_v2_archivos.sql) los contratos ya no se pierden
+   al reiniciar el servidor; esto queda para los que se crearon antes de ella y para
+   una base cargada en otro equipo sin sus archivos.
 
    - Usa la misma plantilla, los datos actuales del contrato y las respuestas guardadas
      en documentos.datos, y guarda el archivo en la MISMA ruta.
-   - No cambia la base (transacción de solo lectura) ni reemplaza archivos que existen.
+   - Solo escribe los archivos que faltan (en la tabla archivos o, sin ella, en la carpeta);
+     no cambia los datos (transacción de solo lectura) ni reemplaza archivos que existen.
    - También vuelve a crear el documento firmado (documentos.archivo_firmado) que entregan
      Mi cuenta y el CRM: el contrato más la hoja de constancia de la plataforma de firma,
      con los firmantes, fechas, IP y código de verificación guardados en la base.
-     En Render el disco se borra en cada reinicio: sin esto, los firmados no se descargan.
    - El resultado puede no ser idéntico al original si cambiaron los datos o la fecha
      (su huella SHA-256 no coincidirá con hash_firmado): sirve para desarrollo y la demo,
      no reemplaza el archivo original de un documento firmado.
    - No puede recrear los escaneos de correspondencia (son archivos subidos).
    ========================================================= */
-const fs = require('fs');
 const config = require('../src/config');
 const { pool } = require('../src/datos/conexion');
 const archivos = require('../src/datos/archivos');
@@ -39,7 +40,8 @@ const urlVerificacion = (codigo) => `${config.appUrl}/verificar?codigo=${encodeU
         FROM documentos d LEFT JOIN contratos k ON k.id = d.contrato_id
        WHERE d.url_archivo IS NOT NULL AND d.url_archivo !~* '^https?://'
        ORDER BY d.id`)).rows;
-    const faltan = docs.filter((d) => !fs.existsSync(archivos.absoluta(d.url_archivo)));
+    const faltan = [];
+    for (const d of docs) if (!await archivos.existe(d.url_archivo)) faltan.push(d);
     console.log(`\nCarpeta de contratos: ${archivos.carpeta()}`);
     console.log(`${docs.length} documento(s) con archivo Word; faltan ${faltan.length}.\n`);
 
@@ -71,7 +73,8 @@ const urlVerificacion = (codigo) => `${config.appUrl}/verificar?codigo=${encodeU
         FROM documentos d LEFT JOIN contratos k ON k.id = d.contrato_id
        WHERE d.archivo_firmado IS NOT NULL AND d.archivo_firmado !~* '^https?://'
        ORDER BY d.id`)).rows;
-    const faltanFirmados = firmados.filter((d) => !fs.existsSync(archivos.absoluta(d.archivo_firmado)));
+    const faltanFirmados = [];
+    for (const d of firmados) if (!await archivos.existe(d.archivo_firmado)) faltanFirmados.push(d);
     console.log(`\n${firmados.length} documento(s) firmado(s); faltan ${faltanFirmados.length}.\n`);
 
     for (const d of faltanFirmados) {

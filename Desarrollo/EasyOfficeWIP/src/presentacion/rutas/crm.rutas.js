@@ -65,7 +65,7 @@ router.post('/documentos/:id/estado', a(crm.estadoDocumento));
 router.post('/documentos/:id/firma', a(firma.enviar));             // envía a la plataforma de firma electrónica
 router.get('/documentos/:id/firmado', a(firma.archivoFirmado));    // documento firmado que devolvió la plataforma
 
-// Plantillas Word y contratos generados (la BD guarda la ubicación; el archivo está en la carpeta de contratos)
+// Plantillas Word y contratos generados (la BD guarda la ruta; el contenido, en la tabla archivos)
 router.get('/plantillas-word', a(arch.plantillas));
 router.get('/plantillas/:id/archivo', a(arch.archivoPlantilla));
 router.post('/contratos/:id/generar', a(arch.generarContrato));

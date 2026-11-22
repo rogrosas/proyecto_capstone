@@ -20,6 +20,7 @@ const { conUsuario, conSistema } = require('../../datos/conexion');
 const { errores } = require('../../comun/errores');
 const v = require('../validacion');
 const archivos = require('../../datos/archivos');
+const pdf = require('../../datos/pdf');
 const correo = require('../../datos/correo');
 const plataforma = require('../../datos/firma');
 const firmaRepo = require('../../datos/repositorios/firma.repositorio');
@@ -250,7 +251,8 @@ async function verificar(codigo) {
   const nombre = (n) => String(n).split(/\s+/).map((p, i) => (i === 0 ? p : `${p[0]}.`)).join(' ');
   return {
     valido: true, codigo: c, documento: d.tipo, folio: d.folio, firmado: d.firmado, cliente: nombre(d.cliente),
-    hash: d.hash_firmado, plataforma: d.firma_proveedor === 'simulador' ? 'Simulador de laboratorio' : 'Plataforma de firma electrónica',
+    // El cliente descarga el PDF del firmado (Mi cuenta): su huella también vale
+    hash: d.hash_firmado, hash_pdf: await pdf.huellaGuardada(d.hash_firmado), plataforma: d.firma_proveedor === 'simulador' ? 'Simulador de laboratorio' : 'Plataforma de firma electrónica',
     firmantes: await conSistema(async (db) => (await firmaRepo.firmantes(db, d.id)).map((x) => ({ nombre: nombre(x.nombre), firmado: x.firmado_en })))
   };
 }

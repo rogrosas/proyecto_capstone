@@ -72,6 +72,16 @@ module.exports = {
     hora: Number(process.env.AVISOS_HORA) || 8
   },
 
+  // PDF de los documentos que descarga el cliente en Mi cuenta (src/datos/pdf.js). PDF_PROVEEDOR:
+  //   'javascript' (por defecto): pdfmake, sin instalar nada; conserva el diseño salvo las dos columnas
+  //   'libreoffice': idéntico al Word; LibreOffice debe estar instalado (SOFFICE_PATH si no está en el lugar habitual)
+  //   'texto': solo el texto (pruebas)
+  pdf: {
+    proveedor: process.env.PDF_PROVEEDOR || 'javascript',
+    soffice: process.env.SOFFICE_PATH || null,
+    timeoutMs: 120 * 1000
+  },
+
   // Firma electrónica. FIRMA_PROVEEDOR: 'simulador' (laboratorio, por defecto) o 'ninguno'.
   // La plataforma real se agrega como otro proveedor en src/datos/firma/ sin cambiar el resto.
   firma: {

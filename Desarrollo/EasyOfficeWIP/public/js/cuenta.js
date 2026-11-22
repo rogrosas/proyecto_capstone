@@ -12,7 +12,7 @@
    3. Con sesión: GET /api/cliente/panel y se dibujan las pestañas.
    4. Documentos: el cliente revisa un borrador con marca de agua (iframe de
       /api/cliente/documentos/<id>/borrador), marca "estoy de acuerdo" y lo acepta
-      para descargar el Word final; si no está de acuerdo, envía un ticket.
+      para descargar el documento final en PDF; si no está de acuerdo, envía un ticket.
    ========================================================= */
 (function () {
   const $ = (id) => document.getElementById(id);
@@ -401,10 +401,10 @@
     if (d.estado_cliente === 'por_revisar') return `<button class="btn btn-g btn-row" data-revisar="${d.id}">Revisar borrador</button>`;
     if (d.firma?.enlace) return `<a class="btn btn-g btn-row" href="${esc(d.firma.enlace)}" target="_blank" rel="noopener">Firmar ahora</a>`;
     if (d.con_firmado) {
-      return `<a class="btn btn-g btn-row" href="/api/cliente/documentos/${d.id}/archivo" download>Descargar firmado</a>
+      return `<a class="btn btn-g btn-row" href="/api/cliente/documentos/${d.id}/archivo" download>Descargar PDF firmado</a>
         ${d.codigo ? `<a class="btn btn-o btn-row" href="/verificar?codigo=${encodeURIComponent(d.codigo)}" target="_blank" rel="noopener">Verificar</a>` : ''}`;
     }
-    if (d.estado_cliente === 'aceptado') return `<a class="btn btn-o btn-row" href="/api/cliente/documentos/${d.id}/archivo" download>Descargar Word</a>`;
+    if (d.estado_cliente === 'aceptado') return `<a class="btn btn-o btn-row" href="/api/cliente/documentos/${d.id}/archivo" download>Descargar PDF</a>`;
     if (d.estado_cliente === 'objetado') return `<button class="btn btn-o btn-row" data-revisar="${d.id}">Ver borrador</button>`;
     return '<span class="sb">En preparación</span>';
   }
@@ -546,7 +546,7 @@
         $('rvPie').innerHTML = r.en_firma
           ? `<div class="aviso-ok">Gracias. Aceptó el documento y quedó listo para su firma electrónica: le enviamos el enlace a su correo y también lo verá en "Mis documentos" con el botón "Firmar ahora".</div>`
           : `<div class="aviso-ok">Gracias. Aceptó el documento y ya puede descargarlo. Le avisaremos cuando esté listo para la firma electrónica.</div>
-          <div class="rv-acc"><a class="btn btn-g" href="/api/cliente/documentos/${doc.id}/archivo" download>Descargar documento final (Word)</a></div>`;
+          <div class="rv-acc"><a class="btn btn-g" href="/api/cliente/documentos/${doc.id}/archivo" download>Descargar documento final (PDF)</a></div>`;
         recargarPanel();
       } catch (err) {
         $('rvError').hidden = false; $('rvError').textContent = err.message;

@@ -37,7 +37,7 @@ const D = {
       { columna: 'version', etiqueta: 'Versión', tipo: 'numero', requerido: true, porDefecto: 1 },
       { columna: 'familia', etiqueta: 'Familia', tipo: 'opcion', opciones: FAMILIAS, requerido: true },
       { columna: 'requiere_revision', etiqueta: 'Requiere revisión humana antes de firmar', tipo: 'bool' },
-      { columna: 'archivo_base', etiqueta: 'Archivo Word (.docx) en la carpeta de contratos', tipo: 'archivo' },
+      { columna: 'archivo_base', etiqueta: 'Archivo Word (.docx)', tipo: 'archivo' },
       { columna: 'contenido_plantilla', etiqueta: 'Contenido con {variables}', tipo: 'textarea' },
       { columna: 'campos', etiqueta: 'Variables: [{"clave","etiqueta","tipo"}]', tipo: 'json' },
       { columna: 'activo', etiqueta: 'Activa', tipo: 'bool', porDefecto: true }

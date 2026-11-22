@@ -2,6 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     { "name": "easyoffice", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "Desarrollo/EasyOfficeWIP", "run", "dev"], "port": 3000 },
-    { "name": "easyoffice-local", "runtimeExecutable": "node", "runtimeArgs": ["--env-file=Desarrollo/EasyOfficeWIP/.env", "-e", "process.chdir('Desarrollo/EasyOfficeWIP'); delete process.env.DATABASE_URL; process.env.PORT = '3001'; process.env.AVISOS_AUTOMATICOS = 'no'; require(require('path').resolve('server.js'))"], "port": 3001 }
+    { "name": "easyoffice-local", "runtimeExecutable": "node", "runtimeArgs": ["--env-file=Desarrollo/EasyOfficeWIP/.env", "-e", "process.chdir('Desarrollo/EasyOfficeWIP'); delete process.env.DATABASE_URL; process.env.PORT = '3001'; process.env.AVISOS_AUTOMATICOS = 'no'; require(require('path').resolve('server.js'))"], "port": 3001 },
+    { "name": "comparar-pdf", "runtimeExecutable": "python", "runtimeArgs": ["-m", "http.server", "8765", "--bind", "127.0.0.1", "--directory", "C:/Users/roger/AppData/Local/Temp/claude/2398e4013c8db5d5/f643002a-d9a7-410a-ae08-fd4c38da831c/scratchpad/comparar"], "port": 8765 }
   ]
 }

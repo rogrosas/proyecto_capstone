@@ -37,6 +37,22 @@ Por eso:
    npm run db:revisar
    ```
 
+7. **Si la base de Neon se cargó antes** (ya tiene tablas), no se vuelve a cargar: se le aplican las migraciones
+   que le falten. Con el `DATABASE_URL` de esa base en `.env`:
+
+   ```bash
+   npm run db:revisar                                     # al final dice qué migraciones faltan y en qué orden
+   npm run db:migrar -- easyoffice_v2_comunas_permisos.sql   # una por una, en ese orden
+   ```
+
+   También se pueden pegar en el **SQL Editor** de Neon (contenido del archivo → **Run**), desde
+   `Desarrollo/base de datos/scripts/`. La lista completa y qué agrega cada una está en el README ("Migraciones").
+   Las últimas son `easyoffice_v2_cartera.sql` (ejecutivo a cargo), `easyoffice_v2_tienda.sql` (CRM → Tienda) y
+   `easyoffice_v2_archivos.sql` (Word y PDF guardados en la base, ver "Contratos Word").
+
+   **Ojo:** confirme que es la misma base que usa Render (Render → servicio → **Environment** → `DATABASE_URL`).
+   El `.env` y Render pueden apuntar a bases o ramas distintas de Neon.
+
 ## 2. Aplicación en Render
 
 1. Subir los cambios a GitHub (`render.yaml` está en la raíz del repositorio).
@@ -56,6 +72,11 @@ Por eso:
 
 Cada `git push` a `main` vuelve a desplegar solo.
 
+**PDF de Mi cuenta.** El cliente descarga sus documentos en PDF, armados con JavaScript (`src/datos/wordPdf.js`,
+pdfmake), sin LibreOffice ni Docker: el servicio sigue con `runtime: node`. No hay que configurar nada
+(`PDF_PROVEEDOR=javascript` es el valor por defecto). Los PDF quedan guardados en la tabla `archivos` de Neon
+(unos 10–250 KB cada uno) y el mismo Word da siempre el mismo PDF.
+
 ## 3. Usar el dominio propio (opcional)
 
 1. En Render: servicio → **Settings → Custom Domains → Add** → `app.f5soluciones.cl`.
@@ -68,11 +89,15 @@ El sitio actual de f5soluciones.cl y el correo de cPanel no se tocan.
 
 ## Cosas a saber
 
-- **Contratos Word.** El disco del plan gratis de Render se borra en cada reinicio o despliegue. Las plantillas
-  que están en git (`base de datos/Contratos/*.docx`) siempre están; los contratos generados se vuelven a crear
-  solos al arrancar (`npm run regenerar-archivos` va en el comando de inicio). Una plantilla **subida desde el CRM**
-  en Render se pierde al reiniciar: súbala en el equipo local y haga commit, o pase al plan *Starter* con un
-  *Persistent Disk* montado en la carpeta de contratos.
+- **Contratos Word.** El disco del plan gratis de Render se borra en cada reinicio o despliegue, así que los
+  archivos se guardan en la base (tabla `archivos`, script `easyoffice_v2_archivos.sql`): las plantillas subidas
+  desde el CRM, los contratos generados, los firmados y los escaneos de correspondencia quedan en Neon y no se
+  pierden. Las plantillas de git (`base de datos/Contratos/*.docx`) se copian a la tabla la primera vez que se
+  abren. Los PDF que descarga el cliente también quedan en la tabla. `npm run regenerar-archivos` sigue en el
+  comando de inicio, pero solo recrea los contratos que no estén guardados (los anteriores a la tabla); con todo
+  guardado, no hace nada.
+  Sin la tabla, la aplicación usa solo la carpeta como antes y lo subido desde el CRM se pierde al reiniciar.
+  Cada Word pesa unos 30–100 KB: los 0,5 GB de Neon alcanzan para miles.
 - **Correos.** Sin `SMTP_HOST`, los correos no salen: el enlace de acceso de cada correo aparece en **Logs** de
   Render (sirve para la demo). Para enviarlos de verdad se puede usar una cuenta de correo del cPanel
   (servidor `mail.f5soluciones.cl`, puerto 465), pero el plan gratis de Render bloquea los puertos SMTP:

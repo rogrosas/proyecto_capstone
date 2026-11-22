@@ -79,7 +79,7 @@ async function iniciar() {
   Object.assign(process.env, {
     PGDATABASE: nombre, CONTRATOS_DIR: contratos, CORREOS_DIR: correos,
     CLIENTE_SECRETO: crypto.randomBytes(32).toString('hex'),
-    SMTP_HOST: '', FIRMA_PROVEEDOR: 'simulador', PAGO_PROVEEDOR: 'simulador', AVISOS_AUTOMATICOS: 'no',
+    SMTP_HOST: '', FIRMA_PROVEEDOR: 'simulador', PAGO_PROVEEDOR: 'simulador', PDF_PROVEEDOR: process.env.PDF_PROVEEDOR || 'texto', AVISOS_AUTOMATICOS: 'no',
     TOTP_CLAVE: crypto.randomBytes(32).toString('hex')
   });
   const silencio = console.log;

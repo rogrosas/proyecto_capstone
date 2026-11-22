@@ -8,8 +8,9 @@ services:
     region: virginia                # misma zona que la base en Neon (AWS us-east-1): cada consulta es rápida
     rootDir: Desarrollo/EasyOfficeWIP
     buildCommand: npm ci --omit=dev
-    # El disco del plan gratis se borra en cada reinicio: antes de arrancar se vuelven a
-    # crear los contratos Word que la base menciona (generados/ no va en git).
+    # Los Word y los PDF se guardan en la base (tabla archivos). Antes de arrancar se recrean los
+    # contratos que no estén guardados (los anteriores a esa tabla). Los PDF de Mi cuenta se arman
+    # con JavaScript (pdfmake): no hace falta instalar LibreOffice ni usar Docker.
     startCommand: npm run regenerar-archivos; npm start
     healthCheckPath: /
     autoDeploy: true

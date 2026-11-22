@@ -6,8 +6,6 @@ const entrega = require('../../negocio/servicios/entrega.servicio');
 const archivosServicio = require('../../negocio/servicios/archivos.servicio');
 const tienda = require('../../negocio/servicios/tienda.servicio');
 
-const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-
 // El borrador es HTML convertido desde el Word: sin scripts ni recursos externos
 function enviarBorrador(res, html) {
   res.set({
@@ -19,10 +17,11 @@ function enviarBorrador(res, html) {
   res.send(html);
 }
 
-function enviarDocx(res, { nombre, contenido }) {
+// Lo que descarga el cliente en Mi cuenta: siempre PDF
+function enviarPdf(res, { nombre, contenido }) {
   res.set({
-    'Content-Type': DOCX,
-    'Content-Disposition': `attachment; filename="${nombre.replace(/[^\x20-\x7e]/g, '_').replace(/"/g, '')}"; filename*=UTF-8''${encodeURIComponent(nombre)}`,
+    'Content-Type': 'application/pdf',
+    'Content-Disposition': `attachment; filename="${nombre.replace(/[^ -~]/g, '_').replace(/"/g, '')}"; filename*=UTF-8''${encodeURIComponent(nombre)}`,
     'Cache-Control': 'private, no-store'
   });
   res.send(contenido);
@@ -48,7 +47,7 @@ module.exports = {
   aceptar: responder((req) => entrega.aceptar(req.cliente, req.params.id, req.body, req.ip)),
   ticketDocumento: responder((req) => entrega.enviarTicket(req.cliente, req.params.id, req.body)),
   ticket: responder((req) => entrega.enviarTicket(req.cliente, null, req.body)),
-  archivoFinal: async (req, res) => enviarDocx(res, await entrega.archivoFinal(req.cliente, req.params.id)),
+  archivoFinal: async (req, res) => enviarPdf(res, await entrega.archivoFinal(req.cliente, req.params.id)),
   ticketsCliente: responder((req) => entrega.ticketsCliente(req.cliente)),
   responderTicket: responder((req) => entrega.responderTicket(req.cliente, req.params.id, req.body)),
 

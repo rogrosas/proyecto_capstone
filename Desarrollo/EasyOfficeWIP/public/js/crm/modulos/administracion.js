@@ -139,12 +139,12 @@ function mostrarValor(campo, fila, refs) {
   return esc(v ?? '—');
 }
 
-/* ---------- Archivos Word de la carpeta de contratos ---------- */
+/* ---------- Plantillas Word (tabla archivos y carpeta de contratos) ---------- */
 const tam = (b) => (b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.round(b / 1024)} KB`);
 async function opcionesArchivo(actual) {
   const { archivos } = await get('/admin/archivos');
   const ops = archivos.map((a) => ({ valor: a.archivo, texto: `${a.archivo} · ${a.campos ? `${a.campos} campos` : 'sin campos de combinación'} · ${tam(a.bytes)}` }));
-  if (actual && !archivos.some((a) => a.archivo === actual)) ops.unshift({ valor: actual, texto: `${actual} (no está en la carpeta)` });
+  if (actual && !archivos.some((a) => a.archivo === actual)) ops.unshift({ valor: actual, texto: `${actual} (no se encontró el archivo)` });
   return ops;
 }
 
